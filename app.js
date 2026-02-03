@@ -11,10 +11,6 @@ import {
 // Import Data
 import { MENU_DATA, translations, flattenMenu } from './data.js';
 
-// Import Components
-import KpiDashboard from './components/KpiDashboard.js';
-import LoginPage from './components/LoginPage.js';
-
 // --- Shared Components (Nav) ---
 
 const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleExpand, isRtl, depth = 0 }) => {
