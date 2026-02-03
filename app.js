@@ -8,10 +8,15 @@ import {
   Calendar, Layers, ChevronRightSquare, LayoutGrid
 } from 'lucide-react';
 
-// Import data from the data module
-import { MENU_DATA, MOCK_TRANSACTIONS, MOCK_STATS, translations, flattenMenu } from './data.js';
+// Import Data
+import { MENU_DATA, translations, flattenMenu } from './data.js';
 
-// --- Components ---
+// Import Components (اینجا کامپوننت‌های جدید را صدا می‌زنیم)
+// نکته مهم: حتما پسوند .js را بنویسید
+import KpiDashboard from './components/KpiDashboard.js';
+
+// --- Shared Components (Nav & Login) ---
+// Note: We can move these to separate files later too!
 
 const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleExpand, isRtl, depth = 0 }) => {
   const hasChildren = item.children && item.children.length > 0;
@@ -108,84 +113,6 @@ const GlobalFilterBar = ({ t, isRtl }) => (
         <Layers size={13} className="text-slate-400" />
         <span className="text-xs font-bold text-slate-500">{t.ledger}:</span>
         <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-white transition-all cursor-pointer">{t.all}</div>
-      </div>
-    </div>
-  </div>
-);
-
-const KpiDashboard = ({ t, isRtl }) => (
-  <div className="space-y-8 animate-in fade-in duration-500">
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">{t.welcome}</h1>
-        <p className="text-slate-500 mt-1 text-sm font-medium">{t.financialOverview}</p>
-      </div>
-      <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all text-xs">
-        <Plus size={18} /> {isRtl ? 'ایجاد موجودیت جدید' : 'Create New'}
-      </button>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {MOCK_STATS.map(stat => (
-        <div key={stat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <div className={`p-3 rounded-2xl bg-slate-50 group-hover:bg-blue-50 transition-colors ${stat.color}`}><stat.icon size={24} /></div>
-            <span className={`text-[10px] font-black px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{stat.change}</span>
-          </div>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-wide">{stat.label[t.language === 'English' ? 'en' : 'fa']}</p>
-          <h3 className="text-2xl font-black mt-1 text-slate-900 font-mono tracking-tighter">{stat.value}</h3>
-        </div>
-      ))}
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
-      <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
-          <h2 className="font-black text-slate-800 tracking-tight">{t.recentTransactions}</h2>
-          <button className="text-blue-600 text-xs font-black hover:underline px-2">View All</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-slate-50/50 text-slate-400 font-black uppercase tracking-[0.1em]">
-              <tr>
-                <th className={`px-6 py-4 text-${isRtl ? 'right' : 'left'}`}>Entity</th>
-                <th className={`px-6 py-4 text-${isRtl ? 'right' : 'left'}`}>Category</th>
-                <th className={`px-6 py-4 text-${isRtl ? 'right' : 'left'}`}>Amount</th>
-                <th className={`px-6 py-4 text-${isRtl ? 'right' : 'left'}`}>Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {MOCK_TRANSACTIONS.map(tx => (
-                <tr key={tx.id} className="hover:bg-blue-50/10 transition-colors">
-                  <td className="px-6 py-4 font-bold text-slate-700">{tx.title[t.language === 'English' ? 'en' : 'fa']}</td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg font-bold text-[10px]">{tx.category}</span></td>
-                  <td className={`px-6 py-4 font-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>{tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-slate-400 font-medium">{tx.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
-        <h2 className="font-black text-slate-800 tracking-tight mb-8">{t.budgetAlloc}</h2>
-        <div className="space-y-8">
-          {[
-            { l: isRtl ? 'عملیاتی' : 'Operations', p: 65, c: 'bg-blue-600', val: '$45k' },
-            { l: isRtl ? 'بازاریابی' : 'Marketing', p: 42, c: 'bg-indigo-500', val: '$22k' },
-            { l: isRtl ? 'توسعه' : 'R&D', p: 89, c: 'bg-emerald-500', val: '$12k' }
-          ].map((b, i) => (
-            <div key={i} className="space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{b.l}</span>
-                <span className="text-xs font-black text-blue-600">{b.p}%</span>
-              </div>
-              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full ${b.c} transition-all duration-1000`} style={{ width: `${b.p}%` }}></div>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   </div>
@@ -517,7 +444,7 @@ const App = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
       
-      {/* 1. Module Rail (Milder Color - Slate 100) */}
+      {/* 1. Module Rail */}
       <aside className={`bg-slate-100 w-20 flex flex-col items-center py-8 shrink-0 z-30 shadow-sm border-${isRtl ? 'l' : 'r'} border-slate-200`}>
         <div className="bg-blue-600 p-2.5 rounded-2xl text-white mb-12 shadow-lg shadow-blue-500/20"><BarChart3 size={24} /></div>
         <div className="flex-1 flex flex-col gap-6 items-center">
@@ -528,97 +455,4 @@ const App = () => {
             >
               <mod.icon size={22} />
               <span className={`absolute ${isRtl ? 'right-full mr-4' : 'left-full ml-4'} top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all whitespace-nowrap z-50`}>{mod.label[lang]}</span>
-              {activeModuleId === mod.id && <div className={`absolute w-1 h-6 bg-blue-500 rounded-full top-1/2 -translate-y-1/2 ${isRtl ? 'right-[-8px]' : 'left-[-8px]'}`}></div>}
-            </button>
-          ))}
-        </div>
-        <button onClick={handleLogout} className="mt-auto p-4 text-slate-400 hover:text-red-500 transition-colors"><LogOut size={22} /></button>
-      </aside>
-
-      {/* 2. Sub-Menu Pane (Tree View) */}
-      <aside className={`bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 transition-all duration-300 flex flex-col overflow-hidden ${sidebarCollapsed ? 'w-0' : 'w-72'}`}>
-        <div className="p-8 flex items-center justify-between">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{currentModule.label[lang]}</h2>
-          <LayoutGrid size={16} className="text-slate-200" />
-        </div>
-
-        <div className="px-6 mb-8">
-          <div className="relative group">
-            <Search size={14} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-4' : 'left-4'} text-slate-400 group-focus-within:text-blue-500`} />
-            <input 
-              type="text" placeholder={t.searchMenu} value={menuSearch} onChange={(e) => handleGlobalSearch(e.target.value)}
-              className={`w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 ${isRtl ? 'pr-11 pl-4' : 'pl-11 pr-4'} text-xs focus:ring-4 focus:ring-blue-50 outline-none transition-all`}
-            />
-          </div>
-        </div>
-
-        {/* Tree Container with Doubled Default Height before Scroll */}
-        <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar max-h-[calc(100vh-160px)]">
-          {currentModule.children?.map(item => (
-            <TreeNavItem 
-              key={item.id} item={item} lang={lang} activeId={activeId} setActiveId={setActiveId} 
-              expandedItems={expandedItems} toggleExpand={toggleExpand} isRtl={isRtl}
-            />
-          ))}
-        </nav>
-
-        <div className="p-6 mt-auto">
-          <div className="bg-slate-50 p-4 rounded-[1.5rem] flex items-center gap-3 border border-slate-100 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-black">AD</div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-black text-slate-800 truncate">Administrator</p>
-              <p className="text-[10px] text-slate-400 truncate">System CFO</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Viewport */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-20">
-          <div className="flex items-center gap-4">
-             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all">
-                <ChevronRightSquare size={20} className={sidebarCollapsed ? (isRtl ? 'rotate-180' : '') : (isRtl ? '' : 'rotate-180')} />
-             </button>
-             <div className="flex items-center gap-2 text-slate-300">
-               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{activeModuleId}</span>
-               <ChevronRight size={12} className={isRtl ? 'rotate-180' : ''} />
-               <span className="text-xs font-black text-blue-600 uppercase tracking-widest">{activeId}</span>
-             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 transition-all"><Search size={18} /></div>
-            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 relative group transition-all">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </div>
-            <button onClick={() => setLang(l => l === 'en' ? 'fa' : 'en')} className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-white text-xs font-black transition-all">
-              <Languages size={14} />{t.language}
-            </button>
-          </div>
-        </header>
-
-        {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
-
-        <div className="flex-1 overflow-y-auto bg-slate-50/30 p-10">
-          {activeId === 'workspace_gen' ? (
-            <KpiDashboard t={t} isRtl={isRtl} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
-               <div className="p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100"><LayoutGrid size={64} className="text-slate-200" /></div>
-               <div>
-                  <h2 className="text-xl font-black text-slate-900">{activeId.toUpperCase()}</h2>
-                  <p className="text-slate-500 mt-2 font-medium">{t.emptyPage}</p>
-               </div>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-};
-
-// Mount the application
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);
+              {activeModuleId === mod.id && <div className={`absolute w-1 h-6 bg-blue-500 rounded-full top-1/2 -translate-y
