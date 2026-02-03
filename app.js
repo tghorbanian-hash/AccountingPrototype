@@ -8,8 +8,10 @@ import {
   Calendar, Layers, ChevronRightSquare, LayoutGrid
 } from 'lucide-react';
 
-// Import Data
-import { MENU_DATA, translations, flattenMenu } from './data.js';
+// --- تغییر مهم: دریافت داده‌ها و کامپوننت‌ها از حافظه مرورگر (Window) ---
+// به جای import، آنها را از window می‌خوانیم تا ارور 404 و ReferenceError رفع شود
+const { MENU_DATA, translations, flattenMenu } = window;
+const { KpiDashboard, LoginPage } = window;
 
 // --- Shared Components (Nav) ---
 
@@ -181,7 +183,6 @@ const App = () => {
 
   const currentModule = useMemo(() => MENU_DATA.find(m => m.id === activeModuleId), [activeModuleId]);
   
-  // Filters Logic: Show only for Document Management pages (gl_docs and its children)
   const showFilters = useMemo(() => {
     const docMgmtIds = ['gl_docs', 'doc_list', 'doc_review', 'doc_finalize'];
     return docMgmtIds.includes(activeId);
@@ -213,7 +214,6 @@ const App = () => {
       {/* 1. Module Rail */}
       <aside className={`bg-slate-100 w-20 flex flex-col items-center py-8 shrink-0 z-30 shadow-sm border-${isRtl ? 'l' : 'r'} border-slate-200`}>
         <div className="bg-blue-600 p-2.5 rounded-2xl text-white mb-12 shadow-lg shadow-blue-500/20"><BarChart3 size={24} /></div>
-        {/* Changed gap-6 to gap-3 for tighter spacing */}
         <div className="flex-1 flex flex-col gap-3 items-center">
           {MENU_DATA.map(mod => (
             <button 
@@ -232,7 +232,6 @@ const App = () => {
       {/* 2. Sub-Menu Pane */}
       <aside className={`bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 transition-all duration-300 flex flex-col overflow-hidden ${sidebarCollapsed ? 'w-0' : 'w-72'}`}>
         
-        {/* Swapped Order: Search Box is now ABOVE the Module Title */}
         <div className="px-6 mt-8 mb-4">
           <div className="relative group">
             <Search size={14} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-4' : 'left-4'} text-slate-400 group-focus-within:text-blue-500`} />
@@ -283,7 +282,6 @@ const App = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Removed the Header Search Button as requested */}
             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 relative group transition-all">
               <Bell size={18} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -297,7 +295,6 @@ const App = () => {
         {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
 
         <div className="flex-1 overflow-y-auto bg-slate-50/30 p-10">
-          {/* Main Content Area */}
           {activeId === 'workspace_gen' ? (
             <KpiDashboard t={t} isRtl={isRtl} />
           ) : (
