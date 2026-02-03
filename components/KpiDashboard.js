@@ -84,4 +84,5 @@ const KpiDashboard = ({ t, isRtl }) => {
   );
 };
 
-export default KpiDashboard;
+// Export to global scope instead of module export
+window.KpiDashboard = KpiDashboard;
