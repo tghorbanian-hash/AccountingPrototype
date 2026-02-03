@@ -248,4 +248,5 @@ const LoginPage = ({
   );
 };
 
-export default LoginPage;
+// Export to global scope instead of module export
+window.LoginPage = LoginPage;
