@@ -184,7 +184,12 @@ const App = () => {
   };
 
   const currentModule = useMemo(() => MENU_DATA.find(m => m.id === activeModuleId), [activeModuleId]);
-  const showFilters = useMemo(() => activeModuleId === 'accounting', [activeModuleId]);
+  
+  // Filters Logic: Show only for Document Management pages (gl_docs and its children)
+  const showFilters = useMemo(() => {
+    const docMgmtIds = ['gl_docs', 'doc_list', 'doc_review', 'doc_finalize'];
+    return docMgmtIds.includes(activeId);
+  }, [activeId]);
 
   if (!isLoggedIn) {
     return (
@@ -212,7 +217,8 @@ const App = () => {
       {/* 1. Module Rail */}
       <aside className={`bg-slate-100 w-20 flex flex-col items-center py-8 shrink-0 z-30 shadow-sm border-${isRtl ? 'l' : 'r'} border-slate-200`}>
         <div className="bg-blue-600 p-2.5 rounded-2xl text-white mb-12 shadow-lg shadow-blue-500/20"><BarChart3 size={24} /></div>
-        <div className="flex-1 flex flex-col gap-6 items-center">
+        {/* Changed gap-6 to gap-3 for tighter spacing */}
+        <div className="flex-1 flex flex-col gap-3 items-center">
           {MENU_DATA.map(mod => (
             <button 
               key={mod.id} onClick={() => setActiveModuleId(mod.id)}
@@ -229,12 +235,9 @@ const App = () => {
 
       {/* 2. Sub-Menu Pane */}
       <aside className={`bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 transition-all duration-300 flex flex-col overflow-hidden ${sidebarCollapsed ? 'w-0' : 'w-72'}`}>
-        <div className="p-8 flex items-center justify-between">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{currentModule.label[lang]}</h2>
-          <LayoutGrid size={16} className="text-slate-200" />
-        </div>
-
-        <div className="px-6 mb-8">
+        
+        {/* Swapped Order: Search Box is now ABOVE the Module Title */}
+        <div className="px-6 mt-8 mb-4">
           <div className="relative group">
             <Search size={14} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-4' : 'left-4'} text-slate-400 group-focus-within:text-blue-500`} />
             <input 
@@ -242,6 +245,11 @@ const App = () => {
               className={`w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 ${isRtl ? 'pr-11 pl-4' : 'pl-11 pr-4'} text-xs focus:ring-4 focus:ring-blue-50 outline-none transition-all`}
             />
           </div>
+        </div>
+
+        <div className="px-8 pb-4 flex items-center justify-between border-b border-slate-50 mb-2">
+          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{currentModule.label[lang]}</h2>
+          <LayoutGrid size={16} className="text-slate-200" />
         </div>
 
         <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar max-h-[calc(100vh-160px)]">
@@ -279,7 +287,7 @@ const App = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 transition-all"><Search size={18} /></div>
+            {/* Removed the Header Search Button as requested */}
             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 relative group transition-all">
               <Bell size={18} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -293,7 +301,7 @@ const App = () => {
         {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
 
         <div className="flex-1 overflow-y-auto bg-slate-50/30 p-10">
-          {/* اینجا تصمیم می‌گیریم کدام صفحه را نشان دهیم */}
+          {/* Main Content Area */}
           {activeId === 'workspace_gen' ? (
             <KpiDashboard t={t} isRtl={isRtl} />
           ) : (
