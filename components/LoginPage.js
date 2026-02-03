@@ -191,10 +191,7 @@ const LoginPage = ({
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{t.passwordLabel}</label>
-                  <button type="button" onClick={() => {setAuthView('forgot-choice');}} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
-                </div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.passwordLabel}</label>
                 <div className="relative group">
                   <div className={`absolute inset-y-0 ${isRtl ? 'right-4' : 'left-4'} flex items-center text-slate-400 group-focus-within:text-blue-600 transition-colors`}>
                     <Lock size={20} />
@@ -207,6 +204,9 @@ const LoginPage = ({
                     className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm`}
                     placeholder="••••••••"
                   />
+                </div>
+                <div className="flex justify-end mt-2 px-1">
+                  <button type="button" onClick={() => {setAuthView('forgot-choice');}} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
                 </div>
               </div>
 
