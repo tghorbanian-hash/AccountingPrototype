@@ -7,19 +7,19 @@ import {
 } from 'lucide-react';
 
 // --- Helper Functions ---
-export const flattenMenu = (items, parentModuleId = null) => {
+window.flattenMenu = (items, parentModuleId = null) => {
   return items.reduce((acc, item) => {
     const currentModuleId = parentModuleId || item.id;
     acc.push({ ...item, moduleId: currentModuleId });
     if (item.children) {
-      acc.push(...flattenMenu(item.children, currentModuleId));
+      acc.push(...window.flattenMenu(item.children, currentModuleId));
     }
     return acc;
   }, []);
 };
 
 // --- Static Menu Structure ---
-export const MENU_DATA = [
+window.MENU_DATA = [
   { 
     id: 'dashboards', 
     label: { en: 'Dashboards', fa: 'داشبوردها' }, 
@@ -199,21 +199,21 @@ export const MENU_DATA = [
 ];
 
 // --- Mock Data ---
-export const MOCK_TRANSACTIONS = [
+window.MOCK_TRANSACTIONS = [
   { id: 1, title: { en: 'Monthly Server Hosting', fa: 'هزینه میزبانی سرور ماهانه' }, amount: 1200, type: 'expense', date: '2024-03-01', category: 'IT' },
   { id: 2, title: { en: 'Consultancy Fee', fa: 'هزینه مشاوره' }, amount: 4500, type: 'income', date: '2024-03-02', category: 'Service' },
   { id: 3, title: { en: 'Office Supplies', fa: 'لوازم اداری' }, amount: 350, type: 'expense', date: '2024-03-03', category: 'Admin' },
   { id: 4, title: { en: 'Client Payment', fa: 'پرداخت مشتری' }, amount: 12500, type: 'income', date: '2024-03-04', category: 'Sales' },
 ];
 
-export const MOCK_STATS = [
+window.MOCK_STATS = [
   { id: 1, label: { en: 'Total Balance', fa: 'موجودی کل' }, value: '$124,500.00', change: '+12.5%', icon: Wallet, color: 'text-blue-600' },
   { id: 2, label: { en: 'Monthly Revenue', fa: 'درآمد ماهانه' }, value: '$45,200.00', change: '+8.2%', icon: ArrowUpRight, color: 'text-green-600' },
   { id: 3, label: { en: 'Total Expenses', fa: 'مجموع هزینه‌ها' }, value: '$12,800.00', change: '-2.4%', icon: ArrowDownLeft, color: 'text-red-600' },
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
-export const translations = {
+window.translations = {
   en: {
     loginTitle: 'Secure Sign In',
     loginSubtitle: 'Enter your credentials to access the financial portal',
