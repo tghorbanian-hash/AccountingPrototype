@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Wallet, ArrowUpRight, ArrowDownLeft, UserCheck, Plus 
 } from 'lucide-react';
-import { MOCK_STATS, MOCK_TRANSACTIONS } from '../data.js'; // دو نقطه یعنی برو یک پله عقب‌تر
+import { MOCK_STATS, MOCK_TRANSACTIONS } from '../app-data.js'; // دو نقطه یعنی برو یک پله عقب‌تر
 
 const KpiDashboard = ({ t, isRtl }) => {
   return (
