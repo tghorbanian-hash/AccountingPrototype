@@ -1,336 +1,477 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { createRoot } from 'react-dom/client';
-import { 
+// دریافت آیکون‌ها از ماژول سراسری React Lucide
+// این روش در محیط بدون بیلد (No-Build) بسیار امن‌تر است
+import * as LucideIcons from 'lucide-react';
+
+// استخراج آیکون‌های مورد نیاز از پکیج ایمپورت شده
+const { 
   LayoutDashboard, Receipt, Wallet, BarChart3, Settings, Languages, Bell, Search, 
   ArrowUpRight, ArrowDownLeft, Plus, MoreVertical, ChevronRight, ChevronLeft, Users, 
   CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
-  Calendar, Layers, ChevronRightSquare, LayoutGrid
-} from 'lucide-react';
+  Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
+  XCircle, FileText, CheckSquare, Eye, MousePointerClick
+} = LucideIcons;
 
-// --- دریافت داده‌ها و کامپوننت‌ها از window ---
-const { MENU_DATA, translations, flattenMenu } = window;
-const { KpiDashboard, LoginPage, UserManagement, GeneralWorkspace } = window;
-
-// --- Shared Components (Nav) ---
-
-const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleExpand, isRtl, depth = 0 }) => {
-  const hasChildren = item.children && item.children.length > 0;
-  const isExpanded = expandedItems.includes(item.id);
-  const isActive = activeId === item.id;
-  const label = item.label[lang];
-  
-  const handleItemClick = (e) => {
-    e.stopPropagation();
-    if (!hasChildren) {
-      setActiveId(item.id);
-    } else {
-      toggleExpand(item.id);
+// --- Helper Functions ---
+window.flattenMenu = (items, parentModuleId = null) => {
+  return items.reduce((acc, item) => {
+    const currentModuleId = parentModuleId || item.id;
+    acc.push({ ...item, moduleId: currentModuleId });
+    if (item.children) {
+      acc.push(...window.flattenMenu(item.children, currentModuleId));
     }
-  };
-
-  const getDepthStyle = () => {
-    if (depth === 0) return "text-slate-800 font-bold bg-slate-100/40 mb-1 border-b border-slate-50";
-    if (depth === 1) return "text-slate-600 font-semibold text-[13px]";
-    return "text-slate-500 font-medium text-[12px]";
-  };
-
-  return (
-    <div className="w-full select-none">
-      <div 
-        onClick={handleItemClick}
-        className={`
-          flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all
-          ${isActive ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-100' : 'hover:bg-slate-100/80'}
-          ${getDepthStyle()}
-        `}
-      >
-        <div className="shrink-0 flex items-center justify-center w-5 h-5">
-          {hasChildren ? (
-            <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`} />
-          ) : (
-            <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-slate-300'}`}></div>
-          )}
-        </div>
-        <span className="flex-1 truncate">{label}</span>
-      </div>
-      
-      {hasChildren && isExpanded && (
-        <div className={`relative mt-1 ${isRtl ? 'mr-4 pr-1' : 'ml-4 pl-1'}`}>
-          <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-0 border-r-2' : 'left-0 border-l-2'} border-slate-100/80`}></div>
-          <div className="space-y-1 py-1">
-            {item.children.map(child => (
-              <TreeNavItem 
-                key={child.id} 
-                item={child} 
-                lang={lang} 
-                activeId={activeId} 
-                setActiveId={setActiveId} 
-                expandedItems={expandedItems}
-                toggleExpand={toggleExpand}
-                isRtl={isRtl}
-                depth={depth + 1}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    return acc;
+  }, []);
 };
 
-const FilterChip = ({ label }) => (
-  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white text-slate-700 rounded-lg text-[11px] font-bold border border-slate-200 shadow-sm">
-    <span>{label}</span>
-    <X size={10} className="text-slate-400 hover:text-red-500 cursor-pointer" />
-  </div>
-);
-
-const GlobalFilterBar = ({ t, isRtl }) => (
-  <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-3 flex flex-wrap items-center gap-6 shrink-0 z-10 sticky top-0 animate-in slide-in-from-top duration-300">
-    <div className="flex items-center gap-2 text-blue-600">
-      <div className="p-1.5 bg-blue-50 rounded-lg"><Filter size={14} /></div>
-      <span className="text-[10px] font-black uppercase tracking-widest">{t.filters}</span>
-    </div>
-    <div className="flex items-center gap-6">
-      <div className="flex items-center gap-2">
-        <Calendar size={13} className="text-slate-400" />
-        <span className="text-xs font-bold text-slate-500">{t.fiscalYear}:</span>
-        <div className="flex items-center gap-2"><FilterChip label="1402" /><FilterChip label="1403" /></div>
-      </div>
-      <div className="w-px h-4 bg-slate-200"></div>
-      <div className="flex items-center gap-2">
-        <Building2 size={13} className="text-slate-400" />
-        <span className="text-xs font-bold text-slate-500">{t.company}:</span>
-        <div className="flex items-center gap-2"><FilterChip label={isRtl ? 'هلدینگ اصلی' : 'Main Corp'} /></div>
-      </div>
-      <div className="w-px h-4 bg-slate-200"></div>
-      <div className="flex items-center gap-2">
-        <Layers size={13} className="text-slate-400" />
-        <span className="text-xs font-bold text-slate-500">{t.ledger}:</span>
-        <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-white transition-all cursor-pointer">{t.all}</div>
-      </div>
-    </div>
-  </div>
-);
-
-const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [lang, setLang] = useState('en');
-  
-  // Navigation State
-  const [activeModuleId, setActiveModuleId] = useState('workspace');
-  const [activeId, setActiveId] = useState('workspace_gen');
-  const [expandedItems, setExpandedItems] = useState(['gl', 'treasury']);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [menuSearch, setMenuSearch] = useState('');
-  
-  // Auth Flow States
-  const [authView, setAuthView] = useState('login');
-  const [loginMethod, setLoginMethod] = useState('standard');
-  const [loginData, setLoginData] = useState({ identifier: '', password: '' });
-  const [recoveryData, setRecoveryData] = useState({ otp: '' });
-  const [error, setError] = useState('');
-  
-  const t = translations[lang];
-  const isRtl = lang === 'fa';
-
-  useEffect(() => {
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  }, [lang, isRtl]);
-
-  const toggleExpand = (id) => {
-    setExpandedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const handleGlobalSearch = (term) => {
-    setMenuSearch(term);
-    if (!term) return;
-    const flat = flattenMenu(MENU_DATA);
-    const found = flat.find(item => item.label[lang].toLowerCase().includes(term.toLowerCase()));
-    if (found && found.moduleId) setActiveModuleId(found.moduleId);
-  };
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (loginData.identifier === 'admin' && loginData.password === 'admin') {
-      setIsLoggedIn(true);
-      setError('');
-    } else setError(t.invalidCreds);
-  };
-
-  const handleVerifyOtp = (e) => {
-    e.preventDefault();
-    if (recoveryData.otp === '630328') {
-      setAuthView('reset-password');
-      setError('');
-    } else setError(t.invalidOtp);
-  };
-
-  const handleUpdatePassword = (e) => {
-    e.preventDefault();
-    setAuthView('login');
-    alert(t.resetSuccess);
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setAuthView('login');
-    setLoginData({ identifier: '', password: '' });
-  };
-
-  const currentModule = useMemo(() => MENU_DATA.find(m => m.id === activeModuleId), [activeModuleId]);
-  
-  const showFilters = useMemo(() => {
-    const docMgmtIds = ['gl_docs', 'doc_list', 'doc_review', 'doc_finalize'];
-    return docMgmtIds.includes(activeId);
-  }, [activeId]);
-
-  // Logic to determine if the page should be Full Screen (No Padding)
-  const isFullScreenPage = useMemo(() => {
-    return ['users_list'].includes(activeId);
-  }, [activeId]);
-
-  const renderContent = () => {
-    switch (activeId) {
-      case 'workspace_gen':
-        return <GeneralWorkspace t={t} isRtl={isRtl} />;
-      
-      case 'users_list':
-        return <UserManagement t={t} isRtl={isRtl} />;
-
-      // Fallback for Dashboard - temporarily same as General Workspace or previous KpiDashboard
-      case 'dashboards_gen':
-        return <KpiDashboard t={t} isRtl={isRtl} />;
-
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
-             <div className="p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100"><LayoutGrid size={64} className="text-slate-200" /></div>
-             <div>
-                <h2 className="text-xl font-black text-slate-900">{activeId.toUpperCase()}</h2>
-                <p className="text-slate-500 mt-2 font-medium">{t.emptyPage}</p>
-             </div>
-          </div>
-        );
-    }
-  };
-
-  if (!isLoggedIn) {
-    return (
-      <LoginPage 
-        t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView}
-        loginMethod={loginMethod} setLoginMethod={setLoginMethod}
-        loginData={loginData} setLoginData={setLoginData}
-        recoveryData={recoveryData} setRecoveryData={setRecoveryData}
-        error={error} handleLogin={handleLogin} handleVerifyOtp={handleVerifyOtp}
-        handleUpdatePassword={handleUpdatePassword} toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')}
-      />
-    );
+// --- Static Menu Structure ---
+window.MENU_DATA = [
+  { 
+    id: 'dashboards', 
+    label: { en: 'Dashboards', fa: 'داشبوردها' }, 
+    icon: LayoutDashboard,
+    children: [
+      { id: 'dashboards_gen', label: { en: 'General Dashboards', fa: 'داشبوردهای عمومی' } },
+      { id: 'dashboards_spec', label: { en: 'Specific Dashboards', fa: 'داشبوردهای اختصاصی' } }
+    ]
+  },
+  { 
+    id: 'workspace', 
+    label: { en: 'Workspace', fa: 'میز کار' }, 
+    icon: Briefcase,
+    children: [
+      { id: 'workspace_gen', label: { en: 'General Workspace', fa: 'میزکار عمومی' } },
+      { id: 'workspace_spec', label: { en: 'Specific Workspace', fa: 'میزکار اختصاصی' } }
+    ]
+  },
+  { 
+    id: 'accounting', 
+    label: { en: 'Accounting', fa: 'حسابداری و مالی' }, 
+    icon: BarChart3,
+    children: [
+      { 
+        id: 'gl', 
+        label: { en: 'General Ledger', fa: 'دفتر کل' },
+        children: [
+          {
+            id: 'gl_settings',
+            label: { en: 'GL Settings', fa: 'تنظیمات دفتر کل' },
+            children: [
+              { id: 'auto_num', label: { en: 'Auto Numbering', fa: 'شماره‌گذاری اتوماتیک' } },
+              { id: 'year_end_setup', label: { en: 'Year-end Settings', fa: 'تنظیمات عملیات پایان سال' } },
+              { id: 'allowed_modules', label: { en: 'Allowed Modules', fa: 'ماژول‌های مجاز' } },
+            ]
+          },
+          {
+            id: 'gl_base_info',
+            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
+            children: [
+              { id: 'ledgers', label: { en: 'Ledgers', fa: 'دفاتر' } },
+              { id: 'acc_structure', label: { en: 'Account Structure', fa: 'ساختار حساب' } },
+              { id: 'details', label: { en: 'Details', fa: 'تفصیل‌ها' } },
+              { id: 'fiscal_periods', label: { en: 'Fiscal Periods', fa: 'دوره‌های مالی' } },
+              { id: 'doc_types', label: { en: 'Document Types', fa: 'انواع اسناد' } },
+              { id: 'std_desc', label: { en: 'Standard Descriptions', fa: 'شرح‌های استاندارد' } },
+            ]
+          },
+          {
+            id: 'gl_docs',
+            label: { en: 'Document Management', fa: 'مدیریت اسناد' },
+            children: [
+              { id: 'doc_list', label: { en: 'Document List', fa: 'فهرست اسناد' } },
+              { id: 'doc_review', label: { en: 'Document Review', fa: 'بررسی اسناد' } },
+              { id: 'doc_finalize', label: { en: 'Finalize Documents', fa: 'قطعی کردن اسناد' } },
+            ]
+          },
+          {
+            id: 'gl_reports',
+            label: { en: 'Reports & Analytics', fa: 'گزارش‌ها و تحلیل‌ها' },
+            children: [
+              { id: 'print_doc', label: { en: 'Print Accounting Doc', fa: 'چاپ سند حسابداری' } },
+              { id: 'acc_review', label: { en: 'Account Review', fa: 'مرور حساب‌ها' } },
+            ]
+          }
+        ]
+      },
+      { 
+        id: 'treasury', 
+        label: { en: 'Treasury', fa: 'خزانه‌داری' },
+        children: [
+          {
+            id: 'tr_settings',
+            label: { en: 'Treasury Settings', fa: 'تنظیمات خزانه‌داری' },
+            children: [
+              { id: 'balance_control', label: { en: 'Balance Control', fa: 'کنترل مانده منابع' } }
+            ]
+          },
+          {
+            id: 'tr_base_info',
+            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
+            children: [
+              { id: 'banks', label: { en: 'Banks', fa: 'بانک‌ها' } },
+              { id: 'acc_types', label: { en: 'Account Types', fa: 'انواع حساب‌های بانکی' } },
+              { id: 'acc_setup', label: { en: 'Account Setup', fa: 'استقرار حساب‌ها' } },
+              { id: 'safes', label: { en: 'Safes', fa: 'صندوق‌ها' } },
+              { id: 'promissory', label: { en: 'Promissory Notes', fa: 'سفته‌ها' } },
+              { id: 'cheque_types', label: { en: 'Cheque Types', fa: 'انواع چک' } },
+              { id: 'petty_cashiers', label: { en: 'Petty Cashiers', fa: 'تنخواه دارها' } },
+              { id: 'cheque_books', label: { en: 'Cheque Books', fa: 'دسته چک' } },
+              { id: 'print_template', label: { en: 'Print Templates', fa: 'الگوی چاپ چک' } },
+              { id: 'reasons', label: { en: 'Reasons/Descriptions', fa: 'بابت‌ها/ شرح‌ها' } },
+              { id: 'blank_promissory', label: { en: 'Blank Promissory', fa: 'سفته سفید' } },
+            ]
+          },
+          {
+            id: 'tr_init',
+            label: { en: 'Initial Operations', fa: 'عملیات ابتدای دوره/ سال' },
+            children: [
+              { id: 'ap_setup', label: { en: 'A/P Setup', fa: 'استقرار حساب‌های پرداختنی' } },
+              { id: 'ar_setup', label: { en: 'A/R Setup', fa: 'استقرار اسناد دریافتنی' } },
+              { id: 'opening_balance', label: { en: 'Opening Balance', fa: 'موجودی ابتدای دوره' } },
+            ]
+          },
+          {
+            id: 'tr_ops',
+            label: { en: 'Receipt & Payment', fa: 'عملیات دریافت و پرداخت' },
+            children: [
+              { id: 'receipts', label: { en: 'Receipts', fa: 'دریافت‌ها' } },
+              { id: 'payments', label: { en: 'Payments', fa: 'پرداخت‌ها' } },
+              { id: 'transfers', label: { en: 'Transfers', fa: 'عملیات انتقال' } },
+              { id: 'petty_summary', label: { en: 'Petty Cash Summary', fa: 'صورت خلاصه تنخواه' } },
+              { id: 'batch_ops', label: { en: 'Batch Operations', fa: 'عملیات گروهی' } },
+            ]
+          },
+          {
+            id: 'tr_requests',
+            label: { en: 'Request Management', fa: 'مدیریت درخواست‌ها' },
+            children: [
+              { id: 'payment_req', label: { en: 'Payment Requests', fa: 'درخواست پرداخت' } },
+              { id: 'my_requests', label: { en: 'My Requests', fa: 'درخواست‌های من' } },
+            ]
+          },
+          {
+            id: 'tr_reports',
+            label: { en: 'Reports & Analytics', fa: 'گزارش‌ها و تحلیل‌ها' },
+            children: [
+              { id: 'print_req', label: { en: 'Print Request', fa: 'چاپ درخواست' } },
+              { id: 'print_cheque', label: { en: 'Print Cheque', fa: 'چاپ چک' } },
+              { id: 'review_req', label: { en: 'Review Requests', fa: 'مرور درخواست‌ها' } },
+              { id: 'review_rp', label: { en: 'Review R/P', fa: 'مرور دریافت/ پرداخت' } },
+            ]
+          }
+        ]
+      },
+      { id: 'budgeting', label: { en: 'Budgeting', fa: 'بودجه‌ریزی' } },
+    ]
+  },
+  {
+    id: 'hr',
+    label: { en: 'Human Capital', fa: 'سرمایه انسانی' },
+    icon: Users,
+    children: [
+      { id: 'employees', label: { en: 'Employee Management', fa: 'مدیریت کارکنان' } },
+      { id: 'compensation', label: { en: 'Compensation', fa: 'جبران خدمات' } },
+    ]
+  },
+  {
+    id: 'workflow',
+    label: { en: 'Workflow', fa: 'مدیریت گردش کار' },
+    icon: GitBranch,
+    children: [
+      { id: 'processes', label: { en: 'Process Management', fa: 'مدیریت فرایندها' } },
+      { id: 'inbox', label: { en: 'Inbox Management', fa: 'مدیریت کارتابل' } },
+      { id: 'tasks', label: { en: 'Task Management', fa: 'مدیریت کارها' } },
+    ]
+  },
+  {
+    id: 'system_settings',
+    label: { en: 'Settings', fa: 'تنظیمات سیستم' },
+    icon: Settings,
+    children: [
+      { id: 'general_settings', label: { en: 'General Settings', fa: 'تنظیمات عمومی' } },
+      { id: 'integrations', label: { en: 'Integrations', fa: 'ارتباط با سایر سیستم‌ها' } },
+    ]
+  },
+  {
+    id: 'permissions',
+    label: { en: 'Access', fa: 'حقوق دسترسی' },
+    icon: Key,
+    children: [
+      { id: 'users_list', label: { en: 'Users', fa: 'کاربران' } },
+      { id: 'roles', label: { en: 'Roles', fa: 'نقش‌ها' } },
+      { id: 'access_mgmt', label: { en: 'Access Management', fa: 'مدیریت دسترسی‌ها' } },
+    ]
   }
+];
 
-  return (
-    <div className={`min-h-screen bg-slate-50 flex ${isRtl ? 'font-vazir' : 'font-sans'}`}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap'); 
-        .font-vazir { font-family: 'Vazirmatn', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-      `}</style>
-      
-      {/* 1. Module Rail */}
-      <aside className={`bg-slate-100 w-20 flex flex-col items-center py-8 shrink-0 z-30 shadow-sm border-${isRtl ? 'l' : 'r'} border-slate-200`}>
-        <div className="bg-blue-600 p-2.5 rounded-2xl text-white mb-12 shadow-lg shadow-blue-500/20"><BarChart3 size={24} /></div>
-        <div className="flex-1 flex flex-col gap-3 items-center">
-          {MENU_DATA.map(mod => (
-            <button 
-              key={mod.id} onClick={() => setActiveModuleId(mod.id)}
-              className={`relative p-3.5 rounded-2xl transition-all group ${activeModuleId === mod.id ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-            >
-              <mod.icon size={22} />
-              <span className={`absolute ${isRtl ? 'right-full mr-4' : 'left-full ml-4'} top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all whitespace-nowrap z-50`}>{mod.label[lang]}</span>
-              {activeModuleId === mod.id && <div className={`absolute w-1 h-6 bg-blue-500 rounded-full top-1/2 -translate-y-1/2 ${isRtl ? 'right-[-8px]' : 'left-[-8px]'}`}></div>}
-            </button>
-          ))}
-        </div>
-        <button onClick={handleLogout} className="mt-auto p-4 text-slate-400 hover:text-red-500 transition-colors"><LogOut size={22} /></button>
-      </aside>
+// --- Mock Data ---
+window.MOCK_TRANSACTIONS = [
+  { id: 1, title: { en: 'Monthly Server Hosting', fa: 'هزینه میزبانی سرور ماهانه' }, amount: 1200, type: 'expense', date: '2024-03-01', category: 'IT' },
+  { id: 2, title: { en: 'Consultancy Fee', fa: 'هزینه مشاوره' }, amount: 4500, type: 'income', date: '2024-03-02', category: 'Service' },
+  { id: 3, title: { en: 'Office Supplies', fa: 'لوازم اداری' }, amount: 350, type: 'expense', date: '2024-03-03', category: 'Admin' },
+  { id: 4, title: { en: 'Client Payment', fa: 'پرداخت مشتری' }, amount: 12500, type: 'income', date: '2024-03-04', category: 'Sales' },
+];
 
-      {/* 2. Sub-Menu Pane */}
-      <aside className={`bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 transition-all duration-300 flex flex-col overflow-hidden ${sidebarCollapsed ? 'w-0' : 'w-72'}`}>
-        
-        <div className="px-6 mt-8 mb-4">
-          <div className="relative group">
-            <Search size={14} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-4' : 'left-4'} text-slate-400 group-focus-within:text-blue-500`} />
-            <input 
-              type="text" placeholder={t.searchMenu} value={menuSearch} onChange={(e) => handleGlobalSearch(e.target.value)}
-              className={`w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 ${isRtl ? 'pr-11 pl-4' : 'pl-11 pr-4'} text-xs focus:ring-4 focus:ring-blue-50 outline-none transition-all`}
-            />
-          </div>
-        </div>
+window.MOCK_STATS = [
+  { id: 1, label: { en: 'Total Balance', fa: 'موجودی کل' }, value: '$124,500.00', change: '+12.5%', icon: Wallet, color: 'text-blue-600' },
+  { id: 2, label: { en: 'Monthly Revenue', fa: 'درآمد ماهانه' }, value: '$45,200.00', change: '+8.2%', icon: ArrowUpRight, color: 'text-green-600' },
+  { id: 3, label: { en: 'Total Expenses', fa: 'مجموع هزینه‌ها' }, value: '$12,800.00', change: '-2.4%', icon: ArrowDownLeft, color: 'text-red-600' },
+  { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
+];
 
-        <div className="px-8 pb-4 flex items-center justify-between border-b border-slate-50 mb-2">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{currentModule.label[lang]}</h2>
-          <LayoutGrid size={16} className="text-slate-200" />
-        </div>
-
-        <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar max-h-[calc(100vh-160px)]">
-          {currentModule.children?.map(item => (
-            <TreeNavItem 
-              key={item.id} item={item} lang={lang} activeId={activeId} setActiveId={setActiveId} 
-              expandedItems={expandedItems} toggleExpand={toggleExpand} isRtl={isRtl}
-            />
-          ))}
-        </nav>
-
-        <div className="p-6 mt-auto">
-          <div className="bg-slate-50 p-4 rounded-[1.5rem] flex items-center gap-3 border border-slate-100 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-black">AD</div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-black text-slate-800 truncate">Administrator</p>
-              <p className="text-[10px] text-slate-400 truncate">System CFO</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Viewport */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-20">
-          <div className="flex items-center gap-4">
-             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all">
-                <ChevronRightSquare size={20} className={sidebarCollapsed ? (isRtl ? 'rotate-180' : '') : (isRtl ? '' : 'rotate-180')} />
-             </button>
-             <div className="flex items-center gap-2 text-slate-300">
-               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{activeModuleId}</span>
-               <ChevronRight size={12} className={isRtl ? 'rotate-180' : ''} />
-               <span className="text-xs font-black text-blue-600 uppercase tracking-widest">{activeId}</span>
-             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 relative group transition-all">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </div>
-            <button onClick={() => setLang(l => l === 'en' ? 'fa' : 'en')} className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-white text-xs font-black transition-all">
-              <Languages size={14} />{t.language}
-            </button>
-          </div>
-        </header>
-
-        {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
-
-        {/* --- CRITICAL CHANGE: Conditional Padding and Overflow based on Route Type --- */}
-        <div className={`flex-1 bg-slate-50/30 ${isFullScreenPage ? 'p-0 overflow-hidden' : 'p-10 overflow-y-auto'}`}>
-          {renderContent()}
-        </div>
-      </main>
-    </div>
-  );
+window.translations = {
+  en: {
+    loginTitle: 'Secure Sign In',
+    loginSubtitle: 'Enter your credentials to access the financial portal',
+    usernameLabel: 'Username',
+    passwordLabel: 'Password',
+    emailLabel: 'Corporate Email',
+    loginBtn: 'Sign In',
+    logoutBtn: 'Logout',
+    standardMethod: 'Standard',
+    adMethod: 'Active Directory',
+    invalidCreds: 'Invalid username or password',
+    forgotPass: 'Forgot Password?',
+    backToLogin: 'Back to Login',
+    resetMethodTitle: 'Reset Password',
+    resetMethodSubtitle: 'Choose how you want to recover your account',
+    viaSms: 'Via SMS OTP',
+    viaEmail: 'Via Email Link',
+    mobileLabel: 'Mobile Number',
+    sendOtp: 'Send Code',
+    enterOtp: 'Enter 6-digit Code',
+    verifyOtp: 'Verify & Continue',
+    invalidOtp: 'Invalid OTP code',
+    newPasswordLabel: 'New Password',
+    confirmPasswordLabel: 'Confirm New Password',
+    updatePassword: 'Update Password',
+    resetSuccess: 'Password Updated Successfully',
+    emailSent: 'Reset Link Sent',
+    emailSentDesc: 'Please check your corporate inbox for the recovery link.',
+    searchMenu: 'Search all menus...',
+    welcome: 'Welcome Back, Admin',
+    financialOverview: 'Financial Overview',
+    language: 'English',
+    recentTransactions: 'Recent Transactions',
+    budgetAlloc: 'Budget Allocation',
+    fiscalYear: 'Fiscal Year',
+    ledger: 'Ledger',
+    company: 'Company',
+    filters: 'Global Filters',
+    all: 'All',
+    emptyPage: 'This module is currently empty or under development.',
+    // User Management Translations
+    usersListTitle: 'User Management',
+    usersListSubtitle: 'Manage system access and user profiles',
+    createNewUser: 'New User',
+    searchUserPlaceholder: 'Search by username...',
+    filter: 'Filter',
+    colId: 'ID',
+    colUsername: 'Username',
+    colLinkedPerson: 'Linked Person',
+    colUserType: 'User Type',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    active: 'Active',
+    inactive: 'Inactive',
+    roleAdmin: 'System Admin',
+    roleUser: 'System User',
+    editUserTitle: 'Edit User Profile',
+    newUserTitle: 'Define New User',
+    newUserSubtitle: 'Fill in the form to create a new user account',
+    editingId: 'Editing ID',
+    fieldId: 'User ID',
+    fieldUsername: 'Username',
+    fieldStatus: 'Account Status',
+    fieldUserType: 'User Type',
+    fieldLinkedPerson: 'Linked Person (Entity)',
+    selectPersonPlaceholder: '- Select a Person -',
+    linkedPersonHelp: 'Link this user account to a predefined person entity in the system.',
+    fieldPassword: 'Password Management',
+    enterPassword: 'Enter new password...',
+    resetDefault: 'Reset to Default',
+    passwordResetMsg: 'Password has been reset to "DefaultPassword123!"',
+    cancel: 'Cancel',
+    saveChanges: 'Save & Close',
+    confirmDelete: 'Are you sure you want to delete this user?',
+    recordsFound: 'records found',
+    edit: 'Edit',
+    delete: 'Delete',
+    viewPermissions: 'View Permissions',
+    // Permission Modal
+    permModalTitle: 'User Access & Permissions',
+    permColSource: 'Access Source',
+    permColForms: 'Accessible Forms',
+    permColOps: 'Allowed Operations',
+    permTypeRole: 'Role',
+    permTypeUser: 'User',
+    permSelectSource: 'Select a Source',
+    permSelectForm: 'Select a Form',
+    // General Workspace Translations (from Help.html)
+    ws_title: "User Workspace",
+    ws_subtitle: "Exchange & Accounting Management System",
+    kpi_cash: "Cash & Bank Balance",
+    kpi_receivable: "Accounts Receivable",
+    kpi_payable: "Accounts Payable",
+    kpi_profit: "Monthly Net Profit",
+    btn_invoice: "+ Buy/Sell Currency",
+    btn_check: "Receive Check",
+    btn_payment_req: "Payment Request",
+    btn_expense: "Record Expense",
+    btn_account: "New Contact/Account",
+    table_title: "Recent Transactions",
+    th_id: "ID",
+    th_date: "Date",
+    th_desc: "Description",
+    th_amount: "Amount",
+    th_status: "Status",
+    row1_desc: "USD Purchase - 5,000$",
+    row2_desc: "Office Rent - Jan 2026",
+    row3_desc: "EUR Sale - 2,200€",
+    status_paid: "Paid",
+    status_pending: "Pending",
+    sidebar_title: "Critical Alerts",
+    alert1_title: "Check Due Soon",
+    alert1_sub: "Mellat Bank - Tomorrow",
+    alert2_title: "Overdue Invoice",
+    alert2_sub: "Client A - 10 Days Delay",
+    alert3_title: "Credit Limit Warning",
+    alert3_sub: "Exchange Partner B - Near Limit",
+    mod_exp_title: "Record New Expense",
+    mod_acc_title: "New Contact",
+    lbl_category: "Category",
+    lbl_amount: "Amount",
+    opt_rent: "Rent",
+    opt_salary: "Salary",
+    btn_save: "Save Data",
+    ph_name: "Contact Name",
+    ph_phone: "Phone Number"
+  },
+  fa: {
+    loginTitle: 'ورود ایمن به سیستم',
+    loginSubtitle: 'برای دسترسی به پرتال مالی، اطلاعات خود را وارد کنید',
+    usernameLabel: 'نام کاربری',
+    passwordLabel: 'رمز عبور',
+    emailLabel: 'ایمیل سازمانی',
+    loginBtn: 'ورود به سیستم',
+    logoutBtn: 'خروج',
+    standardMethod: 'استاندارد',
+    adMethod: 'اکتیو دایرکتوری',
+    invalidCreds: 'نام کاربری یا رمز عبور اشتباه است',
+    forgotPass: 'رمز عبور را فراموش کرده‌اید؟',
+    backToLogin: 'بازگشت به ورود',
+    resetMethodTitle: 'بازیابی رمز عبور',
+    resetMethodSubtitle: 'روش بازیابی حساب کاربری خود را انتخاب کنید',
+    viaSms: 'پیامک (کد یکبار مصرف)',
+    viaEmail: 'ایمیل (لینک بازیابی)',
+    mobileLabel: 'شماره موبایل',
+    sendOtp: 'ارسال کد',
+    enterOtp: 'کد ۶ رقمی را وارد کنید',
+    verifyOtp: 'تایید و ادامه',
+    invalidOtp: 'کد تایید وارد شده صحیح نیست',
+    newPasswordLabel: 'رمز عبور جدید',
+    confirmPasswordLabel: 'تکرار رمز عبور جدید',
+    updatePassword: 'بروزرسانی رمز عبور',
+    resetSuccess: 'رمز عبور با موفقیت تغییر یافت',
+    emailSent: 'لینک بازیابی ارسال شد',
+    emailSentDesc: 'لطفاً صندوق ورودی ایمیل سازمانی خود را بررسی کنید.',
+    searchMenu: 'جستجو در تمام منوها...',
+    welcome: 'خوش آمدید، مدیر سیستم',
+    financialOverview: 'مرور وضعیت مالی',
+    language: 'فارسی',
+    recentTransactions: 'تراکنش‌های اخیر',
+    budgetAlloc: 'توزیع بودجه',
+    fiscalYear: 'سال مالی',
+    ledger: 'دفتر',
+    company: 'شرکت',
+    filters: 'فیلترهای عمومی',
+    all: 'همه',
+    emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
+    // User Management Translations
+    usersListTitle: 'مدیریت کاربران',
+    usersListSubtitle: 'مدیریت دسترسی‌ها و پروفایل‌های کاربری سیستم',
+    createNewUser: 'کاربر جدید',
+    searchUserPlaceholder: 'جستجو بر اساس نام کاربری...',
+    filter: 'فیلتر',
+    colId: 'شناسه',
+    colUsername: 'نام کاربری',
+    colLinkedPerson: 'شخص مرتبط',
+    colUserType: 'نوع کاربر',
+    colStatus: 'وضعیت',
+    colActions: 'عملیات',
+    active: 'فعال',
+    inactive: 'غیرفعال',
+    roleAdmin: 'مدیر سیستم',
+    roleUser: 'کاربر سیستم',
+    editUserTitle: 'ویرایش اطلاعات کاربر',
+    newUserTitle: 'تعریف کاربر جدید',
+    newUserSubtitle: 'برای ایجاد حساب کاربری جدید، فرم زیر را تکمیل کنید',
+    editingId: 'در حال ویرایش شناسه',
+    fieldId: 'شناسه کاربری',
+    fieldUsername: 'نام کاربری',
+    fieldStatus: 'وضعیت حساب',
+    fieldUserType: 'نوع کاربر',
+    fieldLinkedPerson: 'شخص مرتبط (طرف حساب)',
+    selectPersonPlaceholder: '- انتخاب شخص -',
+    linkedPersonHelp: 'این حساب کاربری به یکی از اشخاص تعریف شده در سیستم متصل می‌شود.',
+    fieldPassword: 'مدیریت رمز عبور',
+    enterPassword: 'رمز عبور جدید را وارد کنید...',
+    resetDefault: 'بازنشانی به پیش‌فرض',
+    passwordResetMsg: 'رمز عبور کاربر به "DefaultPassword123!" تغییر یافت.',
+    cancel: 'انصراف',
+    saveChanges: 'ذخیره و بستن',
+    confirmDelete: 'آیا از حذف این کاربر اطمینان دارید؟',
+    recordsFound: 'رکورد یافت شد',
+    edit: 'ویرایش',
+    delete: 'حذف',
+    viewPermissions: 'مشاهده دسترسی‌ها',
+    // Permission Modal
+    permModalTitle: 'مدیریت دسترسی‌ها و مجوزها',
+    permColSource: 'منبع دسترسی',
+    permColForms: 'فرم‌های در دسترس',
+    permColOps: 'عملیات مجاز',
+    permTypeRole: 'نقش',
+    permTypeUser: 'کاربر',
+    permSelectSource: 'یک منبع دسترسی انتخاب کنید',
+    permSelectForm: 'یک فرم را انتخاب کنید',
+    // General Workspace Translations (from Help.html)
+    ws_title: "میز کار کاربر",
+    ws_subtitle: "سیستم مدیریت حسابداری و صرافی",
+    kpi_cash: "موجودی نقد و بانک",
+    kpi_receivable: "مطالبات (بدهکاران)",
+    kpi_payable: "بدهی‌ها (بستانکاران)",
+    kpi_profit: "سود خالص ماهانه",
+    btn_invoice: "+ خرید و فروش ارز",
+    btn_check: "ثبت چک دریافتی",
+    btn_payment_req: "درخواست پرداخت",
+    btn_expense: "ثبت هزینه",
+    btn_account: "تعریف طرف حساب",
+    table_title: "آخرین تراکنش‌ها",
+    th_id: "شناسه",
+    th_date: "تاریخ",
+    th_desc: "شرح",
+    th_amount: "مبلغ",
+    th_status: "وضعیت",
+    row1_desc: "خرید دلار - ۵۰۰۰ واحد",
+    row2_desc: "اجاره دفتر - ژانویه ۲۰۲۶",
+    row3_desc: "فروش یورو - ۲۲۰۰ واحد",
+    status_paid: "تسویه شده",
+    status_pending: "در انتظار",
+    sidebar_title: "هشدارهای حساس",
+    alert1_title: "سررسید چک",
+    alert1_sub: "بانک ملت - موعد فردا",
+    alert2_title: "فاکتور معوقه",
+    alert2_sub: "مشتری الف - ۱۰ روز تاخیر",
+    alert3_title: "هشدار حد اعتبار",
+    alert3_sub: "همکار صراف ب - نزدیک سقف",
+    mod_exp_title: "ثبت هزینه جدید",
+    mod_acc_title: "تعریف طرف حساب جدید",
+    lbl_category: "دسته بندی",
+    lbl_amount: "مبلغ",
+    opt_rent: "اجاره",
+    opt_salary: "حقوق",
+    btn_save: "ذخیره اطلاعات",
+    ph_name: "نام طرف حساب",
+    ph_phone: "شماره تماس"
+  }
 };
-
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);
