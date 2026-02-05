@@ -9,7 +9,7 @@ const {
   CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
-  XCircle
+  XCircle, FileText, CheckSquare, Eye, MousePointerClick
 } = LucideIcons;
 
 // --- Helper Functions ---
@@ -269,7 +269,7 @@ window.translations = {
     colId: 'ID',
     colUsername: 'Username',
     colLinkedPerson: 'Linked Person',
-    colRole: 'Role',
+    colUserType: 'User Type',
     colStatus: 'Status',
     colActions: 'Actions',
     active: 'Active',
@@ -283,7 +283,7 @@ window.translations = {
     fieldId: 'User ID',
     fieldUsername: 'Username',
     fieldStatus: 'Account Status',
-    fieldRole: 'User Type',
+    fieldUserType: 'User Type',
     fieldLinkedPerson: 'Linked Person (Entity)',
     selectPersonPlaceholder: '- Select a Person -',
     linkedPersonHelp: 'Link this user account to a predefined person entity in the system.',
@@ -296,7 +296,17 @@ window.translations = {
     confirmDelete: 'Are you sure you want to delete this user?',
     recordsFound: 'records found',
     edit: 'Edit',
-    delete: 'Delete'
+    delete: 'Delete',
+    viewPermissions: 'View Permissions',
+    // Permission Modal
+    permModalTitle: 'User Access & Permissions',
+    permColSource: 'Access Source',
+    permColForms: 'Accessible Forms',
+    permColOps: 'Allowed Operations',
+    permTypeRole: 'Role',
+    permTypeUser: 'User',
+    permSelectSource: 'Select a Source',
+    permSelectForm: 'Select a Form'
   },
   fa: {
     loginTitle: 'ورود ایمن به سیستم',
@@ -347,7 +357,7 @@ window.translations = {
     colId: 'شناسه',
     colUsername: 'نام کاربری',
     colLinkedPerson: 'شخص مرتبط',
-    colRole: 'نوع کاربر',
+    colUserType: 'نوع کاربر',
     colStatus: 'وضعیت',
     colActions: 'عملیات',
     active: 'فعال',
@@ -361,7 +371,7 @@ window.translations = {
     fieldId: 'شناسه کاربری',
     fieldUsername: 'نام کاربری',
     fieldStatus: 'وضعیت حساب',
-    fieldRole: 'نوع کاربر',
+    fieldUserType: 'نوع کاربر',
     fieldLinkedPerson: 'شخص مرتبط (طرف حساب)',
     selectPersonPlaceholder: '- انتخاب شخص -',
     linkedPersonHelp: 'این حساب کاربری به یکی از اشخاص تعریف شده در سیستم متصل می‌شود.',
@@ -374,6 +384,16 @@ window.translations = {
     confirmDelete: 'آیا از حذف این کاربر اطمینان دارید؟',
     recordsFound: 'رکورد یافت شد',
     edit: 'ویرایش',
-    delete: 'حذف'
+    delete: 'حذف',
+    viewPermissions: 'مشاهده دسترسی‌ها',
+    // Permission Modal
+    permModalTitle: 'مدیریت دسترسی‌ها و مجوزها',
+    permColSource: 'منبع دسترسی',
+    permColForms: 'فرم‌های در دسترس',
+    permColOps: 'عملیات مجاز',
+    permTypeRole: 'نقش',
+    permTypeUser: 'کاربر',
+    permSelectSource: 'یک منبع دسترسی انتخاب کنید',
+    permSelectForm: 'یک فرم را انتخاب کنید'
   }
 };
