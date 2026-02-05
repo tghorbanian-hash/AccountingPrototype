@@ -97,9 +97,9 @@ const UserManagement = ({ t, isRtl }) => {
 
   // --- List View Component ---
   const renderList = () => (
-    <div className="flex flex-col h-full animate-in fade-in duration-300">
-      {/* Header Bar - Full Width */}
-      <div className="flex items-center justify-between bg-white px-6 py-3 border-b border-slate-200 shrink-0">
+    <div className="flex flex-col h-full bg-white animate-in fade-in duration-300">
+      {/* Header Bar - Full Width & Flat */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 shrink-0">
         <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Users size={20} className="text-blue-600"/>
           {t.usersListTitle}
@@ -124,68 +124,66 @@ const UserManagement = ({ t, isRtl }) => {
         </div>
       </div>
 
-      {/* Full Width Table Container */}
-      <div className="flex-1 overflow-auto bg-slate-50 p-2">
-        <div className="bg-white border border-slate-300 shadow-sm h-full flex flex-col">
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-100 text-slate-600 font-bold border-b border-slate-300 sticky top-0 z-10">
-                <tr>
-                  <th className={`px-4 py-3 w-20 text-center border-${isRtl ? 'l' : 'r'} border-slate-200`}>{t.colId}</th>
-                  <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colUsername}</th>
-                  <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colLinkedPerson}</th>
-                  <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colRole}</th>
-                  <th className={`px-4 py-3 w-32 text-center border-${isRtl ? 'l' : 'r'} border-slate-200`}>{t.colStatus}</th>
-                  <th className="px-4 py-3 w-24 text-center">{t.colActions}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {users.map((user, index) => (
-                  <tr key={user.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                    <td className={`px-4 py-2 text-center font-mono text-slate-500 border-${isRtl ? 'l' : 'r'} border-slate-100`}>{user.id}</td>
-                    <td className={`px-4 py-2 font-bold text-slate-700 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>{user.username}</td>
-                    <td className={`px-4 py-2 text-slate-600 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>{user.personName}</td>
-                    <td className={`px-4 py-2 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                        {user.role === 'admin' ? t.roleAdmin : t.roleUser}
-                      </span>
-                    </td>
-                    <td className={`px-4 py-2 text-center border-${isRtl ? 'l' : 'r'} border-slate-100`}>
-                      {user.status ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 font-bold text-[10px]"><CheckCircle2 size={12}/> {t.active}</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-slate-400 font-bold text-[10px]"><XCircle size={12}/> {t.inactive}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => handleEdit(user)} title={t.edit} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors">
-                          <Edit size={14} />
-                        </button>
-                        <button onClick={() => handleDelete(user.id)} title={t.delete} className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-500 font-medium">
-             {users.length} {t.recordsFound}
-          </div>
-        </div>
+      {/* Full Width Table - No Margins, No Rounded Corners */}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-xs text-left border-collapse">
+          <thead className="bg-slate-100 text-slate-600 font-bold border-b border-slate-300 sticky top-0 z-10 shadow-sm">
+            <tr>
+              <th className={`px-4 py-3 w-20 text-center border-${isRtl ? 'l' : 'r'} border-slate-200`}>{t.colId}</th>
+              <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colUsername}</th>
+              <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colLinkedPerson}</th>
+              <th className={`px-4 py-3 border-${isRtl ? 'l' : 'r'} border-slate-200 text-${isRtl ? 'right' : 'left'}`}>{t.colRole}</th>
+              <th className={`px-4 py-3 w-32 text-center border-${isRtl ? 'l' : 'r'} border-slate-200`}>{t.colStatus}</th>
+              <th className="px-4 py-3 w-24 text-center">{t.colActions}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {users.map((user, index) => (
+              <tr key={user.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                <td className={`px-4 py-2 text-center font-mono text-slate-500 border-${isRtl ? 'l' : 'r'} border-slate-100`}>{user.id}</td>
+                <td className={`px-4 py-2 font-bold text-slate-700 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>{user.username}</td>
+                <td className={`px-4 py-2 text-slate-600 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>{user.personName}</td>
+                <td className={`px-4 py-2 border-${isRtl ? 'l' : 'r'} border-slate-100 text-${isRtl ? 'right' : 'left'}`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    {user.role === 'admin' ? t.roleAdmin : t.roleUser}
+                  </span>
+                </td>
+                <td className={`px-4 py-2 text-center border-${isRtl ? 'l' : 'r'} border-slate-100`}>
+                  {user.status ? (
+                    <span className="inline-flex items-center gap-1 text-green-600 font-bold text-[10px]"><CheckCircle2 size={12}/> {t.active}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-slate-400 font-bold text-[10px]"><XCircle size={12}/> {t.inactive}</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <button onClick={() => handleEdit(user)} title={t.edit} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors">
+                      <Edit size={14} />
+                    </button>
+                    <button onClick={() => handleDelete(user.id)} title={t.delete} className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Footer Status Bar */}
+      <div className="px-4 py-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-500 font-medium">
+         {users.length} {t.recordsFound}
       </div>
     </div>
   );
 
-  // --- Form View Component (Full Screen ERP Style) ---
+  // --- Form View Component (Full Screen Flat ERP Style) ---
   const renderForm = () => (
-    <div className="flex flex-col h-full bg-slate-100 animate-in zoom-in-95 duration-200">
+    <div className="flex flex-col h-full bg-white animate-in zoom-in-95 duration-200">
       
-      {/* 1. Top Action Bar - Sticky */}
-      <div className="bg-white border-b border-slate-300 px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-20">
+      {/* 1. Top Action Bar - Sticky & Flat */}
+      <div className="bg-white border-b border-slate-300 px-6 py-3 flex items-center justify-between shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setViewMode('list')}
@@ -217,14 +215,12 @@ const UserManagement = ({ t, isRtl }) => {
         </div>
       </div>
 
-      {/* 2. Main Form Content - Full Width Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* We use a single large card that fills the area */}
-        <div className="bg-white border border-slate-300 rounded shadow-sm min-h-full">
-          <form className="p-6">
+      {/* 2. Main Form Content - Full Width - No Card Wrapper */}
+      <div className="flex-1 overflow-y-auto">
+        <form className="p-8 max-w-7xl mx-auto">
             
             {/* Section: Account Basics */}
-            <div className="mb-6">
+            <div className="mb-8">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                 <User size={14} />
                 {t.gl_base_info || 'Basic Information'}
@@ -233,13 +229,13 @@ const UserManagement = ({ t, isRtl }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
                 {/* ID - Readonly */}
-                <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                <div className="bg-slate-50 p-3 border border-slate-200">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{t.fieldId}</label>
                   <div className="font-mono text-sm font-bold text-slate-700">{formData.id}</div>
                 </div>
 
                 {/* Status Toggle */}
-                <div className="bg-slate-50 p-2 rounded border border-slate-200 flex flex-col justify-center">
+                <div className="bg-slate-50 p-3 border border-slate-200 flex flex-col justify-center">
                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{t.fieldStatus}</label>
                    <div className="flex items-center gap-3">
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -265,7 +261,7 @@ const UserManagement = ({ t, isRtl }) => {
                     required
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-none border-b-2 px-3 py-2 text-xs focus:border-blue-500 focus:ring-0 outline-none transition-colors"
                     placeholder="e.g. j.doe"
                   />
                 </div>
@@ -276,7 +272,7 @@ const UserManagement = ({ t, isRtl }) => {
                   <select 
                     value={formData.role}
                     onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-none border-b-2 px-3 py-2 text-xs focus:border-blue-500 focus:ring-0 outline-none transition-colors"
                   >
                     <option value="user">{t.roleUser}</option>
                     <option value="admin">{t.roleAdmin}</option>
@@ -291,7 +287,7 @@ const UserManagement = ({ t, isRtl }) => {
                       value={formData.personId}
                       onChange={(e) => setFormData({...formData, personId: e.target.value})}
                       required
-                      className="flex-1 bg-white border border-slate-300 rounded px-3 py-2 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="flex-1 bg-white border border-slate-300 rounded-none border-b-2 px-3 py-2 text-xs focus:border-blue-500 focus:ring-0 outline-none transition-colors"
                     >
                       <option value="">{t.selectPersonPlaceholder}</option>
                       {mockPersons.map(p => (
@@ -306,13 +302,13 @@ const UserManagement = ({ t, isRtl }) => {
             </div>
 
             {/* Section: Security */}
-            <div className="mb-6">
+            <div className="mb-8">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                 <Shield size={14} />
                 {t.permissions || 'Security'}
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded border border-slate-200/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/30 p-6 border border-slate-100">
                  <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-2">{t.fieldPassword}</label>
                     <div className="flex items-center gap-2">
@@ -323,7 +319,7 @@ const UserManagement = ({ t, isRtl }) => {
                           value={formData.password}
                           onChange={(e) => setFormData({...formData, password: e.target.value})}
                           placeholder={editingUser ? "••••••••" : t.enterPassword}
-                          className={`w-full bg-white border border-slate-300 rounded px-3 py-2 ${isRtl ? 'pr-9' : 'pl-9'} text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none`}
+                          className={`w-full bg-white border border-slate-300 rounded-none px-3 py-2 ${isRtl ? 'pr-9' : 'pl-9'} text-xs focus:border-blue-500 focus:ring-1 outline-none`}
                         />
                       </div>
                     </div>
@@ -332,7 +328,7 @@ const UserManagement = ({ t, isRtl }) => {
                     <button 
                       type="button"
                       onClick={resetPassword}
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded text-xs font-bold hover:bg-orange-100 transition-colors w-full justify-center"
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-200 text-orange-700 text-xs font-bold hover:bg-orange-50 transition-colors w-full justify-center shadow-sm"
                     >
                       <RefreshCw size={14} /> {t.resetDefault}
                     </button>
@@ -340,8 +336,7 @@ const UserManagement = ({ t, isRtl }) => {
               </div>
             </div>
 
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   );
