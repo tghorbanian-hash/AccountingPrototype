@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Accounting System</title>
+    
+    <script>
+        (function() {
+            var path = window.location.pathname;
+            // اگر آدرس به / ختم نمی‌شود و فایل (دارای نقطه) نیست، ریدارکت کن
+            if (!path.endsWith('/') && path.split('/').pop().indexOf('.') === -1) {
+                window.location.replace(path + '/' + window.location.search + window.location.hash);
+            }
+        })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script>
@@ -30,11 +41,11 @@
 <body class="bg-slate-50">
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module" src="./app-data.js"></script>
+    <script type="text/babel" data-type="module" src="app-data.js"></script>
 
-    <script type="text/babel" data-type="module" src="./components/KpiDashboard.js"></script>
-    <script type="text/babel" data-type="module" src="./components/LoginPage.js"></script>
+    <script type="text/babel" data-type="module" src="components/KpiDashboard.js"></script>
+    <script type="text/babel" data-type="module" src="components/LoginPage.js"></script>
 
-    <script type="text/babel" data-type="module" src="./app.js"></script>
+    <script type="text/babel" data-type="module" src="app.js"></script>
 </body>
 </html>
