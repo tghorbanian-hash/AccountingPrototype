@@ -111,7 +111,7 @@ const GlobalFilterBar = ({ t, isRtl }) => (
         <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-white transition-all cursor-pointer">{t.all}</div>
       </div>
     </div>
-  );
+  </div>
 );
 
 const App = () => {
