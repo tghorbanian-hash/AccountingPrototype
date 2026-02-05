@@ -10,7 +10,7 @@ const UserManagement = ({ t, isRtl }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   
-  // Mock Data: Persons (Entities defined in the system)
+  // Mock Data: Persons
   const mockPersons = [
     { id: 1, name: 'محمد راد' },
     { id: 2, name: 'سارا تهرانی' },
@@ -37,7 +37,6 @@ const UserManagement = ({ t, isRtl }) => {
   });
 
   const handleCreateNew = () => {
-    // Generate Auto ID (Mock logic)
     const newId = Math.max(...users.map(u => u.id), 1000) + 1;
     setFormData({
       id: newId,
@@ -95,11 +94,11 @@ const UserManagement = ({ t, isRtl }) => {
     setFormData({...formData, password: 'DefaultPassword123!', isPasswordChanged: true});
   };
 
-  // --- List View Component ---
+  // --- List View (Full Screen) ---
   const renderList = () => (
     <div className="flex flex-col h-full bg-white animate-in fade-in duration-300">
-      {/* Header Bar - Full Width & Flat */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 shrink-0">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 shrink-0 bg-white">
         <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Users size={20} className="text-blue-600"/>
           {t.usersListTitle}
@@ -124,8 +123,8 @@ const UserManagement = ({ t, isRtl }) => {
         </div>
       </div>
 
-      {/* Full Width Table - No Margins, No Rounded Corners */}
-      <div className="flex-1 overflow-auto">
+      {/* Table Area - Fills remaining space */}
+      <div className="flex-1 overflow-auto bg-white">
         <table className="w-full text-xs text-left border-collapse">
           <thead className="bg-slate-100 text-slate-600 font-bold border-b border-slate-300 sticky top-0 z-10 shadow-sm">
             <tr>
@@ -171,18 +170,18 @@ const UserManagement = ({ t, isRtl }) => {
         </table>
       </div>
       
-      {/* Footer Status Bar */}
+      {/* Footer */}
       <div className="px-4 py-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-500 font-medium">
          {users.length} {t.recordsFound}
       </div>
     </div>
   );
 
-  // --- Form View Component (Full Screen Flat ERP Style) ---
+  // --- Form View (Full Screen) ---
   const renderForm = () => (
     <div className="flex flex-col h-full bg-white animate-in zoom-in-95 duration-200">
       
-      {/* 1. Top Action Bar - Sticky & Flat */}
+      {/* Action Bar */}
       <div className="bg-white border-b border-slate-300 px-6 py-3 flex items-center justify-between shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button 
@@ -215,11 +214,11 @@ const UserManagement = ({ t, isRtl }) => {
         </div>
       </div>
 
-      {/* 2. Main Form Content - Full Width - No Card Wrapper */}
+      {/* Main Form Content */}
       <div className="flex-1 overflow-y-auto">
         <form className="p-8 max-w-7xl mx-auto">
             
-            {/* Section: Account Basics */}
+            {/* Account Basics */}
             <div className="mb-8">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                 <User size={14} />
@@ -228,13 +227,13 @@ const UserManagement = ({ t, isRtl }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                {/* ID - Readonly */}
+                {/* ID */}
                 <div className="bg-slate-50 p-3 border border-slate-200">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{t.fieldId}</label>
                   <div className="font-mono text-sm font-bold text-slate-700">{formData.id}</div>
                 </div>
 
-                {/* Status Toggle */}
+                {/* Status */}
                 <div className="bg-slate-50 p-3 border border-slate-200 flex flex-col justify-center">
                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{t.fieldStatus}</label>
                    <div className="flex items-center gap-3">
@@ -301,7 +300,7 @@ const UserManagement = ({ t, isRtl }) => {
               </div>
             </div>
 
-            {/* Section: Security */}
+            {/* Security */}
             <div className="mb-8">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                 <Shield size={14} />
