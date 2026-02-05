@@ -2,7 +2,10 @@ import React from 'react';
 import { 
   Wallet, ArrowUpRight, ArrowDownLeft, UserCheck, Plus 
 } from 'lucide-react';
-import { MOCK_STATS, MOCK_TRANSACTIONS } from '../app-data.js'; // دو نقطه یعنی برو یک پله عقب‌تر
+
+// --- تغییر اصلاحی: دریافت داده‌ها از window به جای import ---
+// این کار مانع از درخواست مجدد فایل و ارور 404 می‌شود
+const { MOCK_STATS, MOCK_TRANSACTIONS } = window;
 
 const KpiDashboard = ({ t, isRtl }) => {
   return (
