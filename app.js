@@ -10,7 +10,7 @@ import {
 
 // --- دریافت داده‌ها و کامپوننت‌ها از window ---
 const { MENU_DATA, translations, flattenMenu } = window;
-const { KpiDashboard, LoginPage, UserManagement } = window;
+const { KpiDashboard, LoginPage, UserManagement, GeneralWorkspace } = window;
 
 // --- Shared Components (Nav) ---
 
@@ -195,10 +195,14 @@ const App = () => {
   const renderContent = () => {
     switch (activeId) {
       case 'workspace_gen':
-        return <KpiDashboard t={t} isRtl={isRtl} />;
+        return <GeneralWorkspace t={t} isRtl={isRtl} />;
       
       case 'users_list':
         return <UserManagement t={t} isRtl={isRtl} />;
+
+      // Fallback for Dashboard - temporarily same as General Workspace or previous KpiDashboard
+      case 'dashboards_gen':
+        return <KpiDashboard t={t} isRtl={isRtl} />;
 
       default:
         return (
