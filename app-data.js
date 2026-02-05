@@ -461,7 +461,7 @@ window.translations = {
     alert1_title: "سررسید چک",
     alert1_sub: "بانک ملت - موعد فردا",
     alert2_title: "فاکتور معوقه",
-    alert2-sub: "مشتری الف - ۱۰ روز تاخیر",
+    alert2_sub: "مشتری الف - ۱۰ روز تاخیر",
     alert3_title: "هشدار حد اعتبار",
     alert3_sub: "همکار صراف ب - نزدیک سقف",
     mod_exp_title: "ثبت هزینه جدید",
