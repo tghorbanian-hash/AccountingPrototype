@@ -11,7 +11,7 @@ import {
 // --- تغییر مهم: دریافت داده‌ها و کامپوننت‌ها از حافظه مرورگر (Window) ---
 // به جای import، آنها را از window می‌خوانیم تا ارور 404 و ReferenceError رفع شود
 const { MENU_DATA, translations, flattenMenu } = window;
-const { KpiDashboard, LoginPage } = window;
+const { KpiDashboard, LoginPage, UserManagement } = window;
 
 // --- Shared Components (Nav) ---
 
@@ -188,6 +188,29 @@ const App = () => {
     return docMgmtIds.includes(activeId);
   }, [activeId]);
 
+  // Main Content Renderer Logic
+  const renderContent = () => {
+    switch (activeId) {
+      case 'workspace_gen':
+        return <KpiDashboard t={t} isRtl={isRtl} />;
+      
+      // New: User Management Route
+      case 'users_list':
+        return <UserManagement t={t} isRtl={isRtl} />;
+
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
+             <div className="p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100"><LayoutGrid size={64} className="text-slate-200" /></div>
+             <div>
+                <h2 className="text-xl font-black text-slate-900">{activeId.toUpperCase()}</h2>
+                <p className="text-slate-500 mt-2 font-medium">{t.emptyPage}</p>
+             </div>
+          </div>
+        );
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <LoginPage 
@@ -295,17 +318,7 @@ const App = () => {
         {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
 
         <div className="flex-1 overflow-y-auto bg-slate-50/30 p-10">
-          {activeId === 'workspace_gen' ? (
-            <KpiDashboard t={t} isRtl={isRtl} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
-               <div className="p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100"><LayoutGrid size={64} className="text-slate-200" /></div>
-               <div>
-                  <h2 className="text-xl font-black text-slate-900">{activeId.toUpperCase()}</h2>
-                  <p className="text-slate-500 mt-2 font-medium">{t.emptyPage}</p>
-               </div>
-            </div>
-          )}
+          {renderContent()}
         </div>
       </main>
     </div>
