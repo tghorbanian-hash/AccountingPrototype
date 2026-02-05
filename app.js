@@ -8,8 +8,7 @@ import {
   Calendar, Layers, ChevronRightSquare, LayoutGrid
 } from 'lucide-react';
 
-// --- تغییر مهم: دریافت داده‌ها و کامپوننت‌ها از حافظه مرورگر (Window) ---
-// به جای import، آنها را از window می‌خوانیم تا ارور 404 و ReferenceError رفع شود
+// --- دریافت داده‌ها و کامپوننت‌ها از window ---
 const { MENU_DATA, translations, flattenMenu } = window;
 const { KpiDashboard, LoginPage, UserManagement } = window;
 
@@ -112,7 +111,7 @@ const GlobalFilterBar = ({ t, isRtl }) => (
         <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-white transition-all cursor-pointer">{t.all}</div>
       </div>
     </div>
-  </div>
+  );
 );
 
 const App = () => {
@@ -188,13 +187,16 @@ const App = () => {
     return docMgmtIds.includes(activeId);
   }, [activeId]);
 
-  // Main Content Renderer Logic
+  // Logic to determine if the page should be Full Screen (No Padding)
+  const isFullScreenPage = useMemo(() => {
+    return ['users_list'].includes(activeId);
+  }, [activeId]);
+
   const renderContent = () => {
     switch (activeId) {
       case 'workspace_gen':
         return <KpiDashboard t={t} isRtl={isRtl} />;
       
-      // New: User Management Route
       case 'users_list':
         return <UserManagement t={t} isRtl={isRtl} />;
 
@@ -317,7 +319,8 @@ const App = () => {
 
         {showFilters && <GlobalFilterBar t={t} isRtl={isRtl} />}
 
-        <div className="flex-1 overflow-y-auto bg-slate-50/30 p-10">
+        {/* --- CRITICAL CHANGE: Conditional Padding and Overflow based on Route Type --- */}
+        <div className={`flex-1 bg-slate-50/30 ${isFullScreenPage ? 'p-0 overflow-hidden' : 'p-10 overflow-y-auto'}`}>
           {renderContent()}
         </div>
       </main>
