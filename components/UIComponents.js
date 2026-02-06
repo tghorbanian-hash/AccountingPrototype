@@ -1,75 +1,72 @@
 /* Filename: components/UIComponents.js
-   Style: Modular / Structured (Enterprise ERP)
+   Style: Enterprise Compact (Industrial / Excel-like)
 */
 import React from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 
-// --- Design Tokens (Enterprise Modular Theme) ---
+// --- Design Tokens (Compact Theme) ---
 const THEME = {
   colors: {
-    primary: 'blue',      // رنگ اصلی سازمانی
-    pageBg: 'bg-slate-100', // رنگ پس‌زمینه کل صفحه (خاکستری روشن)
-    cardBg: 'bg-white',     // رنگ کارت‌ها (سفید مطلق)
-    border: 'border-slate-300', // رنگ حاشیه‌ها (مشخص و قوی)
-    headerBg: 'bg-slate-50',    // رنگ هدر جداول و پنل‌ها
+    primary: 'blue',
+    pageBg: 'bg-slate-100',
+    panelBg: 'bg-white',
+    border: 'border-slate-400', // حاشیه‌های تیره‌تر برای دیده شدن خطوط
+    headerBg: 'bg-slate-200',   // رنگ هدرهای طوسی کلاسیک
+    inputBg: 'bg-white',
   },
   radius: {
-    card: 'rounded-lg',   // گردی کم و استاندارد
-    field: 'rounded-md',  // اینپوت‌های مکعبی‌تر
+    card: 'rounded-sm',   // گوشه‌های تقریبا تیز
+    field: 'rounded-none', // اینپوت‌های کاملا مستطیلی (مثل اکسل)
+    btn: 'rounded-sm',
   },
-  shadows: {
-    card: 'shadow-sm',    // سایه کم برای تمیزی
-    popover: 'shadow-lg',
+  text: {
+    base: 'text-xs',      // سایز فونت پایه کوچک (۱۲ پیکسل)
+    header: 'text-sm',
   }
 };
 
-// --- 1. Modular Card (باکس اصلی محتوا) ---
-// ویژگی: دارای نوار رنگی در بالا برای تفکیک ماژول‌ها
-export const Card = ({ children, className = '', noPadding = false, title, icon: Icon, headerAction }) => {
+// --- 1. Compact Panel (جایگزین کارت) ---
+export const Card = ({ children, className = '', noPadding = false, title, headerAction }) => {
   return (
     <div className={`
-      ${THEME.colors.cardBg} 
+      ${THEME.colors.panelBg} 
       border ${THEME.colors.border} 
       ${THEME.radius.card} 
-      ${THEME.shadows.card} 
       flex flex-col
-      overflow-hidden
+      shadow-sm
       ${className}
     `}>
-      {/* Card Header (Optional) */}
+      {/* Title Bar (Industrial Style) */}
       {title && (
-        <div className={`px-4 py-3 border-b ${THEME.colors.border} ${THEME.colors.headerBg} flex items-center justify-between shrink-0`}>
-          <div className="flex items-center gap-2">
-            {Icon && <Icon size={18} className={`text-${THEME.colors.primary}-600`} />}
-            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{title}</h3>
-          </div>
+        <div className={`
+          px-3 py-2 border-b ${THEME.colors.border} ${THEME.colors.headerBg} 
+          flex items-center justify-between shrink-0 h-10
+        `}>
+          <h3 className="font-bold text-slate-700 text-xs uppercase tracking-tight">{title}</h3>
           {headerAction && <div>{headerAction}</div>}
         </div>
       )}
       
-      {/* Card Body */}
-      <div className={`flex-1 ${noPadding ? '' : 'p-5'}`}>
+      {/* Body */}
+      <div className={`flex-1 ${noPadding ? '' : 'p-3'}`}>
         {children}
       </div>
     </div>
   );
 };
 
-// --- 2. Enterprise Buttons ---
+// --- 2. Compact Buttons ---
 export const Button = ({ 
   children, variant = 'primary', icon: Icon, isLoading, className = '', onClick, type = 'button', disabled 
 }) => {
-  const baseStyle = `flex items-center justify-center gap-2 px-4 py-2 ${THEME.radius.field} font-bold text-xs transition-all active:translate-y-px duration-150 disabled:opacity-60 disabled:cursor-not-allowed border`;
+  // دکمه‌ها ارتفاع کمتری دارند (py-1.5)
+  const baseStyle = `flex items-center justify-center gap-2 px-4 py-1.5 ${THEME.radius.btn} font-bold text-xs transition-all active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed border`;
   
   const variants = {
-    // دکمه اصلی: توپر، آبی تیره
-    primary: `bg-${THEME.colors.primary}-700 text-white border-${THEME.colors.primary}-700 hover:bg-${THEME.colors.primary}-800`,
-    // دکمه ثانویه: سفید با بوردر خاکستری
-    secondary: `bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-slate-900`,
-    // دکمه خطر: قرمز ملایم
-    danger: `bg-white text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300`,
-    // دکمه متنی
-    ghost: `bg-transparent text-slate-600 border-transparent hover:bg-slate-100`
+    primary: `bg-[#0f4c81] text-white border-[#0f4c81] hover:bg-[#0c3b66]`, // آبی کلاسیک صنعتی
+    secondary: `bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200`,
+    danger: `bg-red-600 text-white border-red-700 hover:bg-red-700`,
+    ghost: `bg-transparent text-slate-600 border-transparent hover:bg-slate-200`
   };
 
   return (
@@ -79,45 +76,41 @@ export const Button = ({
       disabled={isLoading || disabled}
       className={`${baseStyle} ${variants[variant]} ${className}`}
     >
-      {isLoading && <Loader2 size={14} className="animate-spin" />}
-      {!isLoading && Icon && <Icon size={16} />}
+      {isLoading && <Loader2 size={12} className="animate-spin" />}
+      {!isLoading && Icon && <Icon size={14} />}
       {children}
     </button>
   );
 };
 
-// --- 3. Icon Button ---
+// --- 3. Compact Icon Button ---
 export const IconButton = ({ icon: Icon, onClick, color = 'slate', title, className='' }) => {
   return (
     <button 
       onClick={onClick} 
       title={title}
-      className={`p-2 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors border border-transparent hover:border-slate-200 ${className}`}
+      className={`p-1.5 rounded-sm hover:bg-slate-200 text-slate-600 hover:text-black border border-transparent hover:border-slate-300 transition-all ${className}`}
     >
-      <Icon size={16} />
+      <Icon size={14} />
     </button>
   );
 };
 
-// --- 4. Inputs & Forms ---
+// --- 4. Inputs (Excel Style) ---
 export const InputField = ({ label, icon: Icon, isRtl, className = '', ...props }) => {
   return (
     <div className={`w-full ${className}`}>
-      {label && <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>}
+      {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
       <div className="relative group">
-        {Icon && (
-          <div className={`absolute inset-y-0 ${isRtl ? 'right-3' : 'left-3'} flex items-center text-slate-400`}>
-            <Icon size={16} />
-          </div>
-        )}
         <input 
           {...props}
           className={`
-            w-full bg-white border border-slate-300 
-            ${THEME.radius.field} py-2 
-            ${Icon ? (isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3') : 'px-3'} 
-            outline-none focus:border-${THEME.colors.primary}-600 focus:ring-1 focus:ring-${THEME.colors.primary}-600
-            transition-all text-sm text-slate-800 placeholder:text-slate-400
+            w-full bg-white border border-slate-400 
+            ${THEME.radius.field} py-1.5 
+            ${Icon ? (isRtl ? 'pr-2 pl-2' : 'pl-2 pr-2') : 'px-2'} 
+            outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600
+            transition-none text-xs text-slate-900 placeholder:text-slate-400
+            h-8
           `}
         />
       </div>
@@ -128,42 +121,42 @@ export const InputField = ({ label, icon: Icon, isRtl, className = '', ...props 
 export const SelectField = ({ label, children, isRtl, className = '', ...props }) => {
   return (
     <div className={`w-full ${className}`}>
-      {label && <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>}
+      {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
       <div className="relative">
         <select 
           {...props}
           className={`
-            w-full bg-white border border-slate-300 
-            ${THEME.radius.field} py-2 px-3 appearance-none
-            outline-none focus:border-${THEME.colors.primary}-600 focus:ring-1 focus:ring-${THEME.colors.primary}-600
-            transition-all text-sm text-slate-800 cursor-pointer
+            w-full bg-white border border-slate-400 
+            ${THEME.radius.field} py-1.5 px-2 appearance-none
+            outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600
+            text-xs text-slate-900 cursor-pointer h-8
           `}
         >
           {children}
         </select>
-        <div className={`absolute inset-y-0 ${isRtl ? 'left-3' : 'right-3'} flex items-center pointer-events-none text-slate-500`}>
-          <ChevronDown size={14} />
+        <div className={`absolute inset-y-0 ${isRtl ? 'left-2' : 'right-2'} flex items-center pointer-events-none text-slate-500`}>
+          <ChevronDown size={12} />
         </div>
       </div>
     </div>
   );
 };
 
-// --- 5. Toggle Switch ---
+// --- 5. Toggle (Small) ---
 export const Toggle = ({ checked, onChange, labelActive, labelInactive }) => {
   return (
-    <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => onChange(!checked)}>
+    <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => onChange(!checked)}>
       <div className={`
-        w-9 h-5 rounded-full p-0.5 transition-colors duration-200 relative
-        ${checked ? `bg-${THEME.colors.primary}-700` : 'bg-slate-300'}
+        w-8 h-4 rounded-full p-0.5 transition-colors duration-100 relative
+        ${checked ? `bg-[#0f4c81]` : 'bg-slate-300'}
       `}>
         <div className={`
-          w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200
+          w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-100
           ${checked ? (document.dir === 'rtl' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}
         `}></div>
       </div>
       {(labelActive || labelInactive) && (
-         <span className={`text-xs font-bold ${checked ? 'text-slate-800' : 'text-slate-500'}`}>
+         <span className={`text-[11px] font-bold ${checked ? 'text-black' : 'text-slate-500'}`}>
            {checked ? labelActive : labelInactive}
          </span>
       )}
@@ -171,25 +164,24 @@ export const Toggle = ({ checked, onChange, labelActive, labelInactive }) => {
   );
 };
 
-// --- 6. Badges (Solid & Crisp) ---
+// --- 6. Badges (Rectangular) ---
 export const Badge = ({ children, variant = 'neutral' }) => {
   const styles = {
-    success: 'bg-green-100 text-green-800 border-green-200',
-    danger: 'bg-red-100 text-red-800 border-red-200',
-    warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    info: 'bg-blue-100 text-blue-800 border-blue-200',
-    purple: 'bg-purple-100 text-purple-800 border-purple-200',
-    neutral: 'bg-slate-100 text-slate-600 border-slate-200',
+    success: 'bg-green-100 text-green-800 border-green-300',
+    danger: 'bg-red-100 text-red-800 border-red-300',
+    warning: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    info: 'bg-blue-100 text-blue-800 border-blue-300',
+    purple: 'bg-purple-100 text-purple-800 border-purple-300',
+    neutral: 'bg-slate-100 text-slate-600 border-slate-300',
   };
 
   return (
-    <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${styles[variant] || styles.neutral}`}>
+    <span className={`px-1.5 py-[1px] rounded-[2px] text-[10px] font-bold border ${styles[variant] || styles.neutral}`}>
       {children}
     </span>
   );
 };
 
-// --- Export ---
 window.UI = {
   Card,
   Button,
