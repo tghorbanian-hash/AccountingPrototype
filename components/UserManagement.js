@@ -1,14 +1,14 @@
 /* Filename: components/UserManagement.js
-   Style: Enterprise Compact Implementation
+   Style: Modern Minimal (Ant Design) Implementation
 */
 
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, Edit, Trash2, Shield, X, User, 
-  Save, Lock, RefreshCw, Users, Settings, ChevronDown
+  Save, Lock, RefreshCw, Users, Settings, ChevronDown, Filter
 } from 'lucide-react';
 
-// --- MOCK DATA (Simplified for brevity, assumes same logic) ---
+// --- MOCK DATA ---
 const UserManagement = ({ t, isRtl }) => {
   const [viewMode, setViewMode] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +20,6 @@ const UserManagement = ({ t, isRtl }) => {
     { id: 1002, username: 'm.rad', personId: 1, personName: 'محمد راد', userType: 'user', status: true },
     { id: 1003, username: 's.tehrani', personId: 2, personName: 'سارا تهرانی', userType: 'user', status: false },
     { id: 1004, username: 'a.mohammadi', personId: 3, personName: 'علی محمدی', userType: 'user', status: true },
-    { id: 1005, username: 'k.yaghoubi', personId: 5, personName: 'کاوه یعقوبی', userType: 'user', status: true },
   ]);
 
   const [formData, setFormData] = useState({ id: '', username: '', userType: 'user', status: true });
@@ -37,143 +36,152 @@ const UserManagement = ({ t, isRtl }) => {
     setViewMode('form');
   };
 
-  // --- List View (Compact Grid) ---
+  // --- List View (Modern Table) ---
   const renderList = () => (
-    <div className="flex flex-col h-full p-2 gap-2 bg-slate-100 text-xs">
+    <div className="flex flex-col h-full p-6 gap-6 bg-[#f0f2f5]">
       
-      {/* Toolbar */}
-      <window.UI.Card className="!p-2 flex-row items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-           <h1 className="text-sm font-bold text-slate-800 uppercase px-2 border-r border-slate-300">
-             {t.usersListTitle}
-           </h1>
-           <span className="text-[10px] text-slate-500 font-mono">
-             Total: {users.length}
-           </span>
-        </div>
-        <div className="flex items-center gap-2">
-           <div className="flex items-center bg-white border border-slate-400 px-2 h-8 w-64">
-              <Search size={14} className="text-slate-400"/>
-              <input 
-                className="w-full h-full outline-none text-xs px-2"
-                placeholder={t.searchUserPlaceholder}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-           </div>
-           <window.UI.Button onClick={handleCreateNew} icon={Plus} variant="primary">
-             {t.createNewUser}
-           </window.UI.Button>
-        </div>
-      </window.UI.Card>
-
-      {/* Grid / Table */}
-      <div className="flex-1 bg-white border border-slate-400 overflow-auto shadow-sm flex flex-col">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-200 sticky top-0 z-10">
-              <tr>
-                <th className="border border-slate-400 px-2 py-1.5 w-16 text-center text-slate-700 font-bold">{t.colId}</th>
-                <th className={`border border-slate-400 px-2 py-1.5 text-${isRtl ? 'right' : 'left'} text-slate-700 font-bold`}>{t.colUsername}</th>
-                <th className={`border border-slate-400 px-2 py-1.5 text-${isRtl ? 'right' : 'left'} text-slate-700 font-bold`}>{t.colLinkedPerson}</th>
-                <th className={`border border-slate-400 px-2 py-1.5 text-${isRtl ? 'right' : 'left'} text-slate-700 font-bold w-32`}>{t.colUserType}</th>
-                <th className="border border-slate-400 px-2 py-1.5 w-24 text-center text-slate-700 font-bold">{t.colStatus}</th>
-                <th className="border border-slate-400 px-2 py-1.5 w-32 text-center text-slate-700 font-bold">{t.colActions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, idx) => (
-                <tr key={user.id} className={`hover:bg-blue-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                  <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-600">{user.id}</td>
-                  <td className="border border-slate-300 px-2 py-1 font-bold text-slate-900">{user.username}</td>
-                  <td className="border border-slate-300 px-2 py-1 text-slate-800">{user.personName}</td>
-                  <td className="border border-slate-300 px-2 py-1">
-                     {user.userType === 'admin' ? 
-                       <span className="font-bold text-purple-700">{t.roleAdmin}</span> : 
-                       <span className="text-slate-600">{t.roleUser}</span>
-                     }
-                  </td>
-                  <td className="border border-slate-300 px-2 py-1 text-center">
-                     {user.status ? 
-                       <span className="text-green-700 font-bold text-[10px] uppercase">ACTIVE</span> : 
-                       <span className="text-red-700 font-bold text-[10px] uppercase">INACTIVE</span>
-                     }
-                  </td>
-                  <td className="border border-slate-300 px-1 py-1 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <window.UI.IconButton onClick={() => handleEdit(user)} icon={Edit} title={t.edit} />
-                      <window.UI.IconButton onClick={() => {}} icon={Shield} color="purple" title={t.viewPermissions} />
-                      <window.UI.IconButton onClick={() => {}} icon={Trash2} color="red" title={t.delete} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {/* Empty rows filler to look like excel */}
-              {[...Array(5)].map((_, i) => (
-                 <tr key={`empty-${i}`}>
-                    <td className="border border-slate-300 py-4"></td>
-                    <td className="border border-slate-300"></td>
-                    <td className="border border-slate-300"></td>
-                    <td className="border border-slate-300"></td>
-                    <td className="border border-slate-300"></td>
-                    <td className="border border-slate-300"></td>
-                 </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 1. Header & Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+         <div>
+            <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">{t.usersListTitle}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t.recordsFound} {users.length}</p>
+         </div>
+         <div className="flex items-center gap-3">
+             <div className="relative">
+                <input 
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none w-64 transition-all"
+                  placeholder={t.searchUserPlaceholder}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+                <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+             </div>
+             <window.UI.Button onClick={handleCreateNew} icon={Plus} variant="primary">
+                {t.createNewUser}
+             </window.UI.Button>
+         </div>
       </div>
+
+      {/* 2. Modern Card with Table */}
+      <window.UI.Card className="flex-1 overflow-hidden flex flex-col !p-0 shadow-sm border border-gray-200" noPadding>
+         <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.colId}</th>
+                  <th className={`px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-${isRtl ? 'right' : 'left'}`}>{t.colUsername}</th>
+                  <th className={`px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-${isRtl ? 'right' : 'left'}`}>{t.colLinkedPerson}</th>
+                  <th className={`px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-${isRtl ? 'right' : 'left'}`}>{t.colUserType}</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">{t.colStatus}</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">{t.colActions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {users.map((user) => (
+                  <tr key={user.id} className="hover:bg-blue-50/40 transition-colors duration-150 group">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-400">{user.id}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.username}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{user.personName}</td>
+                    <td className="px-6 py-4">
+                      <window.UI.Badge variant={user.userType === 'admin' ? 'purple' : 'neutral'}>
+                        {user.userType === 'admin' ? t.roleAdmin : t.roleUser}
+                      </window.UI.Badge>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${user.status ? 'bg-green-500' : 'bg-red-400'}`}></span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <window.UI.Button variant="ghost" className="!px-2 !py-1" onClick={() => handleEdit(user)}>
+                            <Edit size={16} className="text-blue-600"/>
+                        </window.UI.Button>
+                        <window.UI.Button variant="ghost" className="!px-2 !py-1" onClick={() => {}}>
+                            <Trash2 size={16} className="text-red-500"/>
+                        </window.UI.Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+         </div>
+         {/* Footer / Pagination Placeholder */}
+         <div className="px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between">
+            <span className="text-xs text-gray-400">Showing 1 to {users.length} of {users.length} entries</span>
+            <div className="flex gap-1">
+                <button className="px-3 py-1 border border-gray-200 rounded text-xs text-gray-600 hover:bg-gray-50" disabled>Previous</button>
+                <button className="px-3 py-1 border border-gray-200 rounded text-xs text-white bg-blue-600">1</button>
+                <button className="px-3 py-1 border border-gray-200 rounded text-xs text-gray-600 hover:bg-gray-50" disabled>Next</button>
+            </div>
+         </div>
+      </window.UI.Card>
     </div>
   );
 
-  // --- Form View (Compact) ---
+  // --- Form View (Clean & Centered) ---
   const renderForm = () => (
-    <div className="flex flex-col h-full p-4 justify-center bg-slate-100">
-      <window.UI.Card 
-        className="max-w-3xl w-full mx-auto shadow-md"
-        title={editingUser ? `EDIT RECORD: ${editingUser.id}` : 'NEW RECORD ENTRY'}
-        headerAction={
-            <window.UI.IconButton icon={X} onClick={() => setViewMode('list')} color="red" />
-        }
-      >
-        <div className="grid grid-cols-2 gap-4">
-            {/* Field Set 1 */}
-            <fieldset className="border border-slate-300 p-3 pt-1 relative col-span-2 md:col-span-1">
-               <legend className="text-[10px] font-bold text-blue-700 px-1 uppercase">General Information</legend>
-               <div className="space-y-3 mt-2">
-                 <window.UI.InputField label={t.fieldUsername} value={formData.username} isRtl={isRtl} />
-                 <window.UI.SelectField label={t.fieldUserType} isRtl={isRtl}>
-                    <option value="user">{t.roleUser}</option>
-                    <option value="admin">{t.roleAdmin}</option>
-                 </window.UI.SelectField>
-               </div>
-            </fieldset>
+    <div className="flex flex-col h-full p-6 justify-center bg-[#f0f2f5]">
+      <div className="max-w-3xl w-full mx-auto">
+          
+          <div className="mb-6 flex items-center justify-between">
+              <div>
+                  <h2 className="text-xl font-bold text-gray-800">{editingUser ? t.editUserTitle : t.newUserTitle}</h2>
+                  <p className="text-sm text-gray-500">Please fill in the information below.</p>
+              </div>
+              <window.UI.Button variant="secondary" onClick={() => setViewMode('list')} icon={X}>
+                  {t.cancel}
+              </window.UI.Button>
+          </div>
 
-            {/* Field Set 2 */}
-            <fieldset className="border border-slate-300 p-3 pt-1 relative col-span-2 md:col-span-1">
-               <legend className="text-[10px] font-bold text-blue-700 px-1 uppercase">Security & Status</legend>
-               <div className="space-y-3 mt-2">
-                 <div className="flex items-end gap-2">
-                    <window.UI.InputField label="Password Reset" type="password" placeholder="New Password" isRtl={isRtl} />
-                    <window.UI.Button variant="secondary" icon={RefreshCw}>Gen</window.UI.Button>
-                 </div>
-                 <div className="pt-4">
+          <window.UI.Card className="shadow-sm" noPadding>
+            <div className="p-8 space-y-8">
+                
+                {/* Section 1 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <window.UI.InputField 
+                        label={t.fieldUsername} 
+                        value={formData.username} 
+                        placeholder="e.g. j.doe"
+                        isRtl={isRtl} 
+                    />
+                    <window.UI.SelectField label={t.fieldUserType} isRtl={isRtl}>
+                        <option value="user">{t.roleUser}</option>
+                        <option value="admin">{t.roleAdmin}</option>
+                    </window.UI.SelectField>
+                </div>
+
+                {/* Section 2: Password & Status */}
+                <div className="pt-6 border-t border-gray-100">
+                    <div className="flex items-start gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                        <Lock className="text-blue-500 mt-1" size={20} />
+                        <div className="flex-1">
+                            <h4 className="font-semibold text-gray-800 text-sm mb-1">{t.fieldPassword}</h4>
+                            <p className="text-xs text-gray-500 mb-3">Set a temporary password for the user.</p>
+                            <div className="flex gap-2 max-w-sm">
+                                <window.UI.InputField type="password" placeholder="••••••••" className="bg-white" isRtl={isRtl} />
+                                <window.UI.Button variant="secondary" icon={RefreshCw}>Gen</window.UI.Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
                     <window.UI.Toggle 
                         checked={formData.status} 
                         onChange={() => {}} 
-                        labelActive="ACCOUNT ACTIVE" 
-                        labelInactive="ACCOUNT LOCKED" 
+                        labelActive={t.active} 
+                        labelInactive={t.inactive} 
                     />
-                 </div>
-               </div>
-            </fieldset>
-        </div>
+                    
+                    <div className="flex gap-3">
+                        <window.UI.Button variant="ghost" onClick={() => setViewMode('list')}>{t.cancel}</window.UI.Button>
+                        <window.UI.Button variant="primary" icon={Save}>{t.saveChanges}</window.UI.Button>
+                    </div>
+                </div>
 
-        {/* Footer Actions */}
-        <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end gap-2 bg-slate-50 -m-3 p-3">
-             <window.UI.Button variant="ghost" onClick={() => setViewMode('list')}>{t.cancel}</window.UI.Button>
-             <window.UI.Button variant="primary" icon={Save}>{t.saveChanges}</window.UI.Button>
-        </div>
-
-      </window.UI.Card>
+            </div>
+          </window.UI.Card>
+      </div>
     </div>
   );
 
