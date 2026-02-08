@@ -1,5 +1,5 @@
 /* Filename: components/LoginPage.js */
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -15,11 +15,31 @@ import {
   BarChart3 
 } from 'lucide-react';
 
-const LoginPage = ({ 
-  t, isRtl, authView, setAuthView, loginMethod, setLoginMethod, 
-  loginData, setLoginData, recoveryData, setRecoveryData, error, 
-  handleLogin, handleVerifyOtp, handleUpdatePassword, toggleLanguage 
-}) => {
+const LoginPage = ({ onLogin, t, isRtl, toggleLanguage }) => {
+  // مدیریت داخلی وضعیت‌ها برای جلوگیری از خطای Undefined در Props
+  const [authView, setAuthView] = useState('login'); // login, forgot-choice, otp, email-sent, reset-password
+  const [loginMethod, setLoginMethod] = useState('standard');
+  const [loginData, setLoginData] = useState({ identifier: '', password: '' });
+  const [recoveryData, setRecoveryData] = useState({ otp: '' });
+  const [error, setError] = useState('');
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    
+    // شبیه‌سازی ورود (طبق منطق قبلی شما)
+    if (loginData.identifier === 'admin' && loginData.password === 'admin') {
+      onLogin({
+        id: 1,
+        username: 'admin',
+        fullName: isRtl ? 'مدیر سیستم' : 'System Admin',
+        role: 'Administrator'
+      });
+    } else {
+      setError(t.invalidCreds);
+    }
+  };
+
   const renderAuthView = () => {
     switch (authView) {
       case 'forgot-choice':
@@ -61,40 +81,26 @@ const LoginPage = ({
 
       case 'otp':
         return (
-          <form onSubmit={handleVerifyOtp} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <form onSubmit={(e) => { e.preventDefault(); setAuthView('reset-password'); }} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <button onClick={() => setAuthView('forgot-choice')} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold">
               {isRtl ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               {isRtl ? 'تغییر روش بازیابی' : 'Change Method'}
             </button>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.mobileLabel}</label>
-              <input 
-                type="text" 
-                disabled
-                value="0912****345"
-                className="w-full bg-slate-100 border border-slate-200 rounded-xl py-3 px-4 text-sm font-medium text-slate-500 cursor-not-allowed"
-              />
+              <input type="text" disabled value="0912****345" className="w-full bg-slate-100 border border-slate-200 rounded-xl py-3 px-4 text-sm font-medium text-slate-500 cursor-not-allowed" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.enterOtp}</label>
               <input 
-                type="text" 
-                autoFocus
-                required
-                value={recoveryData.otp}
+                type="text" autoFocus required value={recoveryData.otp}
                 onChange={(e) => setRecoveryData({...recoveryData, otp: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-center text-2xl font-bold tracking-[0.5em] focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all outline-none font-mono"
-                placeholder="000000"
-                maxLength={6}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-center text-2xl font-bold tracking-[0.5em] focus:border-blue-500 transition-all outline-none font-mono"
+                placeholder="000000" maxLength={6}
               />
             </div>
-            {error && <div className="text-red-600 text-xs font-bold flex items-center gap-2"><ShieldCheck size={16}/>{error}</div>}
-            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
               {t.verifyOtp}
-            </button>
-            <button type="button" className="w-full text-slate-500 text-xs font-bold flex items-center justify-center gap-2 hover:text-blue-600 transition-colors">
-              <RefreshCw size={14} />
-              {isRtl ? 'ارسال مجدد کد' : 'Resend Code'}
             </button>
           </form>
         );
@@ -109,10 +115,7 @@ const LoginPage = ({
               <h2 className="text-xl font-bold text-slate-900">{t.emailSent}</h2>
               <p className="text-slate-500 text-sm mt-2">{t.emailSentDesc}</p>
             </div>
-            <button 
-              onClick={() => setAuthView('login')}
-              className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
-            >
+            <button onClick={() => setAuthView('login')} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all">
               {t.backToLogin}
             </button>
           </div>
@@ -120,32 +123,15 @@ const LoginPage = ({
 
       case 'reset-password':
         return (
-          <form onSubmit={handleUpdatePassword} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <form onSubmit={(e) => { e.preventDefault(); setAuthView('login'); }} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.newPasswordLabel}</label>
               <div className="relative group">
                 <div className={`absolute inset-y-0 ${isRtl ? 'right-4' : 'left-4'} flex items-center text-slate-400`}><Lock size={20}/></div>
-                <input 
-                  type="password" 
-                  required
-                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} outline-none focus:border-blue-500 transition-all text-sm`}
-                  placeholder="••••••••"
-                />
+                <input type="password" required className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} outline-none focus:border-blue-500 transition-all text-sm`} placeholder="••••••••" />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.confirmPasswordLabel}</label>
-              <div className="relative group">
-                <div className={`absolute inset-y-0 ${isRtl ? 'right-4' : 'left-4'} flex items-center text-slate-400`}><Lock size={20}/></div>
-                <input 
-                  type="password" 
-                  required
-                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} outline-none focus:border-blue-500 transition-all text-sm`}
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition-all">
               {t.updatePassword}
             </button>
           </form>
@@ -156,22 +142,22 @@ const LoginPage = ({
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
               <button 
-                onClick={() => {setLoginMethod('standard');}}
+                type="button"
+                onClick={() => setLoginMethod('standard')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${loginMethod === 'standard' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                <User size={16} />
-                {t.standardMethod}
+                <User size={16} /> {t.standardMethod}
               </button>
               <button 
-                onClick={() => {setLoginMethod('ad');}}
+                type="button"
+                onClick={() => setLoginMethod('ad')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${loginMethod === 'ad' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                <Building2 size={16} />
-                {t.adMethod}
+                <Building2 size={16} /> {t.adMethod}
               </button>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLoginSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
                   {loginMethod === 'standard' ? t.usernameLabel : t.emailLabel}
@@ -207,7 +193,7 @@ const LoginPage = ({
                   />
                 </div>
                 <div className="flex justify-end mt-2 px-1">
-                  <button type="button" onClick={() => {setAuthView('forgot-choice');}} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
+                  <button type="button" onClick={() => setAuthView('forgot-choice')} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
                 </div>
               </div>
 
@@ -242,12 +228,11 @@ const LoginPage = ({
 
         <div className="p-8">
           {renderAuthView()}
-          <p className="mt-8 text-center text-slate-400 text-xs">© 2024 FinCorp OS. Professional Accounting Protocol.</p>
+          <p className="mt-8 text-center text-slate-400 text-xs">© 2026 Stratum ERP. Professional Protocol.</p>
         </div>
       </div>
     </div>
   );
 };
 
-// Export to global scope instead of module export
 window.LoginPage = LoginPage;
