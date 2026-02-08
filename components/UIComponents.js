@@ -184,7 +184,7 @@ export const ToggleChip = ({ label, checked, onClick, colorClass = "green" }) =>
   );
 };
 
-// 2. SelectionGrid: گرید انتخاب آیتم‌ها (تغییر رنگ به جای آیکون)
+// 2. SelectionGrid: گرید انتخاب آیتم‌ها
 export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }) => {
   const gridCols = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 6: 'grid-cols-6' };
   
@@ -211,7 +211,7 @@ export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }
   );
 };
 
-// 3. TreeView: درخت عمومی با قابلیت جستجو و رندر سفارشی
+// 3. TreeView: درخت عمومی
 export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder = "جستجو..." }) => {
   const [expandedNodes, setExpandedNodes] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -264,7 +264,6 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
       const isExpanded = expandedNodes[item.id];
       const isSelected = selectedNodeId === item.id;
       
-      // Highlight Label
       const label = item.label[isRtl ? 'fa' : 'en'];
       const displayLabel = (searchTerm && item._matches) ? <mark className="bg-yellow-100 rounded px-0.5">{label}</mark> : label;
 
@@ -277,13 +276,11 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
                ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'hover:bg-slate-100 text-slate-700'}
              `}
              style={{ paddingRight: isRtl ? `${depth * 16 + 8}px` : '8px', paddingLeft: isRtl ? '8px' : `${depth * 16 + 8}px` }}
-             // UPDATE: Allow selecting the node even if it has children.
              onClick={() => onSelectNode(item)}
            >
              {hasChildren ? (
                <div 
                   className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10"
-                  // UPDATE: Only toggle expansion when clicking the arrow/icon
                   onClick={(e) => toggleNode(item.id, e)}
                >
                   <div className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`}>
@@ -327,12 +324,12 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
 
 // --- EXISTING COMPLEX COMPONENTS ---
 
-// 2. FILTER SECTION
+// 2. FILTER SECTION (FIXED: Overflow visible)
 export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "فیلترهای پیشرفته" }) => {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className={`bg-white border border-slate-300 rounded-lg shadow-sm mb-3 overflow-hidden transition-all duration-300`}>
+    <div className={`bg-white border border-slate-300 rounded-lg shadow-sm mb-3 transition-all duration-300 ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
       <div 
         className="flex items-center justify-between px-3 py-2 bg-slate-50 cursor-pointer select-none border-b border-transparent hover:bg-slate-100"
         onClick={() => setIsOpen(!isOpen)}
@@ -346,9 +343,9 @@ export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "ف�
         </div>
       </div>
 
-      <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         <div className="p-3 border-t border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3 relative z-10">
             {children}
           </div>
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -463,7 +460,7 @@ export const DataGrid = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden relative z-0">
       <div className="px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {groupBy.map(field => (
@@ -499,7 +496,7 @@ export const DataGrid = ({
 
       <div className="flex-1 overflow-auto relative custom-scrollbar bg-white">
         <table className="w-full border-collapse text-[12px] relative">
-          <thead className="bg-slate-100 sticky top-0 z-20 shadow-sm border-b border-slate-300">
+          <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm border-b border-slate-300">
             <tr>
               <th className="w-10 px-2 py-2 text-center">
                 <input 
@@ -530,7 +527,7 @@ export const DataGrid = ({
                   </div>
                 </th>
               ))}
-              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-20 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] border-l border-slate-300">عملیات</th>
+              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] border-l border-slate-300">عملیات</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -619,6 +616,7 @@ export const DataGrid = ({
              <span className="font-bold text-slate-800">{totalItems}</span> رکورد
            </span>
         </div>
+
         <div className="flex items-center gap-1">
            <Button variant="outline" size="iconSm" icon={ChevronsRight} disabled={currentPage === 1} onClick={() => setCurrentPage(1)} />
            <Button variant="outline" size="iconSm" icon={ChevronRight} disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)} />
@@ -639,9 +637,8 @@ export const DataGrid = ({
   );
 };
 
-// 4. TREE MENU (Sidebar Navigation)
+// 4. TREE MENU
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
-  // Uses TreeView internally but tailored for navigation
   const renderNode = (item) => (
      <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>
   );
