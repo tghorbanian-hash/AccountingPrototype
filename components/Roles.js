@@ -1,9 +1,10 @@
 /* Filename: components/Roles.js */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Shield, Plus, Edit, Trash2, Save, X, Check, 
   ChevronRight, ChevronLeft, Lock, Filter, 
-  Calendar, Layers, CheckSquare, Eye, AlertCircle 
+  Calendar, Layers, CheckSquare, Eye, AlertCircle,
+  Search, ChevronDown, Folder, FolderOpen
 } from 'lucide-react';
 
 const Roles = ({ t, isRtl }) => {
@@ -25,7 +26,6 @@ const Roles = ({ t, isRtl }) => {
   ]);
 
   // --- MOCK PERMISSIONS DATA STORE ---
-  // ساختار: { roleId: { moduleId: { actions: [], dataScopes: {} } } }
   const [permissions, setPermissions] = useState({});
 
   // --- STATES ---
@@ -37,7 +37,11 @@ const Roles = ({ t, isRtl }) => {
 
   // Access Management States
   const [selectedModule, setSelectedModule] = useState(null);
-  const [tempPermissions, setTempPermissions] = useState({}); // برای ذخیره موقت قبل از دکمه "ذخیره تغییرات"
+  const [tempPermissions, setTempPermissions] = useState({});
+  
+  // Tree States
+  const [expandedNodes, setExpandedNodes] = useState({});
+  const [treeSearchTerm, setTreeSearchTerm] = useState('');
 
   // --- DEFINITIONS FOR LAYERS 2 & 3 ---
   const AVAILABLE_ACTIONS = [
@@ -49,9 +53,8 @@ const Roles = ({ t, isRtl }) => {
     { id: 'approve', label: 'تایید / قطعی کردن' },
   ];
 
-  // نمونه محدودیت‌های سطح داده (Layer 3)
   const DATA_SCOPES = {
-    'gl_docs': [ // فقط برای فرم مدیریت اسناد
+    'doc_list': [ // شناسه صحیح برای لیست اسناد در MENU_DATA
       {
         id: 'docType',
         label: 'نوع سند',
@@ -106,9 +109,10 @@ const Roles = ({ t, isRtl }) => {
   // --- HANDLERS: ACCESS MANAGEMENT ---
   const openAccessModal = (role) => {
     setEditingRole(role);
-    // کپی عمیق دسترسی‌های فعلی به متغیر موقت
     setTempPermissions(JSON.parse(JSON.stringify(permissions[role.id] || {})));
     setSelectedModule(null);
+    setExpandedNodes({}); // Reset tree expansion
+    setTreeSearchTerm(''); // Reset search
     setIsAccessModalOpen(true);
   };
 
@@ -121,20 +125,14 @@ const Roles = ({ t, isRtl }) => {
     alert('دسترسی‌ها با موفقیت اعمال شد.');
   };
 
-  // تغییر در دسترسی لایه ۲ (Actions)
   const toggleAction = (moduleId, actionId) => {
     setTempPermissions(prev => {
       const modulePerms = prev[moduleId] || { actions: [], dataScopes: {} };
       const hasAction = modulePerms.actions.includes(actionId);
-      
-      let newActions;
-      if (hasAction) {
-        newActions = modulePerms.actions.filter(a => a !== actionId);
-      } else {
-        newActions = [...modulePerms.actions, actionId];
-      }
+      const newActions = hasAction 
+        ? modulePerms.actions.filter(a => a !== actionId)
+        : [...modulePerms.actions, actionId];
 
-      // اگر هیچ اکشنی نماند، کل پرمیشن ماژول حذف شود؟ (اختیاری: اینجا نگه میداریم)
       return {
         ...prev,
         [moduleId]: { ...modulePerms, actions: newActions }
@@ -142,18 +140,13 @@ const Roles = ({ t, isRtl }) => {
     });
   };
 
-  // تغییر در دسترسی لایه ۳ (Data Scopes)
   const toggleDataScope = (moduleId, scopeId, value) => {
     setTempPermissions(prev => {
       const modulePerms = prev[moduleId] || { actions: [], dataScopes: {} };
       const currentScopeValues = modulePerms.dataScopes[scopeId] || [];
-      
-      let newValues;
-      if (currentScopeValues.includes(value)) {
-        newValues = currentScopeValues.filter(v => v !== value);
-      } else {
-        newValues = [...currentScopeValues, value];
-      }
+      const newValues = currentScopeValues.includes(value) 
+        ? currentScopeValues.filter(v => v !== value)
+        : [...currentScopeValues, value];
 
       return {
         ...prev,
@@ -168,76 +161,132 @@ const Roles = ({ t, isRtl }) => {
     });
   };
 
-  // بررسی وضعیت تیک خوردن یک ماژول در درخت
   const getModuleStatus = (item) => {
     const perm = tempPermissions[item.id];
-    if (perm && perm.actions.length > 0) return 'full'; // دارای دسترسی
-    // اینجا میتوان منطق برای Parent Node ها نوشت که اگر فرزندانش دسترسی داشتند، نیمه پر نشان دهد
+    if (perm && perm.actions.length > 0) return 'full';
     return 'none';
   };
 
-  // --- RENDER HELPERS ---
-  // رندر کردن درخت منو به صورت بازگشتی برای انتخاب ماژول
+  // --- TREE LOGIC (SEARCH & EXPAND) ---
+  const toggleNode = (id, e) => {
+    e.stopPropagation();
+    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Filter Menu Data based on Search Term
+  const filteredMenuData = useMemo(() => {
+    if (!treeSearchTerm) return MENU_DATA;
+
+    const filterNodes = (nodes) => {
+      return nodes.reduce((acc, node) => {
+        const label = node.label[isRtl ? 'fa' : 'en'] || '';
+        const matches = label.toLowerCase().includes(treeSearchTerm.toLowerCase());
+        
+        let children = [];
+        if (node.children) {
+          children = filterNodes(node.children);
+        }
+
+        if (matches || children.length > 0) {
+          acc.push({ ...node, children, _matches: matches });
+        }
+        return acc;
+      }, []);
+    };
+
+    return filterNodes(MENU_DATA);
+  }, [treeSearchTerm, MENU_DATA, isRtl]);
+
+  // Auto-expand tree when searching
+  useEffect(() => {
+    if (treeSearchTerm) {
+      const allIds = {};
+      const traverse = (nodes) => {
+        nodes.forEach(n => {
+          if (n.children && n.children.length > 0) {
+            allIds[n.id] = true;
+            traverse(n.children);
+          }
+        });
+      };
+      traverse(filteredMenuData);
+      setExpandedNodes(allIds);
+    } else {
+      setExpandedNodes({}); // Collapse all when search cleared
+    }
+  }, [treeSearchTerm, filteredMenuData]);
+
   const renderTree = (items, depth = 0) => {
     return items.map(item => {
       const hasChildren = item.children && item.children.length > 0;
       const status = getModuleStatus(item);
       const isSelected = selectedModule?.id === item.id;
+      const isExpanded = expandedNodes[item.id];
+      const label = item.label[isRtl ? 'fa' : 'en'];
       
+      // Highlight matching text
+      const displayLabel = (treeSearchTerm && item._matches) ? (
+        <span className="bg-yellow-100 text-slate-900 rounded px-1">{label}</span>
+      ) : label;
+
       return (
-        <div key={item.id} className="select-none">
+        <div key={item.id} className="select-none relative">
+           {/* Connecting Line for tree hierarchy */}
+           {depth > 0 && (
+             <div className={`absolute top-0 bottom-0 w-px bg-slate-200 ${isRtl ? 'right-[11px]' : 'left-[11px]'}`}></div>
+           )}
+
           <div 
             className={`
-              flex items-center gap-2 py-2 px-2 cursor-pointer rounded-lg transition-colors
-              ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold' : 'hover:bg-slate-50 text-slate-700'}
+              flex items-center gap-2 py-1.5 px-2 my-0.5 cursor-pointer rounded-lg transition-all
+              ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'hover:bg-slate-100 text-slate-700'}
             `}
-            style={{ paddingRight: `${depth * 20 + 8}px` }}
-            onClick={() => !hasChildren && setSelectedModule(item)}
+            style={{ paddingRight: `${depth * 16 + 8}px`, paddingLeft: isRtl ? '8px' : `${depth * 16 + 8}px` }}
+            onClick={(e) => {
+              if(hasChildren) toggleNode(item.id, e);
+              else setSelectedModule(item);
+            }}
           >
             {hasChildren ? (
-              <div className="w-4 h-4 flex items-center justify-center text-slate-400">
-                {isRtl ? <ChevronLeft size={12}/> : <ChevronRight size={12}/>}
+              <div className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10">
+                 <div className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`}>
+                   <ChevronDown size={14} />
+                 </div>
               </div>
             ) : (
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${status === 'full' ? 'bg-green-500 border-green-500 text-white' : 'border-slate-300 bg-white'}`}>
-                {status === 'full' && <Check size={10} />}
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${status === 'full' ? 'bg-green-500 border-green-500 text-white shadow-sm' : 'border-slate-300 bg-white'}`}>
+                {status === 'full' && <Check size={12} strokeWidth={3} />}
               </div>
             )}
-            <span className="text-[12px] truncate">{item.label[isRtl ? 'fa' : 'en']}</span>
+            
+            <div className="flex items-center gap-2 truncate">
+               {hasChildren && (
+                 <span className={`text-slate-400 ${isExpanded ? 'text-indigo-400' : ''}`}>
+                   {isExpanded ? <FolderOpen size={14}/> : <Folder size={14}/>}
+                 </span>
+               )}
+               <span className="text-[12px] truncate">{displayLabel}</span>
+            </div>
           </div>
-          {hasChildren && <div>{renderTree(item.children, depth + 1)}</div>}
+          
+          {hasChildren && isExpanded && (
+            <div className="overflow-hidden animate-in slide-in-from-top-1 duration-200">
+              {renderTree(item.children, depth + 1)}
+            </div>
+          )}
         </div>
       );
     });
   };
 
-  // --- COLUMNS ---
+  // --- RENDER COLUMNS ---
   const columns = [
     { header: 'شناسه', field: 'id', width: 'w-16', sortable: true },
     { header: 'عنوان نقش', field: 'title', width: 'w-48', sortable: true },
     { header: 'کد سیستمی', field: 'code', width: 'w-32', sortable: true },
-    { 
-      header: 'تاریخ شروع', 
-      field: 'startDate', 
-      width: 'w-32',
-      render: (row) => <span className="dir-ltr font-mono text-xs">{row.startDate || '-'}</span>
-    },
-    { 
-      header: 'تاریخ پایان', 
-      field: 'endDate', 
-      width: 'w-32',
-      render: (row) => <span className="dir-ltr font-mono text-xs text-slate-500">{row.endDate || 'نامحدود'}</span>
-    },
-    { 
-      header: 'وضعیت', 
-      field: 'isActive',
-      width: 'w-24 text-center',
-      render: (row) => (
-        <Badge variant={row.isActive ? 'success' : 'neutral'}>
-           {row.isActive ? 'فعال' : 'غیرفعال'}
-        </Badge>
-      )
-    },
+    { header: 'تاریخ شروع', field: 'startDate', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs">{r.startDate || '-'}</span> },
+    { header: 'تاریخ پایان', field: 'endDate', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs text-slate-500">{r.endDate || 'نامحدود'}</span> },
+    { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
 
   return (
@@ -322,7 +371,6 @@ const Roles = ({ t, isRtl }) => {
                   className="dir-ltr"
                />
             </div>
-            
             <div className="grid grid-cols-2 gap-4">
                <DatePicker 
                   label="تاریخ شروع موثر" 
@@ -335,14 +383,6 @@ const Roles = ({ t, isRtl }) => {
                   onChange={(e) => setFormData({...formData, endDate: e.target.value})}
                />
             </div>
-            
-            <div className="bg-amber-50 p-3 rounded border border-amber-200 text-amber-800 text-xs flex gap-2 items-start">
-               <AlertCircle size={16} className="shrink-0 mt-0.5"/>
-               <span>
-                  توجه: اگر تاریخ پایان مشخص شود، پس از آن تاریخ، تمام دسترسی‌های کاربرانی که این نقش را دارند به طور خودکار قطع خواهد شد.
-               </span>
-            </div>
-
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
                <span className="text-[13px] font-bold text-slate-700">وضعیت نقش</span>
                <Toggle 
@@ -354,12 +394,12 @@ const Roles = ({ t, isRtl }) => {
          </div>
       </Modal>
 
-      {/* 4. ACCESS MANAGEMENT MODAL (THE 3-LAYER LOGIC) */}
+      {/* 4. ACCESS MANAGEMENT MODAL */}
       <Modal
          isOpen={isAccessModalOpen}
          onClose={() => setIsAccessModalOpen(false)}
          title={editingRole ? `مدیریت دسترسی‌های نقش: ${editingRole.title}` : "مدیریت دسترسی"}
-         size="xl" // مودال عریض برای نمایش دو ستون
+         size="xl"
          footer={
             <>
                <Button variant="secondary" onClick={() => setIsAccessModalOpen(false)}>انصراف</Button>
@@ -367,20 +407,41 @@ const Roles = ({ t, isRtl }) => {
             </>
          }
       >
-         <div className="flex h-[500px] border border-slate-200 rounded-lg overflow-hidden">
+         <div className="flex h-[550px] border border-slate-200 rounded-lg overflow-hidden">
             
-            {/* LEFT PANE: LAYER 1 (Tree Menu) */}
+            {/* LEFT PANE: TREE MENU */}
             <div className="w-1/3 border-l border-slate-200 bg-slate-50 flex flex-col">
-               <div className="p-3 border-b border-slate-200 bg-white font-bold text-xs text-slate-700 flex items-center gap-2">
-                  <Layers size={14} className="text-indigo-600"/>
-                  لایه ۱: انتخاب فرم/صفحه
+               <div className="p-3 border-b border-slate-200 bg-white font-bold text-xs text-slate-700 flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Layers size={14} className="text-indigo-600"/>
+                    لایه ۱: انتخاب فرم/صفحه
+                  </div>
+                  {/* SEARCH INPUT */}
+                  <div className="relative">
+                     <input 
+                        value={treeSearchTerm}
+                        onChange={(e) => setTreeSearchTerm(e.target.value)}
+                        placeholder="جستجو در منو..." 
+                        className={`w-full bg-slate-100 border border-slate-200 rounded-md text-[11px] h-8 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition-all ${isRtl ? 'pr-8 pl-2' : 'pl-8 pr-2'}`} 
+                     />
+                     <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2.5' : 'left-2.5'}`}/>
+                     {treeSearchTerm && (
+                        <button onClick={() => setTreeSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}>
+                           <X size={12}/>
+                        </button>
+                     )}
+                  </div>
                </div>
-               <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                  {renderTree(MENU_DATA)}
+               <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
+                  {filteredMenuData.length > 0 ? renderTree(filteredMenuData) : (
+                     <div className="text-center p-4 text-slate-400 text-xs">
+                        موردی یافت نشد.
+                     </div>
+                  )}
                </div>
             </div>
 
-            {/* RIGHT PANE: LAYERS 2 & 3 (Permissions) */}
+            {/* RIGHT PANE: PERMISSIONS */}
             <div className="w-2/3 bg-white flex flex-col">
                {selectedModule ? (
                   <>
@@ -389,14 +450,15 @@ const Roles = ({ t, isRtl }) => {
                            <span className="bg-indigo-100 text-indigo-700 p-1 rounded"><CheckSquare size={16}/></span>
                            تنظیمات دسترسی: {selectedModule.label[isRtl ? 'fa' : 'en']}
                         </h3>
+                        <p className="text-[10px] text-slate-400 mt-1 mr-8">شناسه سیستمی: {selectedModule.id}</p>
                      </div>
                      
-                     <div className="flex-1 overflow-y-auto p-5 space-y-8">
+                     <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
                         
                         {/* LAYER 2: OPERATIONS */}
                         <div>
                            <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">2</span>
+                              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">2</span>
                               لایه ۲: عملیات مجاز (Operations)
                            </div>
                            <div className="grid grid-cols-2 gap-3">
@@ -406,7 +468,7 @@ const Roles = ({ t, isRtl }) => {
                                     <div 
                                        key={action.id} 
                                        className={`
-                                          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer
+                                          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none
                                           ${isChecked ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}
                                        `}
                                        onClick={() => toggleAction(selectedModule.id, action.id)}
@@ -423,15 +485,18 @@ const Roles = ({ t, isRtl }) => {
 
                         {/* LAYER 3: DATA SCOPES */}
                         {DATA_SCOPES[selectedModule.id] ? (
-                           <div>
+                           <div className="animate-in slide-in-from-bottom-2 duration-300">
                               <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2 border-t border-slate-100 pt-6">
-                                 <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">3</span>
+                                 <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">3</span>
                                  لایه ۳: دسترسی روی داده (Data Scopes)
                               </div>
                               <div className="space-y-4">
                                  {DATA_SCOPES[selectedModule.id].map(scope => (
-                                    <div key={scope.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                       <h4 className="text-xs font-bold text-slate-800 mb-2">{scope.label}:</h4>
+                                    <div key={scope.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                       <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                          <Filter size={14} className="text-slate-400"/>
+                                          {scope.label}:
+                                       </h4>
                                        <div className="flex flex-wrap gap-2">
                                           {scope.options.map(opt => {
                                              const selectedValues = tempPermissions[selectedModule.id]?.dataScopes?.[scope.id] || [];
@@ -441,12 +506,12 @@ const Roles = ({ t, isRtl }) => {
                                                    key={opt.value}
                                                    onClick={() => toggleDataScope(selectedModule.id, scope.id, opt.value)}
                                                    className={`
-                                                      px-3 py-1.5 rounded text-[11px] font-bold border transition-all
-                                                      ${isActive ? 'bg-white border-green-500 text-green-700 shadow-sm' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400'}
+                                                      px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1.5
+                                                      ${isActive ? 'bg-white border-green-500 text-green-700 shadow-sm ring-1 ring-green-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400'}
                                                    `}
                                                 >
+                                                   {isActive && <Check size={12} className="text-green-600"/>}
                                                    {opt.label}
-                                                   {isActive && <Check size={10} className="inline-block mr-1"/>}
                                                 </button>
                                              );
                                           })}
@@ -456,17 +521,21 @@ const Roles = ({ t, isRtl }) => {
                               </div>
                            </div>
                         ) : (
-                           <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center">
-                              <span className="text-xs text-slate-400">برای این فرم محدودیت لایه ۳ (فیلتر داده) تعریف نشده است.</span>
+                           <div className="mt-6 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center flex flex-col items-center justify-center gap-2 opacity-70">
+                              <Shield size={24} className="text-slate-300"/>
+                              <span className="text-xs text-slate-400 font-medium">برای این فرم محدودیت لایه ۳ (فیلتر داده) تعریف نشده است.</span>
                            </div>
                         )}
 
                      </div>
                   </>
                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                     <Layers size={48} className="mb-4 opacity-20"/>
-                     <p className="text-sm font-medium">لطفاً یک آیتم را از درخت سمت راست انتخاب کنید</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-300 select-none">
+                     <div className="bg-slate-50 p-6 rounded-full mb-4">
+                        <Eye size={48} className="opacity-50"/>
+                     </div>
+                     <p className="text-sm font-bold text-slate-400">لطفاً یک آیتم را از درخت سمت راست انتخاب کنید</p>
+                     <p className="text-xs text-slate-400 mt-1">تا تنظیمات دسترسی نمایش داده شود</p>
                   </div>
                )}
             </div>
