@@ -10,11 +10,10 @@ const {
   CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
-  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component
+  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info
 } = LucideIcons;
 
 // --- توابع کمکی (Helper Functions) ---
-// این تابع برای تبدیل منوی درختی به لیست خطی (در صورت نیاز) استفاده می‌شود
 window.flattenMenu = (items, parentModuleId = null) => {
   return items.reduce((acc, item) => {
     const currentModuleId = parentModuleId || item.id;
@@ -198,7 +197,19 @@ window.MENU_DATA = [
     label: { en: 'Settings', fa: 'تنظیمات سیستم' },
     icon: Settings,
     children: [
-      { id: 'general_settings', label: { en: 'General Settings', fa: 'تنظیمات عمومی' } },
+      { 
+        id: 'general_settings', 
+        label: { en: 'General Settings', fa: 'تنظیمات عمومی' },
+        children: [
+          {
+            id: 'base_info_root',
+            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
+            children: [
+              { id: 'parties', label: { en: 'Parties & Companies', fa: 'اشخاص و شرکت‌ها' } }
+            ]
+          }
+        ]
+      },
       { id: 'integrations', label: { en: 'Integrations', fa: 'ارتباط با سایر سیستم‌ها' } },
     ]
   },
