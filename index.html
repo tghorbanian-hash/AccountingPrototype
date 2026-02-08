@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Accounting System</title>
+    <title>Financial Accounting System (Enterprise Edition)</title>
     
     <script>
         (function() {
@@ -34,15 +34,28 @@
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
     <style>
         #root { height: 100vh; }
+        
+        /* ERP Specific Styles - استایل‌های مخصوص سیستم سازمانی */
+        body { 
+            font-size: 13px; /* فونت استاندارد سیستم‌های مالی */
+        }
+        
+        /* Custom Scrollbar for Enterprise Feel - اسکرول‌بار حرفه‌ای */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-100 overflow-hidden">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module" src="./app-data.js"></script>
 
     <script type="text/babel" data-type="module" src="./components/UIComponents.js"></script>
 
+    <script type="text/babel" data-type="module" src="./components/ComponentShowcase.js"></script>
+    
     <script type="text/babel" data-type="module" src="./components/KpiDashboard.js"></script>
     <script type="text/babel" data-type="module" src="./components/UserManagement.js"></script>
     <script type="text/babel" data-type="module" src="./components/GeneralWorkspace.js"></script>
