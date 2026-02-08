@@ -1,7 +1,4 @@
-/* Filename: components/UIComponents.js
-   Style: Enterprise ERP (Inspired by SAP Fiori / Salesforce Lightning)
-   Focus: High Density, Maximum Screen Real Estate, Information Hierarchy
-*/
+/* Filename: components/UIComponents.js */
 import React, { useState } from 'react';
 import { 
   Loader2, ChevronDown, ChevronRight, Search, X, 
@@ -12,7 +9,7 @@ import {
 // --- ENTERPRISE THEME TOKENS ---
 const THEME = {
   colors: {
-    primary: 'bg-indigo-700 hover:bg-indigo-800 text-white', // Corporate Blue/Indigo
+    primary: 'bg-indigo-700 hover:bg-indigo-800 text-white',
     secondary: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300',
     accent: 'text-indigo-700',
     surface: 'bg-white',
@@ -26,10 +23,10 @@ const THEME = {
     rowSelected: 'bg-indigo-50',
   },
   metrics: {
-    radius: 'rounded', // Small radius for professional look (Salesforce style)
-    inputHeight: 'h-8', // Dense inputs
+    radius: 'rounded',
+    inputHeight: 'h-8',
     buttonHeight: 'h-8',
-    fontSize: 'text-[12px]', // ERP standard font size
+    fontSize: 'text-[12px]',
     headerHeight: 'h-9',
   }
 };
@@ -166,6 +163,7 @@ export const Badge = ({ children, variant = 'neutral' }) => {
     danger: 'bg-red-100 text-red-800 border-red-200',
     info: 'bg-blue-100 text-blue-800 border-blue-200',
     neutral: 'bg-slate-100 text-slate-700 border-slate-200',
+    purple: 'bg-purple-100 text-purple-800 border-purple-200',
   };
   return (
     <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${styles[variant] || styles.neutral}`}>
@@ -176,14 +174,13 @@ export const Badge = ({ children, variant = 'neutral' }) => {
 
 // --- 2. COMPLEX COMPONENTS ---
 
-// --- ERP Data Grid (The Powerhouse) ---
 export const DataGrid = ({ 
-  columns, data, actions, onSelectAll, onSelectRow, selectedIds = [], 
+  columns, data = [], actions, onSelectAll, onSelectRow, selectedIds = [], 
   isLoading, isRtl, pagination 
 }) => {
   return (
     <div className="flex flex-col h-full border border-slate-300 rounded bg-white shadow-sm overflow-hidden">
-      {/* Grid Toolbar (Integrated) */}
+      {/* Grid Toolbar */}
       <div className="bg-slate-50 border-b border-slate-200 p-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" icon={Filter}>Filter</Button>
@@ -263,7 +260,7 @@ export const DataGrid = ({
         </table>
       </div>
 
-      {/* Grid Footer (Pagination) */}
+      {/* Grid Footer */}
       <div className="bg-slate-50 border-t border-slate-300 p-1.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
            <Button variant="ghost" size="sm" icon={ChevronsLeft} disabled />
@@ -285,7 +282,6 @@ export const DataGrid = ({
   );
 };
 
-// --- Enterprise Tree Navigation (4-Layer) ---
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
   const [expanded, setExpanded] = useState({});
 
@@ -298,16 +294,13 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expanded[item.id];
     const isActive = activeId === item.id;
-    
-    // Indentation Logic based on depth
     const paddingStart = `${depth * 12 + 12}px`;
     
-    // Styling based on Hierarchy Layer
     let layerStyle = "";
-    if (depth === 0) layerStyle = "font-black text-[12px] uppercase tracking-wider text-slate-500 mt-4 mb-1 px-4"; // Domain
-    else if (depth === 1) layerStyle = "font-bold text-[13px] text-slate-800 hover:bg-slate-100"; // Module
-    else if (depth === 2) layerStyle = "font-medium text-[12px] text-slate-700 hover:bg-slate-100"; // Category
-    else layerStyle = "text-[12px] text-slate-600 hover:bg-slate-100"; // Form
+    if (depth === 0) layerStyle = "font-black text-[12px] uppercase tracking-wider text-slate-500 mt-4 mb-1 px-4"; 
+    else if (depth === 1) layerStyle = "font-bold text-[13px] text-slate-800 hover:bg-slate-100";
+    else if (depth === 2) layerStyle = "font-medium text-[12px] text-slate-700 hover:bg-slate-100";
+    else layerStyle = "text-[12px] text-slate-600 hover:bg-slate-100";
 
     if (depth === 0) {
       return (
@@ -350,7 +343,6 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
   return <div className="py-2">{items.map(item => renderItem(item, 0))}</div>;
 };
 
-// --- Modal System ---
 export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
   if (!isOpen) return null;
   
@@ -365,18 +357,13 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div className={`bg-white rounded shadow-2xl flex flex-col w-full ${sizes[size]} max-h-[90vh] animate-in zoom-in-95`}>
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0 rounded-t">
           <h3 className="font-bold text-slate-800 text-sm">{title}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-red-500"><X size={18} /></button>
         </div>
-        
-        {/* Body */}
         <div className="p-4 overflow-y-auto flex-1">
           {children}
         </div>
-
-        {/* Footer */}
         {footer && (
           <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0 rounded-b">
             {footer}
@@ -387,7 +374,6 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' })
   );
 };
 
-// --- Date Picker (Native Styled) ---
 export const DatePicker = ({ label, isRtl, className = '', ...props }) => (
   <div className={`w-full ${className}`}>
     {label && <label className="block text-[11px] font-bold text-slate-700 mb-1">{label}</label>}
@@ -402,7 +388,6 @@ export const DatePicker = ({ label, isRtl, className = '', ...props }) => (
            text-[12px] text-slate-900 uppercase font-mono
          `} 
        />
-       {/* Note: Native datepicker icon styling is limited, usually requires custom implementation */}
     </div>
   </div>
 );
