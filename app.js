@@ -73,20 +73,14 @@ const App = () => {
 
   return (
     <div className={`min-h-screen bg-slate-50 flex ${isRtl ? 'font-vazir' : 'font-sans'}`}>
-      <style>{`
-        /* Removed duplicate font import since it is now in index.html */
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-      `}</style>
       
-      {/* SIDEBAR - Module Rail (FIX: Added overflow-x-hidden and removed unnecessary scrolls) */}
+      {/* FIX: Force hide X overflow to prevent horizontal scrollbar */}
       <aside className={`bg-white w-[72px] flex flex-col items-center py-4 shrink-0 z-40 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-sm relative overflow-x-hidden`}>
         <div className="bg-indigo-700 w-10 h-10 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0">
           <BarChart3 size={20} strokeWidth={2.5} />
         </div>
         
+        {/* FIX: Used 'no-scrollbar' class defined in index.html to hide scrollbar visuals */}
         <div className="flex-1 flex flex-col gap-3 items-center w-full px-2 overflow-y-auto no-scrollbar">
           {MENU_DATA.map(mod => {
              const isActive = activeModuleId === mod.id;
@@ -143,7 +137,6 @@ const App = () => {
         </div>
         
         <div className="flex-1 overflow-hidden">
-          {/* FIX: TreeMenu now has its own internal scroll, removing double scrollbars */}
           {TreeMenu ? (
             <TreeMenu 
               items={currentModule.children || []} 
