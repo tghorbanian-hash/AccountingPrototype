@@ -131,8 +131,6 @@ const UserManagement = ({ t, isRtl }) => {
     { id: 4, title: 'مدیر سیستم', code: 'ADMIN' },
   ];
 
-  // MOCK PERMISSIONS FOR ROLES (Using Strings/Numbers consistently)
-  // Assuming form IDs match what's in MENU_DATA (e.g., 'gl_docs', 'inv_list')
   const MOCK_ROLE_PERMISSIONS = {
     1: [ // CFO
        { formId: 'gl_docs', actions: ['view', 'approve'], dataScopes: {} },
@@ -187,7 +185,6 @@ const UserManagement = ({ t, isRtl }) => {
       
       rolePerms.forEach(p => {
         const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
-        // Important: Ensure we only list forms that actually exist in system
         if (!formInfo) return; 
 
         if (!map.has(p.formId)) {
@@ -203,7 +200,6 @@ const UserManagement = ({ t, isRtl }) => {
         } else {
           const item = map.get(p.formId);
           item.sources.push({ type: 'role', label: roleInfo?.title });
-          // Merge logic for actions if needed, for now we just list sources
         }
       });
     });
@@ -300,19 +296,14 @@ const UserManagement = ({ t, isRtl }) => {
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
-    
-    // Hint to user
-    // In a real app we might auto-select the new row.
   };
 
   const handleUpdateDirectPermission = (formId, type, key, value) => {
     setDirectPermissions(prev => {
-        // If this form is not in directPermissions yet (because it came from Role source only), we must add it first
         const existingDirect = prev.find(p => p.formId === formId);
         
         let targetEntry;
         if (!existingDirect) {
-            // Initialize with empty actions if it was only a role permission before
             targetEntry = { formId: formId, actions: [], dataScopes: {} };
         } else {
             targetEntry = { ...existingDirect };
@@ -328,7 +319,6 @@ const UserManagement = ({ t, isRtl }) => {
             targetEntry.dataScopes = { ...targetEntry.dataScopes, [key]: newValues };
         }
 
-        // Reconstruct array
         if (!existingDirect) {
             return [...prev, targetEntry];
         } else {
@@ -342,7 +332,6 @@ const UserManagement = ({ t, isRtl }) => {
     return users.filter(user => {
       const matchName = !appliedFilters.username || user.username.toLowerCase().includes(appliedFilters.username.toLowerCase());
       
-      // Role Filter (Multi-select OR logic: if user has ANY of selected roles)
       let matchRole = true;
       if (appliedFilters.roleIds && appliedFilters.roleIds.length > 0) {
         if (!user.roleIds || user.roleIds.length === 0) {
@@ -351,24 +340,28 @@ const UserManagement = ({ t, isRtl }) => {
             matchRole = appliedFilters.roleIds.some(rId => user.roleIds.includes(rId));
         }
       }
-      
       return matchName && matchRole;
     });
   }, [users, appliedFilters]);
 
-  // Search Results for Forms
+  // Search Results
   const formSearchResults = useMemo(() => {
      if (!formSearchTerm) return [];
      return ALL_SYSTEM_FORMS.filter(f => f.fullPath.includes(formSearchTerm));
   }, [formSearchTerm, ALL_SYSTEM_FORMS]);
 
-  // Search Results for Roles
   const roleSearchResults = useMemo(() => {
      return MOCK_ROLES_LIST.filter(r => 
         !assignedRoles.includes(r.id) && 
         r.title.toLowerCase().includes(roleSearchTerm.toLowerCase())
      );
   }, [roleSearchTerm, assignedRoles]);
+
+  // --- RENDER HELPERS (FIXED: Added missing function) ---
+  const getPartyName = (id) => {
+    const p = MOCK_PARTIES.find(p => p.id === Number(id));
+    return p ? `${p.name} (${p.code})` : 'نامشخص';
+  };
 
   // --- COLUMNS ---
   const columns = [
@@ -426,8 +419,6 @@ const UserManagement = ({ t, isRtl }) => {
       {/* FILTER */}
       <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: '', roleIds: []}); setAppliedFilters({username: '', roleIds: []})}} isRtl={isRtl}>
          <InputField label="نام کاربری" value={filterValues.username} onChange={(e) => setFilterValues({...filterValues, username: e.target.value})} placeholder="جستجو..." isRtl={isRtl} />
-         
-         {/* Custom Role Multi-select Filter */}
          <div>
            <label className="block text-[11px] font-bold text-slate-600 mb-1">نقش‌های کاربری</label>
            <MultiSelect 
@@ -465,7 +456,6 @@ const UserManagement = ({ t, isRtl }) => {
                <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
             </SelectField>
             
-            {/* Password and Party on the SAME ROW */}
             <div className="col-span-2 grid grid-cols-2 gap-4">
                 {!editingUser ? (
                     <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="********" />
@@ -493,7 +483,6 @@ const UserManagement = ({ t, isRtl }) => {
          footer={<Button variant="primary" onClick={() => setIsPermModalOpen(false)}>تایید و بستن</Button>}>
          <div className="flex flex-col h-[600px]">
             
-            {/* 1. TOP: ROLES MANAGEMENT */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 flex items-center justify-between">
                <div className="flex items-center gap-2 overflow-x-auto">
                   <Shield size={16} className="text-purple-600 shrink-0"/>
@@ -512,7 +501,6 @@ const UserManagement = ({ t, isRtl }) => {
                   </div>
                </div>
                
-               {/* Searchable Role Add */}
                <div className="relative shrink-0 w-64">
                    <div 
                      className="flex items-center border border-slate-300 rounded bg-white px-2 h-8 cursor-text"
@@ -541,11 +529,8 @@ const UserManagement = ({ t, isRtl }) => {
                </div>
             </div>
 
-            {/* 2. MAIN SPLIT VIEW */}
             <div className="flex flex-1 border border-slate-200 rounded-lg overflow-hidden">
-               {/* LEFT: GRID + SEARCH */}
                <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col transition-all duration-300 bg-white`}>
-                  {/* Search Toolbar for Direct Access */}
                   <div className="p-2 border-b border-slate-100 bg-white relative z-20">
                      <div className="relative">
                         <input 
@@ -555,7 +540,6 @@ const UserManagement = ({ t, isRtl }) => {
                            className="w-full h-9 bg-slate-50 border border-slate-200 rounded text-xs pr-8 pl-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all"
                         />
                         <Search size={14} className="absolute top-2.5 right-2.5 text-slate-400"/>
-                        {/* Autocomplete Dropdown */}
                         {showFormResults && formSearchTerm && (
                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto">
                               {formSearchResults.length > 0 ? formSearchResults.map(f => (
@@ -589,7 +573,6 @@ const UserManagement = ({ t, isRtl }) => {
                   </div>
                </div>
 
-               {/* RIGHT: DETAILS SIDEBAR */}
                {selectedPermDetail && (
                   <div className="w-1/2 border-r border-slate-200 bg-slate-50 flex flex-col animate-in slide-in-from-right-5 duration-200 relative shadow-xl z-10">
                      <div className="absolute top-2 left-2">
@@ -606,17 +589,8 @@ const UserManagement = ({ t, isRtl }) => {
                      </div>
 
                      <div className="p-5 flex-1 overflow-y-auto space-y-6">
-                        {/* Determine if editable: If has 'Direct' source, it is editable. 
-                            If it doesn't have 'Direct', clicking it will ADD 'Direct' and make it editable. */}
                         {(() => {
                            const hasDirect = selectedPermDetail.sources.some(s => s.type === 'direct');
-                           
-                           // Merge Role Actions + Direct Actions for Display
-                           // If hasDirect is true, user is toggling the Direct Actions/Scopes
-                           const displayedActions = hasDirect 
-                              ? selectedPermDetail.directActions 
-                              : selectedPermDetail.roleActions || [];
-
                            return (
                               <>
                                  {!hasDirect && (
@@ -625,21 +599,16 @@ const UserManagement = ({ t, isRtl }) => {
                                     </div>
                                  )}
 
-                                 {/* ACTIONS: Using SelectionGrid for consistency with Roles.js */}
                                  <div>
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">عملیات مجاز</div>
                                     <SelectionGrid 
                                         items={AVAILABLE_ACTIONS}
-                                        selectedIds={hasDirect 
-                                            ? selectedPermDetail.directActions || [] 
-                                            : selectedPermDetail.roleActions || []
-                                        }
+                                        selectedIds={hasDirect ? selectedPermDetail.directActions || [] : selectedPermDetail.roleActions || []}
                                         onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)}
                                         columns={4}
                                     />
                                  </div>
 
-                                 {/* SCOPES: Using ToggleChip for consistency with Roles.js */}
                                  <div className="pt-4 border-t border-slate-200">
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">دسترسی داده</div>
                                     {Object.entries(DATA_SCOPES).map(([key, def]) => (
