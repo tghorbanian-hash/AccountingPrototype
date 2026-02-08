@@ -1,8 +1,9 @@
-// دریافت آیکون‌ها از ماژول سراسری React Lucide
-// این روش در محیط بدون بیلد (No-Build) بسیار امن‌تر است
+/* Filename: app-data.js */
+
+// دریافت تمام آیکون‌ها از ماژول Lucide
 import * as LucideIcons from 'lucide-react';
 
-// استخراج آیکون‌های مورد نیاز از پکیج ایمپورت شده
+// استخراج آیکون‌های مورد نیاز برای منوها و صفحات
 const { 
   LayoutDashboard, Receipt, Wallet, BarChart3, Settings, Languages, Bell, Search, 
   ArrowUpRight, ArrowDownLeft, Plus, MoreVertical, ChevronRight, ChevronLeft, Users, 
@@ -12,7 +13,8 @@ const {
   XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component
 } = LucideIcons;
 
-// --- Helper Functions ---
+// --- توابع کمکی (Helper Functions) ---
+// این تابع برای تبدیل منوی درختی به لیست خطی (در صورت نیاز) استفاده می‌شود
 window.flattenMenu = (items, parentModuleId = null) => {
   return items.reduce((acc, item) => {
     const currentModuleId = parentModuleId || item.id;
@@ -24,7 +26,7 @@ window.flattenMenu = (items, parentModuleId = null) => {
   }, []);
 };
 
-// --- Static Menu Structure ---
+// --- ساختار منوی اصلی سیستم (MENU_DATA) ---
 window.MENU_DATA = [
   {
     id: 'showcase',
@@ -212,7 +214,7 @@ window.MENU_DATA = [
   }
 ];
 
-// --- Mock Data ---
+// --- Mock Data (داده‌های تستی) ---
 window.MOCK_TRANSACTIONS = [
   { id: 1, title: { en: 'Monthly Server Hosting', fa: 'هزینه میزبانی سرور ماهانه' }, amount: 1200, type: 'expense', date: '2024-03-01', category: 'IT' },
   { id: 2, title: { en: 'Consultancy Fee', fa: 'هزینه مشاوره' }, amount: 4500, type: 'income', date: '2024-03-02', category: 'Service' },
@@ -227,6 +229,7 @@ window.MOCK_STATS = [
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
+// --- دیکشنری ترجمه (Translations) ---
 window.translations = {
   en: {
     loginTitle: 'Secure Sign In',
@@ -316,7 +319,7 @@ window.translations = {
     permTypeUser: 'User',
     permSelectSource: 'Select a Source',
     permSelectForm: 'Select a Form',
-    // General Workspace Translations (from Help.html)
+    // General Workspace Translations
     ws_title: "User Workspace",
     ws_subtitle: "Exchange & Accounting Management System",
     kpi_cash: "Cash & Bank Balance",
@@ -444,7 +447,7 @@ window.translations = {
     permTypeUser: 'کاربر',
     permSelectSource: 'یک منبع دسترسی انتخاب کنید',
     permSelectForm: 'یک فرم را انتخاب کنید',
-    // General Workspace Translations (from Help.html)
+    // General Workspace Translations
     ws_title: "میز کار کاربر",
     ws_subtitle: "سیستم مدیریت حسابداری و صرافی",
     kpi_cash: "موجودی نقد و بانک",
