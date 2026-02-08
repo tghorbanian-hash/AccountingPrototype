@@ -5,14 +5,6 @@ import {
   Printer, MoreHorizontal, Edit, Eye, Shield, DollarSign 
 } from 'lucide-react';
 
-// دسترسی ایمن به کامپوننت‌های UI
-// اگر فایل UIComponents درست لود نشود، این خط خطا می‌دهد
-const UI = window.UI || {}; 
-const { 
-  Button, InputField, SelectField, Toggle, Badge, 
-  DataGrid, TreeMenu, Modal, DatePicker, LOV, THEME 
-} = UI;
-
 // --- MOCK DATA FOR SHOWCASE ---
 const MOCK_MENU = [
   {
@@ -77,9 +69,20 @@ const MOCK_GRID_DATA = Array.from({ length: 50 }).map((_, i) => ({
 }));
 
 const ComponentShowcase = ({ t, isRtl }) => {
+  // دسترسی ایمن به کامپوننت‌های UI در زمان رندر برای جلوگیری از خطا
+  const UI = window.UI || {};
+  const { 
+    Button, InputField, SelectField, Toggle, Badge, 
+    DataGrid, TreeMenu, Modal, DatePicker, LOV 
+  } = UI;
+
   // اگر کامپوننت‌ها لود نشده باشند، پیام خطا نشان بده
-  if (!window.UI || !Button) {
-    return <div className="p-10 text-red-600 font-bold">Error: UI Components not loaded properly. Please check index.html order.</div>;
+  if (!Button) {
+    return (
+      <div className="flex items-center justify-center h-screen text-red-600 font-bold gap-2">
+        <span>Error: UI Components not loaded properly. Please check index.html order.</span>
+      </div>
+    );
   }
 
   const [activeMenu, setActiveMenu] = useState('form_accounts');
@@ -234,7 +237,8 @@ const ComponentShowcase = ({ t, isRtl }) => {
             <div className="bg-indigo-50 border border-indigo-100 p-3 rounded flex items-start gap-3">
                <Shield className="text-indigo-600 shrink-0 mt-0.5" size={16} />
                <div className="text-[11px] text-indigo-900 leading-relaxed">
-                  You are creating a document in the <strong>FY-2026</strong> period. Ensure all dates match the active fiscal year settings.
+                  You are creating a document in the <strong>FY-2026</strong> period.
+                  Ensure all dates match the active fiscal year settings.
                </div>
             </div>
 
@@ -284,4 +288,5 @@ const ComponentShowcase = ({ t, isRtl }) => {
   );
 };
 
+// اتصال کامپوننت به پنجره مرورگر برای استفاده در app.js
 window.ComponentShowcase = ComponentShowcase;
