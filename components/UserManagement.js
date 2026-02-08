@@ -1,233 +1,187 @@
 /* Filename: components/UserManagement.js
-   Style: Pro-Grid Implementation (Clean, Dense, Modern)
+   Style: Enterprise ERP - Adapted for new UIComponents
 */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Search, Plus, Edit, Trash2, Shield, X, User, 
-  Save, Lock, RefreshCw, Users, Settings, ChevronDown, Filter,
-  MoreHorizontal, FileText, Download
+  Plus, Edit, Trash2, Search, Filter, Save, X, 
+  Shield, RefreshCw, Lock, User
 } from 'lucide-react';
 
-// --- MOCK DATA ---
+// دسترسی به کامپوننت‌های سیستم دیزاین جدید
+const { 
+  Button, InputField, SelectField, Toggle, Badge, 
+  DataGrid, Modal
+} = window.UI;
+
 const UserManagement = ({ t, isRtl }) => {
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'form'
+  const [viewMode, setViewMode] = useState('list'); // 'list'
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   
-  // Data
+  // --- MOCK DATA ---
   const [users, setUsers] = useState([
-    { id: 1001, username: 'admin', personId: 4, personName: 'رضا قربانی', userType: 'admin', status: true, lastLogin: '1402/12/20 10:00' },
-    { id: 1002, username: 'm.rad', personId: 1, personName: 'محمد راد', userType: 'user', status: true, lastLogin: '1402/12/19 14:30' },
-    { id: 1003, username: 's.tehrani', personId: 2, personName: 'سارا تهرانی', userType: 'user', status: false, lastLogin: '1402/11/05 09:15' },
-    { id: 1004, username: 'a.mohammadi', personId: 3, personName: 'علی محمدی', userType: 'user', status: true, lastLogin: '1402/12/18 16:45' },
-    { id: 1005, username: 'k.yaghoubi', personId: 5, personName: 'کاوه یعقوبی', userType: 'user', status: true, lastLogin: '-' },
+    { id: 1001, username: 'admin', personName: 'رضا قربانی', userType: 'admin', status: true, lastLogin: '1402/12/20' },
+    { id: 1002, username: 'm.rad', personName: 'محمد راد', userType: 'user', status: true, lastLogin: '1402/12/19' },
+    { id: 1003, username: 's.tehrani', personName: 'سارا تهرانی', userType: 'user', status: false, lastLogin: '1402/11/05' },
+    { id: 1004, username: 'a.mohammadi', personName: 'علی محمدی', userType: 'user', status: true, lastLogin: '1402/12/18' },
+    { id: 1005, username: 'k.yaghoubi', personName: 'کاوه یعقوبی', userType: 'user', status: true, lastLogin: '-' },
   ]);
 
   const [formData, setFormData] = useState({ id: '', username: '', userType: 'user', status: true });
 
+  // --- Handlers ---
   const handleCreateNew = () => {
     setFormData({ id: 'NEW', username: '', userType: 'user', status: true });
     setEditingUser(null);
-    setViewMode('form');
+    setIsModalOpen(true);
   };
 
   const handleEdit = (user) => {
     setFormData(user);
     setEditingUser(user);
-    setViewMode('form');
+    setIsModalOpen(true);
   };
 
-  // --- List View (The Pro Layout) ---
-  const renderList = () => (
-    <div className="flex h-full bg-white">
+  const handleSelectAll = (checked) => {
+    if (checked) setSelectedRows(users.map(u => u.id));
+    else setSelectedRows([]);
+  };
+
+  const handleSelectRow = (id, checked) => {
+    if (checked) setSelectedRows(prev => [...prev, id]);
+    else setSelectedRows(prev => prev.filter(r => r !== id));
+  };
+
+  // --- Column Definitions for DataGrid ---
+  const columns = [
+    { header: t.colId || 'ID', field: 'id', width: 'w-20' },
+    { header: t.colUsername || 'Username', field: 'username', width: 'w-40', sortable: true },
+    { header: t.colLinkedPerson || 'Person', field: 'personName', width: 'w-auto' },
+    { 
+      header: t.colUserType || 'Type', 
+      width: 'w-32',
+      render: (row) => (
+        <Badge variant={row.userType === 'admin' ? 'purple' : 'neutral'}>
+          {row.userType === 'admin' ? t.roleAdmin : t.roleUser}
+        </Badge>
+      )
+    },
+    { 
+      header: t.colStatus || 'Status', 
+      width: 'w-24 text-center',
+      render: (row) => (
+        <Badge variant={row.status ? 'success' : 'danger'}>
+           {row.status ? 'ACTIVE' : 'INACTIVE'}
+        </Badge>
+      )
+    },
+    { header: 'Last Login', field: 'lastLogin', width: 'w-32' }
+  ];
+
+  // --- Render ---
+  return (
+    <div className="flex flex-col h-full space-y-4">
       
-      {/* Sidebar / Filter Panel (Optional but adds 'App' feel) */}
-      <div className={`w-64 border-${isRtl ? 'l' : 'r'} border-zinc-200 bg-zinc-50 flex flex-col shrink-0`}>
-         <div className="p-4 border-b border-zinc-200">
-            <h2 className="font-semibold text-sm text-zinc-900 flex items-center gap-2">
-               <Filter size={16} /> {t.filters || 'Filters'}
-            </h2>
+      {/* 1. Action Bar */}
+      <div className="flex items-center justify-between bg-white p-3 rounded border border-slate-300 shadow-sm shrink-0">
+         <div className="flex items-center gap-3">
+            <h1 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+               <Shield size={16} className="text-indigo-600"/>
+               {t.usersListTitle}
+            </h1>
+            <div className="h-4 w-px bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+               <InputField 
+                  placeholder={t.searchUserPlaceholder} 
+                  icon={Search} 
+                  isRtl={isRtl} 
+                  className="w-64"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+               />
+            </div>
          </div>
-         <div className="p-4 space-y-4">
-             <window.UI.SelectField label={t.colUserType} isRtl={isRtl}>
-                <option value="">All Roles</option>
-                <option value="admin">{t.roleAdmin}</option>
-                <option value="user">{t.roleUser}</option>
-             </window.UI.SelectField>
-             <window.UI.SelectField label={t.colStatus} isRtl={isRtl}>
-                <option value="">All Status</option>
-                <option value="active">{t.active}</option>
-                <option value="inactive">{t.inactive}</option>
-             </window.UI.SelectField>
-         </div>
-         <div className="mt-auto p-4 border-t border-zinc-200">
-             <div className="text-[11px] text-zinc-400 text-center">
-                System v2.5.0 (Pro)
-             </div>
+         <div className="flex items-center gap-2">
+            <Button variant="danger" icon={Trash2} disabled={selectedRows.length === 0}>Delete</Button>
+            <Button variant="primary" icon={Plus} onClick={handleCreateNew}>{t.createNewUser}</Button>
          </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-         
-         {/* 1. Top Toolbar (Clean) */}
-         <div className="h-16 border-b border-zinc-200 flex items-center justify-between px-6 bg-white shrink-0">
-            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Users size={18} />
+      {/* 2. Data Grid */}
+      <div className="flex-1 overflow-hidden">
+         <DataGrid 
+            columns={columns}
+            data={users.filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()))}
+            isRtl={isRtl}
+            selectedIds={selectedRows}
+            onSelectAll={handleSelectAll}
+            onSelectRow={handleSelectRow}
+            actions={(row) => (
+               <div className="flex justify-center gap-1">
+                 <Button variant="ghost" size="icon" icon={Edit} onClick={() => handleEdit(row)} />
                </div>
-               <div>
-                  <h1 className="text-base font-bold text-zinc-900 leading-tight">{t.usersListTitle}</h1>
-                  <p className="text-[11px] text-zinc-500 font-medium">{users.length} Records</p>
-               </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-               <div className="relative group">
-                  <Search size={16} className={`absolute top-2.5 text-zinc-400 ${isRtl ? 'right-3' : 'left-3'}`} />
-                  <input 
-                    className={`
-                      h-9 w-64 bg-zinc-50 border border-zinc-200 rounded-md text-[13px] 
-                      ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} outline-none focus:bg-white focus:border-blue-500 transition-all
-                    `}
-                    placeholder={t.searchUserPlaceholder}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-               </div>
-               <div className="h-6 w-px bg-zinc-200 mx-1"></div>
-               <window.UI.Button onClick={handleCreateNew} icon={Plus} variant="primary">
-                  {t.createNewUser}
-               </window.UI.Button>
-            </div>
-         </div>
-
-         {/* 2. The Grid (Data Table) */}
-         <div className="flex-1 overflow-auto bg-white">
-            <table className="w-full text-left border-collapse">
-               <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
-                  <tr>
-                     <th className={`px-6 py-3 border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>{t.colId}</th>
-                     <th className={`px-6 py-3 border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>{t.colUsername}</th>
-                     <th className={`px-6 py-3 border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>{t.colLinkedPerson}</th>
-                     <th className={`px-6 py-3 border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider ${isRtl ? 'text-right' : 'text-left'}`}>{t.colUserType}</th>
-                     <th className="px-6 py-3 border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider w-32 text-center">{t.colStatus}</th>
-                     <th className="px-6 py-3 border-b border-zinc-200 w-24"></th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-zinc-100">
-                  {users.map((user) => (
-                     <tr key={user.id} className="group hover:bg-zinc-50/80 transition-colors">
-                        <td className="px-6 py-2.5 text-[13px] font-mono text-zinc-500">{user.id}</td>
-                        <td className="px-6 py-2.5">
-                           <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
-                                 {user.username.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="text-[13px] font-medium text-zinc-900">{user.username}</span>
-                           </div>
-                        </td>
-                        <td className="px-6 py-2.5 text-[13px] text-zinc-600">{user.personName}</td>
-                        <td className="px-6 py-2.5">
-                           <window.UI.Badge variant={user.userType === 'admin' ? 'purple' : 'neutral'} style="dot">
-                              {user.userType === 'admin' ? t.roleAdmin : t.roleUser}
-                           </window.UI.Badge>
-                        </td>
-                        <td className="px-6 py-2.5 text-center">
-                           <window.UI.Badge variant={user.status ? 'success' : 'danger'}>
-                              {user.status ? 'ACTIVE' : 'INACTIVE'}
-                           </window.UI.Badge>
-                        </td>
-                        <td className="px-6 py-2.5 text-right">
-                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <window.UI.IconButton onClick={() => handleEdit(user)} icon={Edit} />
-                              <window.UI.IconButton onClick={() => {}} icon={Trash2} color="danger" />
-                           </div>
-                        </td>
-                     </tr>
-                  ))}
-               </tbody>
-            </table>
-         </div>
-
-         {/* 3. Footer / Status Bar */}
-         <div className="h-10 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between px-6 shrink-0">
-            <span className="text-[11px] text-zinc-400">Selected: 0</span>
-            <div className="flex gap-2">
-               <button className="text-[11px] text-zinc-500 hover:text-zinc-900 font-medium">Previous</button>
-               <span className="text-[11px] text-zinc-300">|</span>
-               <button className="text-[11px] text-zinc-500 hover:text-zinc-900 font-medium">Next</button>
-            </div>
-         </div>
-
+            )}
+         />
       </div>
-    </div>
-  );
 
-  // --- Form View (Pro Overlay) ---
-  const renderForm = () => (
-    <div className="flex items-center justify-center h-full bg-zinc-100/50 p-6">
-       <window.UI.Card 
-          className="w-full max-w-2xl shadow-xl border-zinc-300" 
-          title={editingUser ? t.editUserTitle : t.newUserTitle}
-          headerAction={
-             <window.UI.IconButton icon={X} onClick={() => setViewMode('list')} />
-          }
-          footer={
-             <div className="flex justify-end gap-2">
-                <window.UI.Button variant="secondary" onClick={() => setViewMode('list')}>{t.cancel}</window.UI.Button>
-                <window.UI.Button variant="primary" icon={Save}>{t.saveChanges}</window.UI.Button>
-             </div>
-          }
-       >
-          <div className="grid grid-cols-2 gap-6">
-             {/* Left Column */}
-             <div className="space-y-4">
-                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wide border-b border-zinc-100 pb-2">Account Details</h4>
-                <window.UI.InputField 
-                   label={t.fieldUsername} 
-                   value={formData.username} 
-                   icon={User}
-                   isRtl={isRtl} 
-                />
-                <window.UI.SelectField label={t.fieldUserType} isRtl={isRtl}>
+      {/* 3. Create/Edit Modal */}
+      <Modal
+         isOpen={isModalOpen}
+         onClose={() => setIsModalOpen(false)}
+         title={editingUser ? t.editUserTitle : t.newUserTitle}
+         size="md"
+         footer={
+            <>
+               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t.cancel}</Button>
+               <Button variant="primary" icon={Save}>{t.saveChanges}</Button>
+            </>
+         }
+      >
+         <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+               <InputField 
+                  label={t.fieldUsername} 
+                  value={formData.username} 
+                  icon={User}
+                  isRtl={isRtl} 
+               />
+               <SelectField label={t.fieldUserType} isRtl={isRtl}>
                    <option value="user">{t.roleUser}</option>
                    <option value="admin">{t.roleAdmin}</option>
-                </window.UI.SelectField>
-             </div>
+               </SelectField>
+            </div>
+            
+            <div className="bg-slate-50 p-3 rounded border border-slate-200">
+               <h4 className="text-[11px] font-bold text-slate-500 uppercase mb-3 border-b border-slate-200 pb-1">Security</h4>
+               <div className="flex items-end gap-2">
+                  <InputField 
+                     label={t.fieldPassword} 
+                     type="password" 
+                     placeholder="••••••••" 
+                     icon={Lock}
+                     isRtl={isRtl} 
+                     className="flex-1"
+                  />
+                  <Button variant="secondary" icon={RefreshCw}>Gen</Button>
+               </div>
+            </div>
 
-             {/* Right Column */}
-             <div className="space-y-4">
-                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wide border-b border-zinc-100 pb-2">Security</h4>
-                <div className="bg-zinc-50 p-3 rounded-md border border-zinc-200">
-                   <window.UI.InputField 
-                      label={t.fieldPassword} 
-                      type="password" 
-                      placeholder="••••••••" 
-                      icon={Lock}
-                      isRtl={isRtl} 
-                      className="mb-2"
-                   />
-                   <window.UI.Button variant="secondary" className="w-full h-7 text-xs" icon={RefreshCw}>Generate Random</window.UI.Button>
-                </div>
-                
-                <div className="flex items-center justify-between pt-2">
-                   <span className="text-[13px] font-medium text-zinc-700">Account Status</span>
-                   <window.UI.Toggle 
-                      checked={formData.status} 
-                      onChange={() => {}} 
-                      labelActive="Active" 
-                      labelInactive="Blocked" 
-                   />
-                </div>
-             </div>
-          </div>
-       </window.UI.Card>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+               <span className="text-[12px] font-medium text-slate-700">Account Status</span>
+               <Toggle 
+                  checked={formData.status} 
+                  onChange={(val) => setFormData({...formData, status: val})} 
+                  label={formData.status ? "Active Account" : "Blocked"} 
+               />
+            </div>
+         </div>
+      </Modal>
+
     </div>
   );
-
-  return viewMode === 'list' ? renderList() : renderForm();
 };
 
 window.UserManagement = UserManagement;
