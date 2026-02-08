@@ -23,19 +23,19 @@ const THEME = {
     textMuted: 'text-slate-500',
     headerBg: 'bg-slate-50',
     rowHover: 'hover:bg-indigo-50/60',
-    rowSelected: 'bg-indigo-50 border-l-4 border-l-indigo-600', // Selected row indicator
+    rowSelected: 'bg-indigo-50 border-l-4 border-l-indigo-600', // نشانگر سطر انتخاب شده
     groupHeader: 'bg-slate-100/90 backdrop-blur-sm text-slate-700 font-bold',
   },
   metrics: {
-    radius: 'rounded-md', // Slightly sharper corners for enterprise look
-    inputHeight: 'h-8',   // Compact inputs
-    buttonHeight: 'h-8',  // Compact buttons
-    fontSize: 'text-[12px]', // Standard readable size
+    radius: 'rounded-md', 
+    inputHeight: 'h-8',   // ارتفاع فشرده برای ورودی‌ها
+    buttonHeight: 'h-8',  // ارتفاع فشرده برای دکمه‌ها
+    fontSize: 'text-[12px]', 
     headerHeight: 'h-9',
   }
 };
 
-// --- HELPER COMPONENTS ---
+// --- 1. ATOMIC COMPONENTS ---
 
 export const Button = ({ 
   children, variant = 'primary', icon: Icon, isLoading, className = '', onClick, disabled, size = 'default', title
@@ -53,9 +53,9 @@ export const Button = ({
 
   const sizes = {
     default: THEME.metrics.buttonHeight,
-    sm: 'h-6 px-2 text-[11px]', // Very compact
+    sm: 'h-6 px-2 text-[11px]', // دکمه کوچک
     icon: 'h-8 w-8 px-0',
-    iconSm: 'h-6 w-6 px-0', // Tiny icon button
+    iconSm: 'h-6 w-6 px-0', // دکمه آیکون خیلی کوچک برای داخل گرید
   };
 
   return (
@@ -153,7 +153,7 @@ export const Badge = ({ children, variant = 'neutral', className='' }) => {
   );
 };
 
-// --- FILTER SECTION ---
+// --- 2. FILTER SECTION (Collapsible) ---
 export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "فیلترهای پیشرفته" }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -187,7 +187,7 @@ export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "ف�
   );
 };
 
-// --- DATA GRID ---
+// --- 3. MODERN DATA GRID ---
 export const DataGrid = ({ 
   columns, 
   data = [], 
@@ -219,7 +219,7 @@ export const DataGrid = ({
     setSortConfig({ key, direction });
   };
 
-  // -- Processing Data --
+  // -- Data Processing (Search -> Sort -> Group) --
   const processedData = useMemo(() => {
     let result = [...data];
 
@@ -232,7 +232,7 @@ export const DataGrid = ({
       );
     }
 
-    // 2. Sorting (Column Sort)
+    // 2. Sorting
     if (sortConfig.key) {
       result.sort((a, b) => {
         const valA = a[sortConfig.key];
@@ -245,7 +245,7 @@ export const DataGrid = ({
 
     // 3. Grouping
     if (groupBy.length > 0) {
-      // Prioritize group sorting
+      // Prioritize sorting by group fields
       result.sort((a, b) => {
         for (let field of groupBy) {
           if (a[field] < b[field]) return -1;
@@ -290,11 +290,12 @@ export const DataGrid = ({
     return result;
   }, [data, searchTerm, groupBy, expandedGroups, sortConfig]);
 
-  // -- Pagination Logic --
+  // -- Pagination --
   const totalItems = processedData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  // Reset page if data length changes
-  useEffect(() => { if(currentPage > totalPages) setCurrentPage(1); }, [totalItems]);
+  
+  // Reset to page 1 if data filtered significantly
+  useEffect(() => { if(currentPage > totalPages) setCurrentPage(1); }, [totalItems, pageSize]);
   
   const paginatedData = processedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -312,7 +313,7 @@ export const DataGrid = ({
       {/* TOOLBAR */}
       <div className="px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {/* Active Groups */}
+          {/* Active Groups Chips */}
           {groupBy.map(field => (
              <span key={field} className="flex items-center gap-1 bg-white text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 text-[11px] font-bold shadow-sm">
                 <span>{columns.find(c => c.field === field)?.header || field}</span>
@@ -339,8 +340,8 @@ export const DataGrid = ({
              <Search size={12} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2' : 'left-2'}`} />
            </div>
            <div className="flex items-center gap-1 border-r border-slate-300 pr-2 mr-1">
-             <Button variant="ghost" size="iconSm" icon={Download} title="اکسل" />
-             <Button variant="ghost" size="iconSm" icon={Settings} title="تنظیمات" />
+             <Button variant="ghost" size="iconSm" icon={Download} title="خروجی اکسل" />
+             <Button variant="ghost" size="iconSm" icon={Settings} title="تنظیمات ستون‌ها" />
            </div>
         </div>
       </div>
@@ -372,7 +373,7 @@ export const DataGrid = ({
                         {sortConfig.key === col.field ? (
                            sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-indigo-600"/> : <ArrowDown size={12} className="text-indigo-600"/>
                         ) : (
-                           <div className="opacity-0 group-hover:opacity-50"><ArrowDown size={12}/></div> // Hint
+                           <div className="opacity-0 group-hover:opacity-50"><ArrowDown size={12}/></div> // Hint indicator
                         )}
                       </div>
                     )}
@@ -390,7 +391,7 @@ export const DataGrid = ({
             ) : (
               paginatedData.map((row, rowIndex) => {
                 
-                // Group Header
+                // Group Header Row
                 if (row._type === 'GROUP_HEADER') {
                   const isClosed = expandedGroups[row.key] === false;
                   return (
@@ -427,7 +428,7 @@ export const DataGrid = ({
                     <td className="px-2 py-1.5 border-r border-slate-100 text-center">
                       <input 
                         type="checkbox" 
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        className="rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                         checked={isSelected}
                         onChange={(e) => onSelectRow && onSelectRow(row.id, e.target.checked)}
                       />
@@ -446,7 +447,7 @@ export const DataGrid = ({
                     
                     {/* Actions Column */}
                     <td className="px-1 py-1 text-center sticky left-0 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5px_rgba(0,0,0,0.02)] z-10">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-1 opacity-100">
                         {actions ? actions(row) : null}
                       </div>
                     </td>
@@ -498,35 +499,112 @@ export const DataGrid = ({
   );
 };
 
-// --- Re-export TreeMenu & others to keep file complete ---
+// --- 4. TREE MENU (With py-2 spacing) ---
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+
   const toggle = (id, e) => { e.stopPropagation(); setExpanded(prev => ({ ...prev, [id]: !prev[id] })); };
   const getLabel = (item) => (typeof item.label === 'object' && item.label !== null) ? (isRtl ? item.label.fa : item.label.en) : item.label;
   const handleExpandAll = () => { const all={}; const t=(n)=>{n.forEach(x=>{if(x.children)all[x.id]=true;if(x.children)t(x.children)})}; t(items); setExpanded(all); };
-  const filter = (nodes, term) => { if(!term)return nodes; return nodes.reduce((acc,n)=>{ const l=getLabel(n)||''; const m=l.toLowerCase().includes(term.toLowerCase()); const c=n.children?filter(n.children,term):[]; if(m||c.length>0)acc.push({...n,children:c,_isMatch:m}); return acc; },[])};
-  const visible = useMemo(()=>filter(items,searchTerm),[items,searchTerm,isRtl]);
-  const render = (item,d=0) => {
-    const hasC=item.children?.length>0, isEx=searchTerm?true:expanded[item.id], label=getLabel(item);
-    if(d===0&&hasC) return <div key={item.id} className="mb-2"><div onClick={(e)=>toggle(item.id,e)} className="px-4 py-1 flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded text-[11px] font-black text-slate-500 uppercase tracking-widest">{isEx?<ChevronDown size={14}/>:(isRtl?<ChevronLeft size={14}/>:<ChevronRight size={14}/>)}<span>{label}</span><div className="h-px bg-slate-200 flex-1"/></div>{isEx&&<div>{item.children.map(c=>render(c,d+1))}</div>}</div>;
-    return <div key={item.id} className="relative"><div onClick={(e)=>hasC?toggle(item.id,e):onSelect(item.id)} className={`flex items-center gap-2 py-1 px-2 mx-2 rounded cursor-pointer ${activeId===item.id&&!hasC?'bg-indigo-50 text-indigo-700 font-bold border-r-2 border-indigo-600':'text-slate-600 hover:bg-slate-100'} text-[12px]`} style={{paddingRight:d===0?'8px':(isRtl?`${d*12+8}px`:'8px')}}>{hasC?<ChevronDown size={14} className={isEx?'':'rotate-90'}/>:<div className={`w-1.5 h-1.5 rounded-full ${activeId===item.id?'bg-indigo-600':'bg-slate-300'}`}/>}<span className="truncate">{label}</span></div>{hasC&&isEx&&<div>{item.children.map(c=>render(c,d+1))}</div>}</div>;
+  
+  const filter = (nodes, term) => { 
+    if(!term) return nodes; 
+    return nodes.reduce((acc,n)=>{ 
+      const l=getLabel(n)||''; 
+      const m=l.toLowerCase().includes(term.toLowerCase()); 
+      const c=n.children?filter(n.children,term):[]; 
+      if(m||c.length>0)acc.push({...n,children:c,_isMatch:m}); return acc; 
+    },[]);
   };
-  return <div className="flex flex-col h-full"><div className="px-3 py-2 flex flex-col gap-2 shrink-0"><div className="relative"><input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="جستجو..." className="w-full bg-slate-100 border-none rounded text-xs h-7 pr-7 outline-none"/><Search size={12} className="absolute top-2 right-2 text-slate-400"/></div><div className="flex justify-end gap-1"><button onClick={handleExpandAll} className="p-1 hover:bg-slate-200 rounded"><FolderOpen size={14}/></button><button onClick={()=>setExpanded({})} className="p-1 hover:bg-slate-200 rounded"><Folder size={14}/></button></div></div><div className="flex-1 overflow-y-auto custom-scrollbar">{visible.map(i=>render(i))}</div></div>;
+  const visible = useMemo(()=>filter(items,searchTerm),[items,searchTerm,isRtl]);
+
+  const render = (item, d=0) => {
+    const hasC=item.children?.length>0, isEx=searchTerm?true:expanded[item.id], label=getLabel(item);
+    
+    // Level 0 Headers
+    if(d===0 && hasC) {
+      return (
+        <div key={item.id} className="mb-3 mt-2">
+           <div onClick={(e)=>toggle(item.id,e)} className="px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded-lg text-[11px] font-black text-slate-500 uppercase tracking-widest transition-colors">
+              <div className="text-slate-400">{isEx ? <ChevronDown size={14}/> : (isRtl ? <ChevronLeft size={14}/> : <ChevronRight size={14}/>)}</div>
+              <span>{label}</span>
+              <div className="h-px bg-slate-200 flex-1"></div>
+           </div>
+           {isEx && <div className="flex flex-col gap-0.5">{item.children.map(c => render(c, d+1))}</div>}
+        </div>
+      );
+    }
+
+    // Tree Items (Increased padding py-2)
+    return (
+      <div key={item.id} className="relative">
+        {d > 1 && !searchTerm && <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-[19px]' : 'left-[19px]'} w-px bg-slate-200`}></div>}
+        <div onClick={(e) => { hasC ? toggle(item.id, e) : onSelect && onSelect(item.id); }} 
+             className={`flex items-center gap-2 py-2 px-2 mx-2 rounded-lg cursor-pointer transition-all select-none ${activeId === item.id && !hasC ? 'bg-indigo-50 text-indigo-700 font-bold border-r-4 border-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${d === 0 ? 'mx-4' : (isRtl ? 'mr-8 ml-2' : 'ml-8 mr-2')}`}
+             style={{ paddingRight: d === 0 ? '8px' : (isRtl ? '8px' : '8px') }}>
+          <div className="shrink-0 flex items-center justify-center w-5 h-5">
+             {hasC ? <ChevronDown size={15} className={`text-slate-400 transition-transform duration-200 ${isEx ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`} /> : <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>}
+          </div>
+          <span className="text-[13px] truncate flex-1 pt-0.5 leading-normal">{searchTerm && item._isMatch ? <mark className="bg-yellow-100 rounded px-0.5">{label}</mark> : label}</span>
+        </div>
+        {hasC && isEx && <div className="overflow-hidden flex flex-col gap-0.5">{item.children.map(c => render(c, d + 1))}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-3 py-3 flex flex-col gap-2 shrink-0 bg-white sticky top-0 z-10">
+        <div className="relative">
+          <input value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} placeholder={isRtl ? "جستجو..." : "Search..."} className={`w-full bg-slate-100 border-none rounded-lg text-xs h-9 focus:ring-2 focus:ring-indigo-100 outline-none transition-all ${isRtl ? 'pr-9 pl-2' : 'pl-9 pr-2'}`} />
+          <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-3' : 'left-3'}`}/>
+          {searchTerm && <button onClick={()=>setSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}><X size={12} /></button>}
+        </div>
+        <div className="flex justify-end gap-1 px-1">
+          <button onClick={handleExpandAll} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="باز کردن همه"><FolderOpen size={16}/></button>
+          <button onClick={()=>setExpanded({})} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="بستن همه"><Folder size={16}/></button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">{visible.length>0?visible.map(i=>render(i)):<div className="text-center text-slate-400 text-xs mt-8 italic">موردی یافت نشد</div>}</div>
+    </div>
+  );
 };
 
 export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
   if (!isOpen) return null;
   const sizes = { sm: 'max-w-sm', md: 'max-w-xl', lg: 'max-w-4xl', xl: 'max-w-6xl', full: 'max-w-[95vw] h-[90vh]' };
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"><div className={`bg-white rounded-lg shadow-2xl flex flex-col w-full ${sizes[size]} max-h-[90vh] animate-in zoom-in-95 border border-slate-200`}><div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-lg"><h3 className="font-bold text-slate-800 text-sm">{title}</h3><button onClick={onClose}><X size={18} className="text-slate-400 hover:text-red-500"/></button></div><div className="p-4 overflow-y-auto flex-1">{children}</div>{footer&&<div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 rounded-b-lg">{footer}</div>}</div></div>;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className={`bg-white rounded-lg shadow-2xl flex flex-col w-full ${sizes[size]} max-h-[90vh] animate-in zoom-in-95 border border-slate-200`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0 rounded-t-lg">
+          <h3 className="font-bold text-slate-800 text-sm">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-red-500"><X size={18} /></button>
+        </div>
+        <div className="p-4 overflow-y-auto flex-1">{children}</div>
+        {footer && <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0 rounded-b-lg">{footer}</div>}
+      </div>
+    </div>
+  );
 };
 
 export const DatePicker = ({ label, isRtl, className = '', ...props }) => (
-  <div className={`w-full ${className}`}>{label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}<div className="relative"><input type="date" {...props} className={`w-full ${THEME.colors.surface} border ${THEME.colors.border} ${THEME.metrics.radius} ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-[12px] text-slate-800 uppercase font-mono transition-all`} /></div></div>
+  <div className={`w-full ${className}`}>
+    {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+    <div className="relative">
+       <input type="date" {...props} className={`w-full ${THEME.colors.surface} border ${THEME.colors.border} ${THEME.metrics.radius} ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-[12px] text-slate-800 uppercase font-mono transition-all`} />
+    </div>
+  </div>
 );
 
 export const LOV = ({ label, placeholder, isRtl }) => (
-  <div className="w-full">{label&&<label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}<div className="flex relative"><input placeholder={placeholder} className={`flex-1 ${THEME.colors.surface} border ${THEME.colors.border} rounded-r-md border-l-0 ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 text-[12px]`}/><button className={`bg-slate-50 border ${THEME.colors.border} px-2 hover:bg-slate-100 rounded-l-md border-r-0`}><List size={14}/></button></div></div>
+  <div className="w-full">
+    {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+    <div className="flex relative">
+      <input placeholder={placeholder} className={`flex-1 ${THEME.colors.surface} border ${THEME.colors.border} rounded-r-md border-l-0 ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 text-[12px]`} />
+      <button className={`bg-slate-50 border ${THEME.colors.border} px-2 hover:bg-slate-100 rounded-l-md border-r-0`}><List size={14}/></button>
+    </div>
+  </div>
 );
 
 // --- Exports ---
