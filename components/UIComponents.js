@@ -155,11 +155,18 @@ export const Badge = ({ children, variant = 'neutral', className='' }) => {
 
 // --- NEW COMPONENTS FOR ROLES & ACCESS ---
 
-// 1. ToggleChip: دکمه‌های انتخاب چندگانه کوچک (مثل تگ‌ها)
-export const ToggleChip = ({ label, checked, onClick, icon: Icon, colorClass = "green" }) => {
+// 1. ToggleChip: آیتم‌های انتخابی ساده (بدون آیکون)
+export const ToggleChip = ({ label, checked, onClick, colorClass = "green" }) => {
   const styles = {
-    green: checked ? 'bg-green-50 border-green-500 text-green-700 ring-1 ring-green-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400',
-    indigo: checked ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400',
+    // Green Theme (Default)
+    green: checked 
+      ? 'bg-emerald-50 border-emerald-400 text-emerald-700 font-bold ring-1 ring-emerald-100 shadow-sm' 
+      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
+    
+    // Indigo Theme
+    indigo: checked 
+      ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold ring-1 ring-indigo-100 shadow-sm' 
+      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
   };
 
   const activeStyle = styles[colorClass] || styles.green;
@@ -168,17 +175,16 @@ export const ToggleChip = ({ label, checked, onClick, icon: Icon, colorClass = "
     <button
       onClick={onClick}
       className={`
-        px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1.5
-        ${activeStyle} shadow-sm
+        px-3 py-1.5 rounded-lg text-[11px] border transition-all duration-200
+        ${activeStyle} text-center min-w-[80px]
       `}
     >
-      {checked && (Icon ? <Icon size={12} className={checked ? `text-${colorClass}-600` : ''}/> : <Check size={12} />)}
       {label}
     </button>
   );
 };
 
-// 2. SelectionGrid: گرید انتخاب آیتم‌ها (مثل عملیات CRUD)
+// 2. SelectionGrid: گرید انتخاب آیتم‌ها (تغییر رنگ به جای آیکون)
 export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }) => {
   const gridCols = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 6: 'grid-cols-6' };
   
@@ -190,15 +196,14 @@ export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }
             <div 
                key={item.id} 
                className={`
-                  flex flex-col items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none text-center
-                  ${isChecked ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}
+                  flex items-center justify-center p-2 rounded-lg border transition-all duration-200 cursor-pointer select-none text-center h-10
+                  ${isChecked 
+                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold shadow-sm ring-1 ring-indigo-100' 
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}
                `}
                onClick={() => onToggle(item.id)}
             >
-               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
-                  {isChecked && <Check size={14} className="text-white"/>}
-               </div>
-               <span className={`text-[10px] font-bold ${isChecked ? 'text-indigo-700' : 'text-slate-600'}`}>{item.label}</span>
+               <span className="text-[11px]">{item.label}</span>
             </div>
          );
       })}
