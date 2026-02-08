@@ -277,13 +277,15 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
                ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'hover:bg-slate-100 text-slate-700'}
              `}
              style={{ paddingRight: isRtl ? `${depth * 16 + 8}px` : '8px', paddingLeft: isRtl ? '8px' : `${depth * 16 + 8}px` }}
-             onClick={(e) => {
-               if(hasChildren) toggleNode(item.id, e);
-               else onSelectNode(item);
-             }}
+             // UPDATE: Allow selecting the node even if it has children.
+             onClick={() => onSelectNode(item)}
            >
              {hasChildren ? (
-               <div className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10">
+               <div 
+                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10"
+                  // UPDATE: Only toggle expansion when clicking the arrow/icon
+                  onClick={(e) => toggleNode(item.id, e)}
+               >
                   <div className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`}>
                     <ChevronDown size={14} />
                   </div>
