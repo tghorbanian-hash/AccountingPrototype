@@ -1,8 +1,8 @@
 /* Filename: components/Roles.js */
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Shield, Edit, Save, Check, Lock, Layers, CheckSquare, Eye, Filter, AlertCircle,
-  FolderOpen, Trash2, Zap
+  FolderOpen, Trash2, Zap, Users, Search, UserPlus, X, UserMinus
 } from 'lucide-react';
 
 const Roles = ({ t, isRtl }) => {
@@ -17,61 +17,56 @@ const Roles = ({ t, isRtl }) => {
 
   if (!Button) return <div className="p-4 text-center">Loading UI...</div>;
 
-  // --- MOCK DATA ---
+  // --- MOCK DATA: USERS (برای شبیه‌سازی دیتابیس کاربران) ---
+  const [allUsers, setAllUsers] = useState([
+    { id: 101, username: 'admin', fullName: 'رضا قربانی', isActive: true, roleIds: [1, 4] },
+    { id: 102, username: 's.ahmadi', fullName: 'سارا احمدی', isActive: true, roleIds: [2] },
+    { id: 103, username: 'm.rad', fullName: 'محمد راد', isActive: true, roleIds: [] },
+    { id: 104, username: 'k.tehrani', fullName: 'کاوه تهرانی', isActive: false, roleIds: [1] },
+    { id: 105, username: 'z.kamali', fullName: 'زهرا کمالی', isActive: true, roleIds: [2, 3] },
+  ]);
+
+  // --- MOCK DATA: ROLES ---
   const [roles, setRoles] = useState([
     { id: 1, title: 'مدیر ارشد مالی', code: 'CFO', isActive: true, startDate: '1402/01/01', endDate: '' },
     { id: 2, title: 'حسابدار فروش', code: 'ACC_SALES', isActive: true, startDate: '1402/05/10', endDate: '1403/05/10' },
     { id: 3, title: 'حسابرس داخلی', code: 'AUDITOR', isActive: false, startDate: '1402/10/01', endDate: '' },
+    { id: 4, title: 'مدیر سیستم', code: 'ADMIN', isActive: true, startDate: '1400/01/01', endDate: '' },
   ]);
 
+  // --- STATES ---
   const [permissions, setPermissions] = useState({});
   const [selectedRows, setSelectedRows] = useState([]);
+  
+  // Role Modal States
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({ title: '', code: '', isActive: true, startDate: '', endDate: '' });
 
-  // Access Management States
+  // Access Modal States
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
   const [tempPermissions, setTempPermissions] = useState({});
-  
+
+  // ** NEW: User Assignment Modal States **
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [showUserResults, setShowUserResults] = useState(false);
+
   // --- CONFIG ---
   const AVAILABLE_ACTIONS = [
-    { id: 'create', label: 'ایجاد' },
-    { id: 'view', label: 'مشاهده' },
-    { id: 'edit', label: 'ویرایش' },
-    { id: 'delete', label: 'حذف' },
-    { id: 'print', label: 'چاپ' },
-    { id: 'approve', label: 'تایید' },
-    { id: 'export', label: 'خروجی' },
-    { id: 'share', label: 'اشتراک' },
+    { id: 'create', label: 'ایجاد' }, { id: 'view', label: 'مشاهده' }, { id: 'edit', label: 'ویرایش' }, { id: 'delete', label: 'حذف' },
+    { id: 'print', label: 'چاپ' }, { id: 'approve', label: 'تایید' }, { id: 'export', label: 'خروجی' }, { id: 'share', label: 'اشتراک' },
   ];
 
   const DATA_SCOPES = {
     'doc_list': [
-      {
-        id: 'docType',
-        label: 'نوع سند',
-        options: [
-          { value: 'opening', label: 'سند افتتاحیه' },
-          { value: 'general', label: 'سند عمومی' },
-          { value: 'closing', label: 'سند اختتامیه' },
-          { value: 'depreciation', label: 'سند استهلاک' }
-        ]
-      },
-      {
-        id: 'docStatus',
-        label: 'وضعیت سند',
-        options: [
-          { value: 'draft', label: 'پیش‌نویس / موقت' },
-          { value: 'reviewed', label: 'بررسی شده' },
-          { value: 'final', label: 'قطعی / نهایی' }
-        ]
-      }
+      { id: 'docType', label: 'نوع سند', options: [{ value: 'opening', label: 'سند افتتاحیه' }, { value: 'general', label: 'سند عمومی' }] },
+      { id: 'docStatus', label: 'وضعیت سند', options: [{ value: 'draft', label: 'پیش‌نویس' }, { value: 'final', label: 'نهایی' }] }
     ]
   };
 
-  // --- HANDLERS ---
+  // --- HANDLERS: ROLE CRUD ---
   const handleCreate = () => {
     setEditingRole(null);
     setFormData({ title: '', code: '', isActive: true, startDate: '', endDate: '' });
@@ -100,6 +95,7 @@ const Roles = ({ t, isRtl }) => {
     setIsRoleModalOpen(false);
   };
 
+  // --- HANDLERS: ACCESS MANAGEMENT ---
   const openAccessModal = (role) => {
     setEditingRole(role);
     setTempPermissions(JSON.parse(JSON.stringify(permissions[role.id] || {})));
@@ -111,8 +107,6 @@ const Roles = ({ t, isRtl }) => {
     setPermissions(prev => ({ ...prev, [editingRole.id]: tempPermissions }));
     setIsAccessModalOpen(false);
   };
-
-  // --- PERMISSION LOGIC ---
 
   const updateAction = (moduleId, actionId) => {
     setTempPermissions(prev => {
@@ -133,59 +127,33 @@ const Roles = ({ t, isRtl }) => {
     });
   };
 
-  // --- RECURSIVE BULK ACTIONS ---
-  
-  // Helper to find all children IDs recursively
   const getAllDescendantIds = (node) => {
      let ids = [node.id];
      if (node.children && node.children.length > 0) {
-        node.children.forEach(child => {
-           ids = [...ids, ...getAllDescendantIds(child)];
-        });
+        node.children.forEach(child => { ids = [...ids, ...getAllDescendantIds(child)]; });
      }
      return ids;
   };
 
   const handleBulkPermission = (mode) => {
      if (!selectedModule) return;
-     
      const targetIds = getAllDescendantIds(selectedModule);
-     const count = targetIds.length;
-
-     // Confirmation for safety
-     if (count > 1 && !confirm(`این عملیات روی ${count} آیتم زیرمجموعه اعمال می‌شود. آیا اطمینان دارید؟`)) return;
+     if (targetIds.length > 1 && !confirm(`این عملیات روی ${targetIds.length} آیتم اعمال می‌شود. ادامه می‌دهید؟`)) return;
 
      setTempPermissions(prev => {
         const next = { ...prev };
-        
         targetIds.forEach(id => {
-           if (mode === 'revoke') {
-              // Delete permissions for this module
-              delete next[id];
-           } else {
-              // Grant FULL permissions
-              const allActions = AVAILABLE_ACTIONS.map(a => a.id);
+           if (mode === 'revoke') delete next[id];
+           else {
               let allScopes = {};
-              
-              // Apply Data Scopes if any defined for this ID
-              if (DATA_SCOPES[id]) {
-                 DATA_SCOPES[id].forEach(scope => {
-                    allScopes[scope.id] = scope.options.map(o => o.value);
-                 });
-              }
-
-              next[id] = {
-                 actions: allActions,
-                 dataScopes: allScopes
-              };
+              if (DATA_SCOPES[id]) DATA_SCOPES[id].forEach(scope => { allScopes[scope.id] = scope.options.map(o => o.value); });
+              next[id] = { actions: AVAILABLE_ACTIONS.map(a => a.id), dataScopes: allScopes };
            }
         });
-        
         return next;
      });
   };
 
-  // Render node for TreeView
   const renderPermissionNode = (item) => {
     const hasAccess = tempPermissions[item.id]?.actions?.length > 0;
     return (
@@ -195,56 +163,96 @@ const Roles = ({ t, isRtl }) => {
     );
   };
 
+  // --- HANDLERS: USER ASSIGNMENT (NEW) ---
+  const openUserAssignment = (role) => {
+    setEditingRole(role);
+    setUserSearchTerm('');
+    setShowUserResults(false);
+    setIsUserModalOpen(true);
+  };
+
+  // Filter users who HAVE this role
+  const assignedUsers = useMemo(() => {
+    if (!editingRole) return [];
+    return allUsers.filter(u => u.roleIds.includes(editingRole.id));
+  }, [allUsers, editingRole]);
+
+  // Search users who DO NOT have this role
+  const searchResults = useMemo(() => {
+    if (!editingRole || !userSearchTerm) return [];
+    const term = userSearchTerm.toLowerCase();
+    return allUsers.filter(u => 
+      !u.roleIds.includes(editingRole.id) && // Not already assigned
+      (u.username.toLowerCase().includes(term) || u.fullName.toLowerCase().includes(term))
+    );
+  }, [userSearchTerm, allUsers, editingRole]);
+
+  const handleAssignUser = (userId) => {
+    setAllUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, roleIds: [...u.roleIds, editingRole.id] } : u
+    ));
+    setUserSearchTerm('');
+    setShowUserResults(false);
+  };
+
+  const handleUnassignUser = (userId) => {
+    if (confirm('آیا از سلب مسئولیت این نقش از کاربر اطمینان دارید؟')) {
+      setAllUsers(prev => prev.map(u => 
+        u.id === userId ? { ...u, roleIds: u.roleIds.filter(id => id !== editingRole.id) } : u
+      ));
+    }
+  };
+
   // --- COLUMNS ---
-  const columns = [
+  const roleColumns = [
     { header: 'شناسه', field: 'id', width: 'w-16', sortable: true },
     { header: 'عنوان نقش', field: 'title', width: 'w-48', sortable: true },
     { header: 'کد سیستمی', field: 'code', width: 'w-32', sortable: true },
     { header: 'تاریخ شروع', field: 'startDate', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs">{r.startDate || '-'}</span> },
-    { header: 'تاریخ پایان', field: 'endDate', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs text-slate-500">{r.endDate || 'نامحدود'}</span> },
     { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
 
-  const hasChildren = selectedModule?.children && selectedModule.children.length > 0;
+  const assignedUsersColumns = [
+    { header: 'شناسه', field: 'id', width: 'w-16' },
+    { header: 'نام کاربری', field: 'username', width: 'w-32' },
+    { header: 'نام و نام خانوادگی', field: 'fullName', width: 'w-48', render: (r) => <span className="font-bold text-slate-700">{r.fullName}</span> },
+    { header: 'وضعیت کاربر', field: 'isActive', width: 'w-24', render: (r) => <div className="flex justify-center"><Toggle checked={r.isActive} disabled /></div> },
+  ];
 
   return (
     <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       
-      {/* 1. HEADER */}
+      {/* HEADER */}
       <div className="flex items-center justify-between mb-4 shrink-0">
          <div>
             <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-               <Shield className="text-indigo-600" size={24}/>
-               مدیریت نقش‌ها و دسترسی‌ها
+               <Shield className="text-indigo-600" size={24}/> مدیریت نقش‌ها
             </h1>
-            <p className="text-slate-500 text-xs mt-1">تعریف نقش‌های سازمانی و تعیین سطوح دسترسی ۳ لایه</p>
          </div>
       </div>
 
-      {/* 2. GRID */}
-      <FilterSection title="جستجوی نقش‌ها" onSearch={() => {}} onClear={() => {}} isRtl={isRtl}>
+      {/* GRID */}
+      <FilterSection title="جستجو" onSearch={() => {}} onClear={() => {}} isRtl={isRtl}>
          <InputField label="عنوان نقش" placeholder="جستجو..." isRtl={isRtl} />
-         <InputField label="کد نقش" placeholder="جستجو..." isRtl={isRtl} />
-         <SelectField label="وضعیت" isRtl={isRtl}><option>همه</option></SelectField>
       </FilterSection>
 
       <div className="flex-1 min-h-0">
          <DataGrid 
-            columns={columns} data={roles} isRtl={isRtl}
-            selectedIds={selectedRows}
-            onSelectAll={(c) => setSelectedRows(c ? roles.map(r => r.id) : [])}
+            columns={roleColumns} data={roles} isRtl={isRtl}
+            selectedIds={selectedRows} onSelectAll={(c) => setSelectedRows(c ? roles.map(r => r.id) : [])}
             onSelectRow={(id, c) => setSelectedRows(p => c ? [...p, id] : p.filter(r => r !== id))}
             onCreate={handleCreate} onDelete={handleDelete} onDoubleClick={handleEdit}
             actions={(row) => (
                <>
-                 <Button variant="ghost" size="iconSm" icon={Edit} className="text-blue-600 hover:bg-blue-50" onClick={() => handleEdit(row)} title="ویرایش" />
-                 <Button variant="ghost" size="iconSm" icon={Lock} className="text-amber-600 hover:bg-amber-50" onClick={() => openAccessModal(row)} title="دسترسی‌ها" />
+                 <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleEdit(row)} title="ویرایش" />
+                 <Button variant="ghost" size="iconSm" icon={Users} className="text-indigo-600" onClick={() => openUserAssignment(row)} title="کاربران نقش" />
+                 <Button variant="ghost" size="iconSm" icon={Lock} className="text-amber-600" onClick={() => openAccessModal(row)} title="دسترسی‌ها" />
                </>
             )}
          />
       </div>
 
-      {/* 3. ROLE MODAL */}
+      {/* ROLE MODAL */}
       <Modal isOpen={isRoleModalOpen} onClose={() => setIsRoleModalOpen(false)} title={editingRole ? "ویرایش نقش" : "نقش جدید"} size="md"
          footer={<><Button variant="secondary" onClick={() => setIsRoleModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveRole}>ذخیره</Button></>}>
          <div className="space-y-4">
@@ -257,104 +265,102 @@ const Roles = ({ t, isRtl }) => {
                <DatePicker label="تاریخ پایان" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} />
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
-               <span className="text-[13px] font-bold text-slate-700">وضعیت</span>
+               <span className="text-[13px] font-bold text-slate-700">وضعیت نقش</span>
                <Toggle checked={formData.isActive} onChange={(val) => setFormData({...formData, isActive: val})} label={formData.isActive ? "فعال" : "غیرفعال"} />
             </div>
          </div>
       </Modal>
 
-      {/* 4. ACCESS MODAL */}
+      {/* USER ASSIGNMENT MODAL (NEW) */}
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={`کاربران دارای نقش: ${editingRole?.title}`} size="lg"
+         footer={<Button variant="primary" onClick={() => setIsUserModalOpen(false)}>بستن</Button>}>
+         <div className="flex flex-col h-[500px]">
+            
+            {/* ADD USER SEARCH BAR */}
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-3 relative z-[60]">
+               <label className="text-xs font-bold text-indigo-800 mb-2 block flex items-center gap-2">
+                  <UserPlus size={14}/> افزودن کاربر جدید به این نقش
+               </label>
+               <div className="relative">
+                  <input 
+                     value={userSearchTerm}
+                     onChange={(e) => { setUserSearchTerm(e.target.value); setShowUserResults(true); }}
+                     placeholder="جستجوی نام کاربری یا نام شخص..."
+                     className="w-full h-9 bg-white border border-indigo-200 rounded text-xs pr-9 pl-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+                  />
+                  <Search size={16} className="absolute top-2.5 right-2.5 text-indigo-400"/>
+                  
+                  {showUserResults && userSearchTerm && (
+                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[100]">
+                        {searchResults.length > 0 ? searchResults.map(user => (
+                           <div key={user.id} onClick={() => handleAssignUser(user.id)} className="p-2 hover:bg-indigo-50 cursor-pointer flex items-center justify-between border-b border-slate-50 last:border-0 group transition-colors">
+                              <div className="flex flex-col">
+                                 <span className="text-xs font-bold text-slate-700">{user.fullName}</span>
+                                 <span className="text-[10px] text-slate-400 font-mono">@{user.username}</span>
+                              </div>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 bg-indigo-100 p-1 rounded">
+                                 <Plus size={14}/>
+                              </div>
+                           </div>
+                        )) : (
+                           <div className="p-3 text-center text-xs text-slate-400">کاربری یافت نشد یا قبلاً اضافه شده است.</div>
+                        )}
+                     </div>
+                  )}
+                  {showUserResults && userSearchTerm && <div className="fixed inset-0 z-[-1]" onClick={() => setShowUserResults(false)}></div>}
+               </div>
+            </div>
+
+            {/* ASSIGNED USERS GRID */}
+            <div className="flex-1 overflow-hidden border border-slate-200 rounded-lg bg-white relative z-0">
+               <DataGrid 
+                  columns={assignedUsersColumns}
+                  data={assignedUsers}
+                  isRtl={isRtl}
+                  actions={(row) => (
+                     <Button variant="ghost" size="iconSm" icon={UserMinus} className="text-red-500 hover:bg-red-50" onClick={() => handleUnassignUser(row.id)} title="حذف نقش از کاربر" />
+                  )}
+               />
+            </div>
+         </div>
+      </Modal>
+
+      {/* ACCESS MODAL */}
       <Modal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} title={`دسترسی‌های: ${editingRole?.title}`} size="xl"
          footer={<><Button variant="secondary" onClick={() => setIsAccessModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveAccess}>اعمال</Button></>}>
          <div className="flex h-[550px] border border-slate-200 rounded-lg overflow-hidden">
             <div className="w-1/3 border-l border-slate-200 bg-slate-50 flex flex-col p-2">
-               <div className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2"><Layers size={14} className="text-indigo-600"/>لایه ۱: انتخاب فرم</div>
-               <TreeView 
-                 data={MENU_DATA} 
-                 selectedNodeId={selectedModule?.id} 
-                 onSelectNode={setSelectedModule} 
-                 renderNodeContent={renderPermissionNode} 
-                 isRtl={isRtl} 
-               />
+               <TreeView data={MENU_DATA} selectedNodeId={selectedModule?.id} onSelectNode={setSelectedModule} renderNodeContent={renderPermissionNode} isRtl={isRtl} />
             </div>
-
             <div className="w-2/3 bg-white flex flex-col">
                {selectedModule ? (
                   <>
-                     <div className="p-4 border-b border-slate-100 bg-white flex items-center justify-between">
-                        <div>
-                           <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                              {hasChildren ? <FolderOpen size={16} className="text-indigo-500"/> : <CheckSquare size={16} className="text-indigo-500"/>}
-                              {selectedModule.label[isRtl ? 'fa' : 'en']}
-                           </h3>
-                           <p className="text-[10px] text-slate-400 mt-0.5 mr-6">{hasChildren ? 'این آیتم دارای زیرمجموعه است' : `شناسه: ${selectedModule.id}`}</p>
-                        </div>
-                        {/* BULK ACTIONS TOOLBAR */}
-                        <div className="flex items-center gap-2">
-                           <Button variant="outline" size="sm" icon={Trash2} onClick={() => handleBulkPermission('revoke')} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100">حذف تمام دسترسی‌ها</Button>
-                           <Button variant="success" size="sm" icon={Zap} onClick={() => handleBulkPermission('grant')}>اعطای دسترسی کامل</Button>
+                     <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-sm">{selectedModule.label[isRtl ? 'fa' : 'en']}</h3>
+                        <div className="flex gap-1">
+                           <Button variant="outline" size="sm" icon={Trash2} onClick={() => handleBulkPermission('revoke')}>حذف همه</Button>
+                           <Button variant="success" size="sm" icon={Zap} onClick={() => handleBulkPermission('grant')}>دسترسی کامل</Button>
                         </div>
                      </div>
-
-                     {hasChildren ? (
-                        <div className="flex flex-col items-center justify-center flex-1 text-slate-400 bg-slate-50/30">
-                           <Layers size={48} className="mb-4 opacity-10 text-indigo-500"/>
-                           <p className="font-bold text-slate-500 text-sm">شما یک سرشاخه را انتخاب کرده‌اید</p>
-                           <p className="text-xs mt-2 max-w-xs text-center">
-                              برای تنظیم دسترسی تکی، روی زیرمجموعه‌ها در درخت کلیک کنید. 
-                              <br/>
-                              یا از دکمه‌های بالا برای <span className="font-bold text-slate-700">اعمال گروهی</span> روی تمام فرزندان استفاده کنید.
-                           </p>
+                     <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                        <div>
+                           <div className="text-[11px] font-bold text-slate-500 uppercase mb-2">عملیات</div>
+                           <SelectionGrid items={AVAILABLE_ACTIONS} selectedIds={tempPermissions[selectedModule.id]?.actions || []} onToggle={(id) => updateAction(selectedModule.id, id)} />
                         </div>
-                     ) : (
-                        <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
-                           <div>
-                              <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
-                                 <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">2</span>لایه ۲: عملیات
-                              </div>
-                              <SelectionGrid 
-                                 items={AVAILABLE_ACTIONS} 
-                                 selectedIds={tempPermissions[selectedModule.id]?.actions || []} 
-                                 onToggle={(id) => updateAction(selectedModule.id, id)}
-                              />
+                        {DATA_SCOPES[selectedModule.id] && (
+                           <div className="pt-4 border-t border-slate-100">
+                              <div className="text-[11px] font-bold text-slate-500 uppercase mb-2">داده‌ها</div>
+                              {DATA_SCOPES[selectedModule.id].map(scope => (
+                                 <div key={scope.id} className="mb-3">
+                                    <span className="text-xs font-bold block mb-1">{scope.label}:</span>
+                                    <div className="flex flex-wrap gap-2">{scope.options.map(o => <ToggleChip key={o.value} label={o.label} checked={tempPermissions[selectedModule.id]?.dataScopes?.[scope.id]?.includes(o.value)} onClick={() => updateScope(selectedModule.id, scope.id, o.value)} />)}</div>
+                                 </div>
+                              ))}
                            </div>
-
-                           {DATA_SCOPES[selectedModule.id] ? (
-                              <div className="animate-in slide-in-from-bottom-2 duration-300">
-                                 <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2 border-t border-slate-100 pt-6">
-                                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">3</span>لایه ۳: فیلتر داده
-                                 </div>
-                                 <div className="space-y-4">
-                                    {DATA_SCOPES[selectedModule.id].map(scope => (
-                                       <div key={scope.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                          <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2"><Filter size={14}/>{scope.label}:</h4>
-                                          <div className="flex flex-wrap gap-2">
-                                             {scope.options.map(opt => (
-                                                <ToggleChip 
-                                                   key={opt.value} 
-                                                   label={opt.label} 
-                                                   checked={tempPermissions[selectedModule.id]?.dataScopes?.[scope.id]?.includes(opt.value)} 
-                                                   onClick={() => updateScope(selectedModule.id, scope.id, opt.value)}
-                                                />
-                                             ))}
-                                          </div>
-                                       </div>
-                                    ))}
-                                 </div>
-                              </div>
-                           ) : (
-                              <div className="mt-6 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center opacity-70">
-                                 <Shield size={24} className="mx-auto mb-2 text-slate-300"/><span className="text-xs text-slate-400">بدون محدودیت لایه ۳</span>
-                              </div>
-                           )}
-                        </div>
-                     )}
+                        )}
+                     </div>
                   </>
-               ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-300 select-none">
-                     <Eye size={48} className="opacity-50 mb-4"/><p className="text-sm font-bold text-slate-400">یک آیتم انتخاب کنید</p>
-                  </div>
-               )}
+               ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">یک آیتم انتخاب کنید</div>}
             </div>
          </div>
       </Modal>
