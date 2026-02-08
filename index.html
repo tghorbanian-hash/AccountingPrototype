@@ -6,6 +6,7 @@
     <title>Financial Accounting System (Enterprise Edition)</title>
     
     <script>
+        // Redirect logic for GitHub Pages SPA
         (function() {
             var path = window.location.pathname;
             if (!path.endsWith('/') && path.split('/').pop().indexOf('.') === -1) {
@@ -35,12 +36,12 @@
     <style>
         #root { height: 100vh; }
         
-        /* ERP Specific Styles - استایل‌های مخصوص سیستم سازمانی */
+        /* ERP Specific Styles */
         body { 
-            font-size: 13px; /* فونت استاندارد سیستم‌های مالی */
+            font-size: 13px; 
         }
         
-        /* Custom Scrollbar for Enterprise Feel - اسکرول‌بار حرفه‌ای */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -53,8 +54,8 @@
     <script type="text/babel" data-type="module" src="./app-data.js"></script>
 
     <script type="text/babel" data-type="module" src="./components/UIComponents.js"></script>
+
     <script type="text/babel" data-type="module" src="./components/ComponentShowcase.js"></script>
-    
     <script type="text/babel" data-type="module" src="./components/KpiDashboard.js"></script>
     <script type="text/babel" data-type="module" src="./components/UserManagement.js"></script>
     <script type="text/babel" data-type="module" src="./components/GeneralWorkspace.js"></script>
