@@ -8,27 +8,22 @@ import {
 } from 'lucide-react';
 
 const App = () => {
-  // --- STATE ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [lang, setLang] = useState('fa'); 
-  const [activeModuleId, setActiveModuleId] = useState('accounting'); // ماژول پیش‌فرض
-  const [activeId, setActiveId] = useState('gl_docs'); // صفحه پیش‌فرض
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
-  // Auth States
-  const [authView, setAuthView] = useState('login');
-  const [loginMethod, setLoginMethod] = useState('standard');
-  const [loginData, setLoginData] = useState({ identifier: '', password: '' });
-  const [error, setError] = useState('');
-
-  // --- دریافت داده‌ها به صورت پویا ---
-  // نکته مهم: دریافت این موارد داخل بدنه کامپوننت باعث می‌شود 
-  // اگر فایل‌ها کمی دیرتر لود شوند، باز هم برنامه کار کند.
   const MENU_DATA = window.MENU_DATA || [];
   const translations = window.translations || { en: {}, fa: {} };
   const UI = window.UI || {};
   const { TreeMenu } = UI;
   
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [lang, setLang] = useState('fa'); 
+  const [activeModuleId, setActiveModuleId] = useState('accounting');
+  const [activeId, setActiveId] = useState('gl_docs');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const [authView, setAuthView] = useState('login');
+  const [loginMethod, setLoginMethod] = useState('standard');
+  const [loginData, setLoginData] = useState({ identifier: '', password: '' });
+  const [error, setError] = useState('');
+
   const t = translations[lang] || {};
   const isRtl = lang === 'fa';
 
@@ -47,39 +42,16 @@ const App = () => {
 
   const currentModule = useMemo(() => {
     return MENU_DATA.find(m => m.id === activeModuleId) || MENU_DATA[0] || {};
-  }, [activeModuleId, MENU_DATA]); // MENU_DATA را به وابستگی‌ها اضافه کردیم
+  }, [activeModuleId, MENU_DATA]);
   
-  // --- تابع رندر محتوا (اصلاح شده) ---
   const renderContent = () => {
-    // نکته کلیدی: کامپوننت‌ها را دقیقا همین‌جا از window می‌گیریم
-    // تا مطمئن شویم حتما لود شده‌اند.
-    const { 
-      KpiDashboard, 
-      UserManagement, 
-      GeneralWorkspace, 
-      ComponentShowcase,
-      LoginPage 
-    } = window;
+    const { KpiDashboard, UserManagement, GeneralWorkspace, ComponentShowcase, LoginPage } = window;
 
-    // مسیریابی بر اساس activeId
-    if (activeId === 'workspace_gen') {
-      return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center"><span className="loading">Loading Workspace...</span></div>;
-    }
-    
-    if (activeId === 'users_list') {
-      // اگر UserManagement لود نشده باشد پیام مناسب می‌دهد
-      return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center text-red-500 font-bold">Error: UserManagement Module Not Loaded via script tag.</div>;
-    }
-    
-    if (activeId === 'dashboards_gen') {
-      return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center"><span className="loading">Loading Dashboard...</span></div>;
-    }
+    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
+    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
 
-    if (activeId === 'ui_showcase') {
-       return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div className="p-10 text-center">Loading Showcase...</div>;
-    }
-
-    // صفحه پیش‌فرض یا خالی
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
           <div className="p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200">
@@ -93,37 +65,25 @@ const App = () => {
     );
   };
 
-  // --- 1. LOGIN SCREEN ---
-  const { LoginPage } = window; // دریافت ایمن برای لاگین
+  const { LoginPage } = window;
   if (!isLoggedIn) {
-    if (!LoginPage) return <div className="p-10 text-center text-slate-500">Loading Login Module...</div>;
-    return (
-      <LoginPage 
-        t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView}
-        loginMethod={loginMethod} setLoginMethod={setLoginMethod}
-        loginData={loginData} setLoginData={setLoginData}
-        recoveryData={{otp: ''}} setRecoveryData={() => {}}
-        error={error} handleLogin={handleLogin} toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')}
-        handleVerifyOtp={() => {}} handleUpdatePassword={() => {}}
-      />
-    );
+    if (!LoginPage) return <div className="p-10 text-center">Loading...</div>;
+    return <LoginPage t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView} loginMethod={loginMethod} setLoginMethod={setLoginMethod} loginData={loginData} setLoginData={setLoginData} recoveryData={{otp: ''}} setRecoveryData={() => {}} error={error} handleLogin={handleLogin} toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')} handleVerifyOtp={() => {}} handleUpdatePassword={() => {}} />;
   }
 
-  // --- 2. MAIN APP ---
   return (
     <div className={`min-h-screen bg-slate-50 flex ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap'); 
-        .font-vazir { font-family: 'Vazirmatn', sans-serif; }
+        /* Removed duplicate font import since it is now in index.html */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
       
-      {/* SIDEBAR - Module Rail */}
-      <aside className={`bg-white w-[72px] flex flex-col items-center py-4 shrink-0 z-40 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-sm relative`}>
-        <div className="bg-indigo-700 w-10 h-10 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
+      {/* SIDEBAR - Module Rail (FIX: Added overflow-x-hidden and removed unnecessary scrolls) */}
+      <aside className={`bg-white w-[72px] flex flex-col items-center py-4 shrink-0 z-40 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-sm relative overflow-x-hidden`}>
+        <div className="bg-indigo-700 w-10 h-10 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0">
           <BarChart3 size={20} strokeWidth={2.5} />
         </div>
         
@@ -134,7 +94,7 @@ const App = () => {
               <button 
                 key={mod.id} onClick={() => setActiveModuleId(mod.id)}
                 className={`
-                  relative w-10 h-10 rounded-xl transition-all flex items-center justify-center group
+                  relative w-10 h-10 rounded-xl transition-all flex items-center justify-center shrink-0 group
                   ${isActive 
                     ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' 
                     : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}
@@ -159,7 +119,7 @@ const App = () => {
           })}
         </div>
         
-        <div className="mt-auto flex flex-col gap-3 items-center pb-2">
+        <div className="mt-auto flex flex-col gap-3 items-center pb-2 shrink-0">
             <button onClick={() => setLang(l => l === 'en' ? 'fa' : 'en')} className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors">
                  <Languages size={20} />
             </button>
@@ -182,8 +142,8 @@ const App = () => {
            </h2>
         </div>
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-          {/* استفاده ایمن از TreeMenu */}
+        <div className="flex-1 overflow-hidden">
+          {/* FIX: TreeMenu now has its own internal scroll, removing double scrollbars */}
           {TreeMenu ? (
             <TreeMenu 
               items={currentModule.children || []} 
@@ -196,7 +156,7 @@ const App = () => {
           )}
         </div>
         
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
           <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-slate-100">
              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-100 to-blue-50 border border-white shadow-sm flex items-center justify-center text-indigo-700 font-black text-xs">
                 AD
