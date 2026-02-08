@@ -45,10 +45,13 @@ const App = () => {
   }, [activeModuleId, MENU_DATA]);
   
   const renderContent = () => {
-    const { KpiDashboard, UserManagement, GeneralWorkspace, ComponentShowcase, LoginPage } = window;
+    // 1. اضافه کردن Roles به لیست کامپوننت‌های دریافتی از window
+    const { KpiDashboard, UserManagement, GeneralWorkspace, ComponentShowcase, LoginPage, Roles } = window;
 
     if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
     if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
+    // 2. اضافه کردن شرط نمایش صفحه نقش‌ها
+    if (activeId === 'roles') return Roles ? <Roles t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Roles Component Not Loaded</div>;
     if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
     if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
 
