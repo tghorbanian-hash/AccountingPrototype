@@ -36,6 +36,7 @@ const THEME = {
 export const Button = ({ 
   children, variant = 'primary', icon: Icon, isLoading, className = '', onClick, disabled, size = 'default' 
 }) => {
+  // FIX: Removed leading-none to prevent text clipping
   const baseStyle = `flex items-center justify-center gap-1.5 px-3 ${THEME.metrics.radius} font-medium text-[12px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap active:scale-[0.98]`;
   const variants = {
     primary: `${THEME.colors.primary} shadow-sm`,
@@ -172,7 +173,7 @@ export const DataGrid = ({ columns, data = [], actions, onSelectAll, onSelectRow
   );
 };
 
-// --- IMPROVED TREE MENU WITH SEARCH ---
+// --- IMPROVED TREE MENU ---
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
   const [expanded, setExpanded] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,7 +224,6 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     }
 
     // --- Interactive Items ---
-    // FIX: Removed 'leading-none' to prevent text clipping in Persian
     return (
       <div key={item.id} className="relative">
         {depth > 1 && !searchTerm && (
@@ -249,8 +249,8 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
              )}
           </div>
           
-          {/* FIX: Use 'leading-normal' or 'leading-snug' instead of 'leading-none' */}
-          <span className="text-[13px] truncate flex-1 leading-snug pt-0.5">
+          {/* FIX: Removed 'leading-none', added 'pt-0.5' for visual alignment */}
+          <span className="text-[13px] truncate flex-1 leading-normal pt-0.5">
             {searchTerm && item._isMatch ? <mark className="bg-yellow-100 rounded px-0.5 text-slate-900">{label}</mark> : label}
           </span>
         </div>
