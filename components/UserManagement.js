@@ -1,9 +1,9 @@
 /* Filename: components/UserManagement.js */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Users, Search, Plus, Edit, Trash2, Key, Shield, 
   Check, X, RefreshCw, Briefcase, ChevronLeft, 
-  Lock, FileText, Filter, CheckSquare, Zap, UserPlus, UserMinus
+  Lock, FileText, Filter, CheckSquare, Zap, UserPlus, UserMinus, ChevronDown
 } from 'lucide-react';
 
 const UserManagement = ({ t, isRtl }) => {
@@ -15,6 +15,89 @@ const UserManagement = ({ t, isRtl }) => {
   const MENU_DATA = window.MENU_DATA || [];
 
   if (!Button) return <div className="p-4">Loading UI...</div>;
+
+  // --- INTERNAL COMPONENT: MULTI-SELECT WITH SEARCH ---
+  const MultiSelect = ({ options, value = [], onChange, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (containerRef.current && !containerRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt => 
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const toggleOption = (id) => {
+      const newValue = value.includes(id) 
+        ? value.filter(v => v !== id) 
+        : [...value, id];
+      onChange(newValue);
+    };
+
+    const removeTag = (e, id) => {
+      e.stopPropagation();
+      onChange(value.filter(v => v !== id));
+    };
+
+    return (
+      <div className="relative" ref={containerRef}>
+        <div 
+          className="min-h-[32px] bg-white border border-slate-200 rounded-md flex flex-wrap items-center gap-1 p-1 cursor-pointer focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-100 transition-all"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {value.length === 0 && <span className="text-slate-400 text-[11px] px-1 select-none">{placeholder}</span>}
+          {value.map(id => {
+            const opt = options.find(o => o.id === id);
+            return (
+              <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1">
+                {opt?.label}
+                <span onClick={(e) => removeTag(e, id)} className="hover:text-red-500 rounded-full"><X size={10}/></span>
+              </span>
+            );
+          })}
+          <div className="ml-auto px-1 text-slate-400">
+            <ChevronDown size={14}/>
+          </div>
+        </div>
+
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+            <div className="p-2 border-b border-slate-50 sticky top-0 bg-white">
+              <input 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="جستجو..."
+                className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 outline-none focus:border-indigo-400"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            {filteredOptions.length > 0 ? filteredOptions.map(opt => (
+              <div 
+                key={opt.id} 
+                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-slate-50 flex items-center justify-between ${value.includes(opt.id) ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'}`}
+                onClick={() => toggleOption(opt.id)}
+              >
+                {opt.label}
+                {value.includes(opt.id) && <Check size={12}/>}
+              </div>
+            )) : (
+              <div className="p-2 text-center text-slate-400 text-[10px]">موردی یافت نشد</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // --- HELPER: FLATTEN MENU FOR SEARCH ---
   const getAllForms = () => {
@@ -48,27 +131,30 @@ const UserManagement = ({ t, isRtl }) => {
     { id: 4, title: 'مدیر سیستم', code: 'ADMIN' },
   ];
 
-  // MOCK PERMISSIONS FOR ROLES (To simulate auto-populate)
+  // MOCK PERMISSIONS FOR ROLES (Using Strings/Numbers consistently)
+  // Assuming form IDs match what's in MENU_DATA (e.g., 'gl_docs', 'inv_list')
   const MOCK_ROLE_PERMISSIONS = {
     1: [ // CFO
        { formId: 'gl_docs', actions: ['view', 'approve'], dataScopes: {} },
        { formId: 'rpt_balance', actions: ['view', 'print'], dataScopes: {} }
     ],
     2: [ // SALES
-       { formId: 'gl_docs', actions: ['create', 'view'], dataScopes: {} }, // Overlap with CFO on gl_docs
+       { formId: 'gl_docs', actions: ['create', 'view'], dataScopes: {} },
        { formId: 'inv_list', actions: ['create', 'view'], dataScopes: {} }
     ]
   };
 
   const [users, setUsers] = useState([
-    { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', isActive: true, lastLogin: '1402/11/15' },
-    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', isActive: true, lastLogin: '1402/11/10' },
+    { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', roleIds: [1, 4], isActive: true, lastLogin: '1402/11/15' },
+    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', roleIds: [2], isActive: true, lastLogin: '1402/11/10' },
   ]);
 
   // --- STATES ---
   const [selectedRows, setSelectedRows] = useState([]);
-  const [filterValues, setFilterValues] = useState({ username: '', userType: '', isActive: 'all' });
-  const [appliedFilters, setAppliedFilters] = useState({ username: '', userType: '', isActive: 'all' });
+  
+  // Filter States
+  const [filterValues, setFilterValues] = useState({ username: '', roleIds: [], isActive: 'all' });
+  const [appliedFilters, setAppliedFilters] = useState({ username: '', roleIds: [], isActive: 'all' });
 
   // Create/Edit States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -78,16 +164,19 @@ const UserManagement = ({ t, isRtl }) => {
   // Permissions Modal States
   const [isPermModalOpen, setIsPermModalOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
-  const [assignedRoles, setAssignedRoles] = useState([]); // IDs of roles assigned to user
-  const [directPermissions, setDirectPermissions] = useState([]); // Array of { formId, actions, ... }
+  const [assignedRoles, setAssignedRoles] = useState([]); 
+  const [directPermissions, setDirectPermissions] = useState([]); 
   const [selectedPermDetail, setSelectedPermDetail] = useState(null);
   
   // Search Form State (in Permission Modal)
   const [formSearchTerm, setFormSearchTerm] = useState('');
   const [showFormResults, setShowFormResults] = useState(false);
+  
+  // Search Role State (in Permission Modal)
+  const [roleSearchTerm, setRoleSearchTerm] = useState('');
+  const [isRoleSearchOpen, setIsRoleSearchOpen] = useState(false);
 
   // --- LOGIC: MERGE PERMISSIONS ---
-  // This calculates the effective permissions grid based on Roles + Direct Access
   const effectivePermissions = useMemo(() => {
     const map = new Map();
 
@@ -98,23 +187,23 @@ const UserManagement = ({ t, isRtl }) => {
       
       rolePerms.forEach(p => {
         const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
-        if (!formInfo) return;
+        // Important: Ensure we only list forms that actually exist in system
+        if (!formInfo) return; 
 
         if (!map.has(p.formId)) {
           map.set(p.formId, {
             id: p.formId,
             path: formInfo.fullPath,
-            sources: [{ type: 'role', label: roleInfo.title }],
-            roleActions: p.actions, // Keep separate to show read-only
+            sources: [{ type: 'role', label: roleInfo?.title }],
+            roleActions: p.actions, 
             roleScopes: p.dataScopes,
             directActions: [],
             directScopes: {}
           });
         } else {
-          // Overlap! Add source
           const item = map.get(p.formId);
-          item.sources.push({ type: 'role', label: roleInfo.title });
-          // In a real app, you might merge actions here for display.
+          item.sources.push({ type: 'role', label: roleInfo?.title });
+          // Merge logic for actions if needed, for now we just list sources
         }
       });
     });
@@ -135,7 +224,6 @@ const UserManagement = ({ t, isRtl }) => {
           directScopes: p.dataScopes || {}
         });
       } else {
-        // Direct access on top of Role
         const item = map.get(p.formId);
         item.sources.push({ type: 'direct', label: 'مستقیم' });
         item.directActions = p.actions || [];
@@ -168,7 +256,7 @@ const UserManagement = ({ t, isRtl }) => {
     if (editingUser) {
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...userFormData, id: u.id } : u));
     } else {
-      setUsers(prev => [...prev, { id: Date.now(), ...userFormData, lastLogin: '-' }]);
+      setUsers(prev => [...prev, { id: Date.now(), ...userFormData, lastLogin: '-', roleIds: [] }]);
     }
     setIsEditModalOpen(false);
   };
@@ -182,20 +270,20 @@ const UserManagement = ({ t, isRtl }) => {
   // --- HANDLERS: PERMISSIONS ---
   const handleOpenPermissions = (user) => {
     setViewingUser(user);
-    // Initialize mock state for this user
-    setAssignedRoles([1, 2]); // Mock: User has CFO(1) and SALES(2) roles
+    setAssignedRoles(user.roleIds || []);
     setDirectPermissions([]); 
     setSelectedPermDetail(null);
     setFormSearchTerm('');
+    setRoleSearchTerm('');
     setIsPermModalOpen(true);
   };
 
-  const handleAddRole = (e) => {
-    const roleId = Number(e.target.value);
+  const handleAddRole = (roleId) => {
     if (roleId && !assignedRoles.includes(roleId)) {
       setAssignedRoles(prev => [...prev, roleId]);
     }
-    e.target.value = ''; // Reset select
+    setIsRoleSearchOpen(false);
+    setRoleSearchTerm('');
   };
 
   const handleRemoveRole = (roleId) => {
@@ -203,57 +291,68 @@ const UserManagement = ({ t, isRtl }) => {
   };
 
   const handleAddDirectForm = (form) => {
-    // Check if already has DIRECT access (Role access doesn't prevent adding direct override)
     const exists = directPermissions.find(p => p.formId === form.id);
-    if (exists) return alert('این فرم قبلاً به لیست دسترسی‌های مستقیم اضافه شده است.');
+    if (exists) {
+        alert('این فرم قبلاً به لیست دسترسی‌های مستقیم اضافه شده است.');
+        return;
+    }
 
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
     
-    // Auto select for editing
-    setTimeout(() => {
-        // Need to find the newly added item in effectivePermissions
-        // But effectivePermissions is derived. We can manually construct a mock item to set selected
-        // Or wait for effect. Simple way: user sees it added, then clicks it.
-    }, 100);
+    // Hint to user
+    // In a real app we might auto-select the new row.
   };
 
   const handleUpdateDirectPermission = (formId, type, key, value) => {
-    // Type: 'action' or 'scope'
-    setDirectPermissions(prev => prev.map(p => {
-       if (p.formId !== formId) return p;
-       
-       if (type === 'action') {
-          const has = p.actions?.includes(key);
-          return { 
-             ...p, 
-             actions: has ? p.actions.filter(a => a !== key) : [...(p.actions || []), key] 
-          };
-       } else if (type === 'scope') { // scope
-          const currentScopes = p.dataScopes?.[key] || [];
-          const has = currentScopes.includes(value);
-          const newValues = has ? currentScopes.filter(v => v !== value) : [...currentScopes, value];
-          return {
-             ...p,
-             dataScopes: { ...p.dataScopes, [key]: newValues }
-          };
-       }
-       return p;
-    }));
+    setDirectPermissions(prev => {
+        // If this form is not in directPermissions yet (because it came from Role source only), we must add it first
+        const existingDirect = prev.find(p => p.formId === formId);
+        
+        let targetEntry;
+        if (!existingDirect) {
+            // Initialize with empty actions if it was only a role permission before
+            targetEntry = { formId: formId, actions: [], dataScopes: {} };
+        } else {
+            targetEntry = { ...existingDirect };
+        }
+
+        if (type === 'action') {
+            const has = targetEntry.actions.includes(key);
+            targetEntry.actions = has ? targetEntry.actions.filter(a => a !== key) : [...targetEntry.actions, key];
+        } else if (type === 'scope') {
+            const currentScopes = targetEntry.dataScopes[key] || [];
+            const has = currentScopes.includes(value);
+            const newValues = has ? currentScopes.filter(v => v !== value) : [...currentScopes, value];
+            targetEntry.dataScopes = { ...targetEntry.dataScopes, [key]: newValues };
+        }
+
+        // Reconstruct array
+        if (!existingDirect) {
+            return [...prev, targetEntry];
+        } else {
+            return prev.map(p => p.formId === formId ? targetEntry : p);
+        }
+    });
   };
 
-  // --- RENDER HELPERS ---
-  const getPartyName = (id) => {
-    const p = MOCK_PARTIES.find(p => p.id === Number(id));
-    return p ? `${p.name} (${p.code})` : 'نامشخص';
-  };
-
-  // Filtered User List
+  // --- FILTER LOGIC ---
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchName = !appliedFilters.username || user.username.toLowerCase().includes(appliedFilters.username.toLowerCase());
-      return matchName;
+      
+      // Role Filter (Multi-select OR logic: if user has ANY of selected roles)
+      let matchRole = true;
+      if (appliedFilters.roleIds && appliedFilters.roleIds.length > 0) {
+        if (!user.roleIds || user.roleIds.length === 0) {
+            matchRole = false;
+        } else {
+            matchRole = appliedFilters.roleIds.some(rId => user.roleIds.includes(rId));
+        }
+      }
+      
+      return matchName && matchRole;
     });
   }, [users, appliedFilters]);
 
@@ -263,12 +362,28 @@ const UserManagement = ({ t, isRtl }) => {
      return ALL_SYSTEM_FORMS.filter(f => f.fullPath.includes(formSearchTerm));
   }, [formSearchTerm, ALL_SYSTEM_FORMS]);
 
+  // Search Results for Roles
+  const roleSearchResults = useMemo(() => {
+     return MOCK_ROLES_LIST.filter(r => 
+        !assignedRoles.includes(r.id) && 
+        r.title.toLowerCase().includes(roleSearchTerm.toLowerCase())
+     );
+  }, [roleSearchTerm, assignedRoles]);
+
   // --- COLUMNS ---
   const columns = [
     { header: 'شناسه', field: 'id', width: 'w-16', sortable: true },
     { header: 'نام کاربری', field: 'username', width: 'w-32', sortable: true },
     { header: 'نام شخص / شرکت', field: 'partyId', width: 'w-48', render: (row) => <span className="font-bold text-slate-700">{getPartyName(row.partyId)}</span> },
     { header: 'نوع کاربری', field: 'userType', width: 'w-32', sortable: true },
+    { header: 'نقش‌ها', field: 'roleIds', width: 'w-48', render: (r) => (
+        <div className="flex flex-wrap gap-1">
+            {r.roleIds && r.roleIds.map(rid => {
+                const role = MOCK_ROLES_LIST.find(x => x.id === rid);
+                return role ? <Badge key={rid} variant="neutral" className="px-1 py-0 text-[9px]">{role.title}</Badge> : null;
+            })}
+        </div>
+    )},
     { header: 'آخرین ورود', field: 'lastLogin', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs text-slate-500">{r.lastLogin}</span> },
     { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
@@ -287,10 +402,11 @@ const UserManagement = ({ t, isRtl }) => {
   ];
 
   const AVAILABLE_ACTIONS = [
-      { id: 'create', label: 'ایجاد' }, { id: 'edit', label: 'ویرایش' }, { id: 'view', label: 'مشاهده' }, { id: 'delete', label: 'حذف' }
+      { id: 'create', label: 'ایجاد' }, { id: 'edit', label: 'ویرایش' }, { id: 'view', label: 'مشاهده' }, { id: 'delete', label: 'حذف' },
+      { id: 'print', label: 'چاپ' }, { id: 'approve', label: 'تایید' }, { id: 'export', label: 'خروجی' }, { id: 'share', label: 'اشتراک' },
   ];
 
-  const DATA_SCOPES = { // Mock definitions
+  const DATA_SCOPES = { 
      'docType': { label: 'نوع سند', options: [{value:'عمومی', label:'عمومی'}, {value:'افتتاحیه', label:'افتتاحیه'}] },
      'status': { label: 'وضعیت', options: [{value:'موقت', label:'موقت'}, {value:'قطعی', label:'قطعی'}] }
   };
@@ -308,8 +424,19 @@ const UserManagement = ({ t, isRtl }) => {
       </div>
 
       {/* FILTER */}
-      <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: ''}); setAppliedFilters({username: ''})}} isRtl={isRtl}>
+      <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: '', roleIds: []}); setAppliedFilters({username: '', roleIds: []})}} isRtl={isRtl}>
          <InputField label="نام کاربری" value={filterValues.username} onChange={(e) => setFilterValues({...filterValues, username: e.target.value})} placeholder="جستجو..." isRtl={isRtl} />
+         
+         {/* Custom Role Multi-select Filter */}
+         <div>
+           <label className="block text-[11px] font-bold text-slate-600 mb-1">نقش‌های کاربری</label>
+           <MultiSelect 
+             options={MOCK_ROLES_LIST.map(r => ({id: r.id, label: r.title}))}
+             value={filterValues.roleIds}
+             onChange={(vals) => setFilterValues({...filterValues, roleIds: vals})}
+             placeholder="انتخاب نقش‌ها..."
+           />
+         </div>
       </FilterSection>
 
       {/* GRID */}
@@ -338,16 +465,21 @@ const UserManagement = ({ t, isRtl }) => {
                <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
             </SelectField>
             
-            <SelectField label="اتصال به شخص / طرف حساب" value={userFormData.partyId} onChange={(e) => setUserFormData({...userFormData, partyId: Number(e.target.value)})} isRtl={isRtl} className="col-span-2">
-               <option value="">-- انتخاب کنید --</option>
-               {MOCK_PARTIES.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
-            </SelectField>
-
-            {!editingUser && (
-                <div className="col-span-2">
-                   <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="رمز عبور را وارد کنید..." />
-                </div>
-            )}
+            {/* Password and Party on the SAME ROW */}
+            <div className="col-span-2 grid grid-cols-2 gap-4">
+                {!editingUser ? (
+                    <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="********" />
+                ) : (
+                    <div className="opacity-50">
+                        <InputField label="رمز عبور" disabled value="********" isRtl={isRtl} />
+                    </div>
+                )}
+                
+                <SelectField label="اتصال به شخص / طرف حساب" value={userFormData.partyId} onChange={(e) => setUserFormData({...userFormData, partyId: Number(e.target.value)})} isRtl={isRtl}>
+                    <option value="">-- انتخاب کنید --</option>
+                    {MOCK_PARTIES.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
+                </SelectField>
+            </div>
             
             <div className="col-span-2 flex items-center justify-between pt-2">
                <span className="text-xs font-bold text-slate-700">وضعیت حساب:</span>
@@ -363,14 +495,14 @@ const UserManagement = ({ t, isRtl }) => {
             
             {/* 1. TOP: ROLES MANAGEMENT */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 flex items-center justify-between">
-               <div className="flex items-center gap-2">
-                  <Shield size={16} className="text-purple-600"/>
-                  <span className="text-xs font-bold text-slate-700">نقش‌های تخصیص یافته:</span>
+               <div className="flex items-center gap-2 overflow-x-auto">
+                  <Shield size={16} className="text-purple-600 shrink-0"/>
+                  <span className="text-xs font-bold text-slate-700 shrink-0">نقش‌های تخصیص یافته:</span>
                   <div className="flex gap-1 mr-2">
                      {assignedRoles.map(rId => {
                         const role = MOCK_ROLES_LIST.find(r => r.id === rId);
                         return (
-                           <div key={rId} className="flex items-center gap-1 bg-white border border-purple-200 text-purple-700 px-2 py-1 rounded-md text-[11px] font-bold shadow-sm">
+                           <div key={rId} className="flex items-center gap-1 bg-white border border-purple-200 text-purple-700 px-2 py-1 rounded-md text-[11px] font-bold shadow-sm whitespace-nowrap">
                               {role?.title}
                               <button onClick={() => handleRemoveRole(rId)} className="hover:text-red-500 rounded-full p-0.5"><X size={10}/></button>
                            </div>
@@ -379,14 +511,33 @@ const UserManagement = ({ t, isRtl }) => {
                      {assignedRoles.length === 0 && <span className="text-[10px] text-slate-400 italic mt-1">بدون نقش</span>}
                   </div>
                </div>
-               <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500">افزودن نقش:</span>
-                  <select className="h-7 text-[11px] border border-slate-300 rounded bg-white outline-none" onChange={handleAddRole}>
-                     <option value="">انتخاب کنید...</option>
-                     {MOCK_ROLES_LIST.filter(r => !assignedRoles.includes(r.id)).map(r => (
-                        <option key={r.id} value={r.id}>{r.title}</option>
-                     ))}
-                  </select>
+               
+               {/* Searchable Role Add */}
+               <div className="relative shrink-0 w-64">
+                   <div 
+                     className="flex items-center border border-slate-300 rounded bg-white px-2 h-8 cursor-text"
+                     onClick={() => setIsRoleSearchOpen(!isRoleSearchOpen)}
+                   >
+                       <input 
+                         className="w-full text-[11px] outline-none"
+                         placeholder="افزودن نقش (جستجو)..."
+                         value={roleSearchTerm}
+                         onChange={(e) => { setRoleSearchTerm(e.target.value); setIsRoleSearchOpen(true); }}
+                       />
+                       <ChevronDown size={14} className="text-slate-400"/>
+                   </div>
+                   {isRoleSearchOpen && (
+                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-40 overflow-y-auto">
+                           {roleSearchResults.length > 0 ? roleSearchResults.map(r => (
+                               <div key={r.id} onClick={() => handleAddRole(r.id)} className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-[11px] text-slate-700 border-b border-slate-50">
+                                   {r.title}
+                               </div>
+                           )) : (
+                               <div className="p-2 text-center text-slate-400 text-[10px]">نقشی یافت نشد</div>
+                           )}
+                       </div>
+                   )}
+                   {isRoleSearchOpen && <div className="fixed inset-0 z-[-1]" onClick={() => setIsRoleSearchOpen(false)}></div>}
                </div>
             </div>
 
@@ -455,63 +606,58 @@ const UserManagement = ({ t, isRtl }) => {
                      </div>
 
                      <div className="p-5 flex-1 overflow-y-auto space-y-6">
-                        {/* Determine if editable: If has 'Direct' source, it is editable */}
+                        {/* Determine if editable: If has 'Direct' source, it is editable. 
+                            If it doesn't have 'Direct', clicking it will ADD 'Direct' and make it editable. */}
                         {(() => {
                            const hasDirect = selectedPermDetail.sources.some(s => s.type === 'direct');
+                           
+                           // Merge Role Actions + Direct Actions for Display
+                           // If hasDirect is true, user is toggling the Direct Actions/Scopes
+                           const displayedActions = hasDirect 
+                              ? selectedPermDetail.directActions 
+                              : selectedPermDetail.roleActions || [];
+
                            return (
                               <>
                                  {!hasDirect && (
                                     <div className="bg-amber-50 border border-amber-200 p-2 rounded text-[10px] text-amber-700 flex items-center gap-1 mb-2">
-                                       <Lock size={10}/> این فرم فقط از طریق نقش در دسترس است و قابل ویرایش مستقیم نیست.
+                                       <Lock size={10}/> دسترسی فعلی از طریق نقش است. برای تغییر، روی گزینه‌ها کلیک کنید تا دسترسی مستقیم اضافه شود.
                                     </div>
                                  )}
 
-                                 {/* ACTIONS */}
+                                 {/* ACTIONS: Using SelectionGrid for consistency with Roles.js */}
                                  <div>
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">عملیات مجاز</div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                       {AVAILABLE_ACTIONS.map(action => {
-                                          const roleHas = selectedPermDetail.roleActions?.includes(action.id);
-                                          const directHas = selectedPermDetail.directActions?.includes(action.id);
-                                          const isChecked = roleHas || directHas;
-                                          
-                                          return (
-                                             <div key={action.id} 
-                                                onClick={() => hasDirect && handleUpdateDirectPermission(selectedPermDetail.id, 'action', action.id)}
-                                                className={`
-                                                   flex items-center gap-2 p-2 rounded border text-xs select-none transition-all
-                                                   ${isChecked ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-400'}
-                                                   ${hasDirect ? 'cursor-pointer hover:border-indigo-300' : 'opacity-70 cursor-not-allowed'}
-                                                `}
-                                             >
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
-                                                   {isChecked && <Check size={10} className="text-white"/>}
-                                                </div>
-                                                <span className="font-bold">{action.label}</span>
-                                                {roleHas && <span className="mr-auto text-[9px] bg-purple-100 text-purple-700 px-1 rounded">نقش</span>}
-                                             </div>
-                                          );
-                                       })}
-                                    </div>
+                                    <SelectionGrid 
+                                        items={AVAILABLE_ACTIONS}
+                                        selectedIds={hasDirect 
+                                            ? selectedPermDetail.directActions || [] 
+                                            : selectedPermDetail.roleActions || []
+                                        }
+                                        onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)}
+                                        columns={4}
+                                    />
                                  </div>
 
-                                 {/* SCOPES (Mock for View) */}
+                                 {/* SCOPES: Using ToggleChip for consistency with Roles.js */}
                                  <div className="pt-4 border-t border-slate-200">
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">دسترسی داده</div>
                                     {Object.entries(DATA_SCOPES).map(([key, def]) => (
-                                        <div key={key} className="mb-3">
-                                            <span className="text-[11px] font-bold block mb-1">{def.label}:</span>
-                                            <div className="flex gap-2">
+                                        <div key={key} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-3">
+                                            <span className="text-[11px] font-bold block mb-2 text-slate-700">{def.label}:</span>
+                                            <div className="flex flex-wrap gap-2">
                                                 {def.options.map(opt => {
-                                                    // Simplify logic for prototype: check simple inclusion
                                                     const roleHas = selectedPermDetail.roleScopes?.[key]?.includes(opt.value);
                                                     const directHas = selectedPermDetail.directScopes?.[key]?.includes(opt.value);
-                                                    const isChecked = roleHas || directHas;
+                                                    const isChecked = hasDirect ? directHas : roleHas;
+                                                    
                                                     return (
                                                         <ToggleChip 
-                                                            key={opt.value} label={opt.label} checked={isChecked}
-                                                            onClick={() => hasDirect && handleUpdateDirectPermission(selectedPermDetail.id, 'scope', key, opt.value)}
-                                                            colorClass={roleHas ? 'indigo' : 'green'} // Indigo for Role, Green for Direct override
+                                                            key={opt.value} 
+                                                            label={opt.label} 
+                                                            checked={isChecked}
+                                                            onClick={() => handleUpdateDirectPermission(selectedPermDetail.id, 'scope', key, opt.value)}
+                                                            colorClass={hasDirect ? 'green' : 'indigo'} 
                                                         />
                                                     )
                                                 })}
