@@ -8,30 +8,26 @@ import {
 } from 'lucide-react';
 
 const App = () => {
-  // --- دریافت داده‌ها و کامپوننت‌ها از Window ---
-  const MENU_DATA = window.MENU_DATA || [];
-  const translations = window.translations || { en: {}, fa: {} };
-  
-  // دریافت کامپوننت‌های UI (شامل TreeMenu جدید)
-  const UI = window.UI || {};
-  const { TreeMenu } = UI;
-
-  // دریافت صفحات
-  const { KpiDashboard, LoginPage, UserManagement, GeneralWorkspace, ComponentShowcase } = window;
-
+  // --- STATE ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState('fa'); 
-  
-  // Navigation State
-  const [activeModuleId, setActiveModuleId] = useState('accounting');
-  const [activeId, setActiveId] = useState('gl_docs');
+  const [activeModuleId, setActiveModuleId] = useState('accounting'); // ماژول پیش‌فرض
+  const [activeId, setActiveId] = useState('gl_docs'); // صفحه پیش‌فرض
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
-  // Auth Flow States
+  // Auth States
   const [authView, setAuthView] = useState('login');
   const [loginMethod, setLoginMethod] = useState('standard');
   const [loginData, setLoginData] = useState({ identifier: '', password: '' });
   const [error, setError] = useState('');
+
+  // --- دریافت داده‌ها به صورت پویا ---
+  // نکته مهم: دریافت این موارد داخل بدنه کامپوننت باعث می‌شود 
+  // اگر فایل‌ها کمی دیرتر لود شوند، باز هم برنامه کار کند.
+  const MENU_DATA = window.MENU_DATA || [];
+  const translations = window.translations || { en: {}, fa: {} };
+  const UI = window.UI || {};
+  const { TreeMenu } = UI;
   
   const t = translations[lang] || {};
   const isRtl = lang === 'fa';
@@ -49,17 +45,41 @@ const App = () => {
     } else setError(t.invalidCreds || 'Invalid credentials');
   };
 
-  // پیدا کردن ماژول فعال
   const currentModule = useMemo(() => {
     return MENU_DATA.find(m => m.id === activeModuleId) || MENU_DATA[0] || {};
-  }, [activeModuleId]);
+  }, [activeModuleId, MENU_DATA]); // MENU_DATA را به وابستگی‌ها اضافه کردیم
   
-  // رندر کردن محتوای صفحه
+  // --- تابع رندر محتوا (اصلاح شده) ---
   const renderContent = () => {
-    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading Workspace...</div>;
-    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div>Loading Users...</div>;
-    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading Dashboard...</div>;
+    // نکته کلیدی: کامپوننت‌ها را دقیقا همین‌جا از window می‌گیریم
+    // تا مطمئن شویم حتما لود شده‌اند.
+    const { 
+      KpiDashboard, 
+      UserManagement, 
+      GeneralWorkspace, 
+      ComponentShowcase,
+      LoginPage 
+    } = window;
 
+    // مسیریابی بر اساس activeId
+    if (activeId === 'workspace_gen') {
+      return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center"><span className="loading">Loading Workspace...</span></div>;
+    }
+    
+    if (activeId === 'users_list') {
+      // اگر UserManagement لود نشده باشد پیام مناسب می‌دهد
+      return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center text-red-500 font-bold">Error: UserManagement Module Not Loaded via script tag.</div>;
+    }
+    
+    if (activeId === 'dashboards_gen') {
+      return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div className="p-10 flex justify-center"><span className="loading">Loading Dashboard...</span></div>;
+    }
+
+    if (activeId === 'ui_showcase') {
+       return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div className="p-10 text-center">Loading Showcase...</div>;
+    }
+
+    // صفحه پیش‌فرض یا خالی
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
           <div className="p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200">
@@ -73,9 +93,10 @@ const App = () => {
     );
   };
 
-  // --- 1. Login Screen ---
+  // --- 1. LOGIN SCREEN ---
+  const { LoginPage } = window; // دریافت ایمن برای لاگین
   if (!isLoggedIn) {
-    if (!LoginPage) return <div className="p-10 text-center">Loading Login Module...</div>;
+    if (!LoginPage) return <div className="p-10 text-center text-slate-500">Loading Login Module...</div>;
     return (
       <LoginPage 
         t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView}
@@ -88,47 +109,24 @@ const App = () => {
     );
   }
 
-  // --- 2. SHOWCASE MODE ---
-  if (activeId === 'ui_showcase') {
-    return (
-      <div className="h-screen w-full bg-white relative">
-        <button 
-          onClick={() => { setActiveModuleId('workspace'); setActiveId('workspace_gen'); }}
-          className={`
-            fixed bottom-4 ${isRtl ? 'left-4' : 'right-4'} z-[9999] 
-            bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-full shadow-xl 
-            text-xs font-bold flex items-center gap-2 transition-transform hover:scale-105
-          `}
-        >
-          <LogOut size={14} /> Exit Showcase
-        </button>
-        {ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div className="p-10 text-center">Loading Showcase...</div>}
-      </div>
-    );
-  }
-
-  // --- 3. STANDARD APP SHELL ---
+  // --- 2. MAIN APP ---
   return (
     <div className={`min-h-screen bg-slate-50 flex ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap'); 
         .font-vazir { font-family: 'Vazirmatn', sans-serif; }
-        
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
       
-      {/* A. Module Rail (ستون سمت چپ - آیکون‌ها) */}
+      {/* SIDEBAR - Module Rail */}
       <aside className={`bg-white w-[72px] flex flex-col items-center py-4 shrink-0 z-40 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-sm relative`}>
-        {/* لوگو */}
         <div className="bg-indigo-700 w-10 h-10 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
           <BarChart3 size={20} strokeWidth={2.5} />
         </div>
         
-        {/* لیست ماژول‌ها */}
         <div className="flex-1 flex flex-col gap-3 items-center w-full px-2 overflow-y-auto no-scrollbar">
           {MENU_DATA.map(mod => {
              const isActive = activeModuleId === mod.id;
@@ -148,7 +146,6 @@ const App = () => {
                   <span className={`absolute w-1.5 h-1.5 bg-indigo-600 rounded-full top-1.5 ${isRtl ? 'right-1' : 'left-1'}`}></span>
                 )}
 
-                {/* تولتیپ */}
                 <div className={`
                   absolute ${isRtl ? 'right-full mr-4' : 'left-full ml-4'} top-1/2 -translate-y-1/2 
                   bg-slate-900 text-white text-[11px] py-1.5 px-3 rounded-md opacity-0 invisible 
@@ -162,7 +159,6 @@ const App = () => {
           })}
         </div>
         
-        {/* دکمه‌های پایین */}
         <div className="mt-auto flex flex-col gap-3 items-center pb-2">
             <button onClick={() => setLang(l => l === 'en' ? 'fa' : 'en')} className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors">
                  <Languages size={20} />
@@ -174,21 +170,20 @@ const App = () => {
         </div>
       </aside>
 
-      {/* B. Sub-Menu Pane (ستون وسط - منوی درختی جدید) */}
+      {/* SIDEBAR - Sub Menu */}
       <aside className={`
         bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 
         flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.01)]
         ${sidebarCollapsed ? 'w-0 opacity-0' : 'w-72 opacity-100'}
       `}>
-        {/* سرتیتر ماژول */}
         <div className="h-16 flex items-center px-6 border-b border-slate-100 shrink-0 bg-slate-50/30">
            <h2 className="text-sm font-black text-slate-800 truncate leading-tight">
              {currentModule.label ? currentModule.label[lang] : 'Menu'}
            </h2>
         </div>
         
-        {/* استفاده از کامپوننت جدید TreeMenu به جای کد دستی */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+          {/* استفاده ایمن از TreeMenu */}
           {TreeMenu ? (
             <TreeMenu 
               items={currentModule.children || []} 
@@ -197,11 +192,10 @@ const App = () => {
               isRtl={isRtl}
             />
           ) : (
-            <div className="p-4 text-center text-slate-400 text-xs">Loading Menu...</div>
+             <div className="p-4 text-center text-slate-400 text-xs">Loading Menu Component...</div>
           )}
         </div>
         
-        {/* پروفایل کاربر */}
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-slate-100">
              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-100 to-blue-50 border border-white shadow-sm flex items-center justify-center text-indigo-700 font-black text-xs">
@@ -215,10 +209,8 @@ const App = () => {
         </div>
       </aside>
 
-      {/* C. Main Viewport */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/50 relative">
-        
-        {/* هدر بالا */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-20">
            <div className="flex items-center gap-4">
              <button 
@@ -253,7 +245,6 @@ const App = () => {
            </div>
         </header>
 
-        {/* ناحیه محتوا */}
         <div className="flex-1 overflow-hidden relative p-0">
            {renderContent()}
         </div>
