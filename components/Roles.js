@@ -1,8 +1,8 @@
 /* Filename: components/Roles.js */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Shield, Edit, Save, Check, Lock, Layers, CheckSquare, Eye, Filter, AlertCircle,
-  FolderOpen, Trash2, Zap, Users, Search, UserPlus, X, UserMinus, Plus
+  FolderOpen, Trash2, Zap, Users, Search, UserPlus, X, UserMinus, Plus, ChevronDown
 } from 'lucide-react';
 
 const Roles = ({ t, isRtl }) => {
@@ -17,7 +17,70 @@ const Roles = ({ t, isRtl }) => {
 
   if (!Button) return <div className="p-4 text-center">Loading UI...</div>;
 
-  // --- MOCK DATA: USERS (برای شبیه‌سازی دیتابیس کاربران) ---
+  // --- INTERNAL COMPONENT: MULTI-SELECT ---
+  const MultiSelect = ({ options, value = [], onChange, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (containerRef.current && !containerRef.current.contains(event.target)) setIsOpen(false);
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt => 
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const toggleOption = (id) => {
+      const newValue = value.includes(id) ? value.filter(v => v !== id) : [...value, id];
+      onChange(newValue);
+    };
+
+    return (
+      <div className="relative" ref={containerRef}>
+        <div 
+          className="min-h-[32px] bg-white border border-slate-200 rounded-md flex flex-wrap items-center gap-1 p-1 cursor-pointer focus-within:border-indigo-400 transition-all" 
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {value.length === 0 && <span className="text-slate-400 text-[11px] px-1 select-none">{placeholder}</span>}
+          {value.map(id => (
+            <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1">
+              {options.find(o => o.id === id)?.label}
+              <X size={10} className="hover:text-red-500" onClick={(e) => { e.stopPropagation(); onChange(value.filter(v => v !== id)); }}/>
+            </span>
+          ))}
+          <div className={`${isRtl ? 'mr-auto' : 'ml-auto'} px-1 text-slate-400`}><ChevronDown size={14}/></div>
+        </div>
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-[100] max-h-48 overflow-y-auto p-2">
+            <input 
+              className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 mb-2 outline-none focus:border-indigo-400" 
+              placeholder="جستجو..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              onClick={e => e.stopPropagation()}
+              autoFocus
+            />
+            {filteredOptions.length > 0 ? filteredOptions.map(opt => (
+              <div 
+                key={opt.id} 
+                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-slate-50 flex items-center justify-between ${value.includes(opt.id) ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'}`} 
+                onClick={() => toggleOption(opt.id)}
+              >
+                {opt.label} {value.includes(opt.id) && <Check size={12}/>}
+              </div>
+            )) : <div className="p-2 text-center text-slate-400 text-[10px]">موردی یافت نشد</div>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // --- MOCK DATA: USERS ---
   const [allUsers, setAllUsers] = useState([
     { id: 101, username: 'admin', fullName: 'رضا قربانی', isActive: true, roleIds: [1, 4] },
     { id: 102, username: 's.ahmadi', fullName: 'سارا احمدی', isActive: true, roleIds: [2] },
@@ -38,20 +101,21 @@ const Roles = ({ t, isRtl }) => {
   const [permissions, setPermissions] = useState({});
   const [selectedRows, setSelectedRows] = useState([]);
   
-  // Role Modal States
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({ title: '', code: '', isActive: true, startDate: '', endDate: '' });
 
-  // Access Modal States
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
   const [tempPermissions, setTempPermissions] = useState({});
 
-  // ** NEW: User Assignment Modal States **
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [showUserResults, setShowUserResults] = useState(false);
+
+  // --- FILTER STATES ---
+  const [filterValues, setFilterValues] = useState({ formIds: [], userIds: [], isActive: 'all' });
+  const [appliedFilters, setAppliedFilters] = useState({ formIds: [], userIds: [], isActive: 'all' });
 
   // --- CONFIG ---
   const AVAILABLE_ACTIONS = [
@@ -65,6 +129,25 @@ const Roles = ({ t, isRtl }) => {
       { id: 'docStatus', label: 'وضعیت سند', options: [{ value: 'draft', label: 'پیش‌نویس' }, { value: 'final', label: 'نهایی' }] }
     ]
   };
+
+  const allForms = useMemo(() => {
+    const forms = [];
+    const traverse = (nodes) => nodes.forEach(n => {
+      if (!n.children || n.children.length === 0) forms.push({ id: n.id, label: n.label[isRtl ? 'fa' : 'en'] });
+      else traverse(n.children);
+    });
+    traverse(MENU_DATA);
+    return forms;
+  }, [MENU_DATA, isRtl]);
+
+  const filteredRoles = useMemo(() => {
+    return roles.filter(role => {
+      const matchStatus = appliedFilters.isActive === 'all' || (appliedFilters.isActive === 'active' ? role.isActive : !role.isActive);
+      const matchUser = appliedFilters.userIds.length === 0 || allUsers.some(u => appliedFilters.userIds.includes(u.id) && u.roleIds.includes(role.id));
+      const matchForm = appliedFilters.formIds.length === 0 || (permissions[role.id] && appliedFilters.formIds.some(fid => permissions[role.id][fid]?.actions?.length > 0));
+      return matchStatus && matchUser && matchForm;
+    });
+  }, [roles, appliedFilters, allUsers, permissions]);
 
   // --- HANDLERS: ROLE CRUD ---
   const handleCreate = () => {
@@ -111,9 +194,7 @@ const Roles = ({ t, isRtl }) => {
   const updateAction = (moduleId, actionId) => {
     setTempPermissions(prev => {
       const modulePerms = prev[moduleId] || { actions: [], dataScopes: {} };
-      const newActions = modulePerms.actions.includes(actionId)
-        ? modulePerms.actions.filter(a => a !== actionId)
-        : [...modulePerms.actions, actionId];
+      const newActions = modulePerms.actions.includes(actionId) ? modulePerms.actions.filter(a => a !== actionId) : [...modulePerms.actions, actionId];
       return { ...prev, [moduleId]: { ...modulePerms, actions: newActions } };
     });
   };
@@ -128,30 +209,27 @@ const Roles = ({ t, isRtl }) => {
   };
 
   const getAllDescendantIds = (node) => {
-     let ids = [node.id];
-     if (node.children && node.children.length > 0) {
-        node.children.forEach(child => { ids = [...ids, ...getAllDescendantIds(child)]; });
-     }
-     return ids;
+    let ids = [node.id];
+    if (node.children && node.children.length > 0) node.children.forEach(child => { ids = [...ids, ...getAllDescendantIds(child)]; });
+    return ids;
   };
 
   const handleBulkPermission = (mode) => {
-     if (!selectedModule) return;
-     const targetIds = getAllDescendantIds(selectedModule);
-     if (targetIds.length > 1 && !confirm(`این عملیات روی ${targetIds.length} آیتم اعمال می‌شود. ادامه می‌دهید؟`)) return;
-
-     setTempPermissions(prev => {
-        const next = { ...prev };
-        targetIds.forEach(id => {
-           if (mode === 'revoke') delete next[id];
-           else {
-              let allScopes = {};
-              if (DATA_SCOPES[id]) DATA_SCOPES[id].forEach(scope => { allScopes[scope.id] = scope.options.map(o => o.value); });
-              next[id] = { actions: AVAILABLE_ACTIONS.map(a => a.id), dataScopes: allScopes };
-           }
-        });
-        return next;
-     });
+    if (!selectedModule) return;
+    const targetIds = getAllDescendantIds(selectedModule);
+    if (targetIds.length > 1 && !confirm(`این عملیات روی ${targetIds.length} آیتم اعمال می‌شود. ادامه می‌دهید؟`)) return;
+    setTempPermissions(prev => {
+      const next = { ...prev };
+      targetIds.forEach(id => {
+        if (mode === 'revoke') delete next[id];
+        else {
+          let allScopes = {};
+          if (DATA_SCOPES[id]) DATA_SCOPES[id].forEach(scope => { allScopes[scope.id] = scope.options.map(o => o.value); });
+          next[id] = { actions: AVAILABLE_ACTIONS.map(a => a.id), dataScopes: allScopes };
+        }
+      });
+      return next;
+    });
   };
 
   const renderPermissionNode = (item) => {
@@ -163,7 +241,7 @@ const Roles = ({ t, isRtl }) => {
     );
   };
 
-  // --- HANDLERS: USER ASSIGNMENT (NEW) ---
+  // --- HANDLERS: USER ASSIGNMENT ---
   const openUserAssignment = (role) => {
     setEditingRole(role);
     setUserSearchTerm('');
@@ -171,35 +249,26 @@ const Roles = ({ t, isRtl }) => {
     setIsUserModalOpen(true);
   };
 
-  // Filter users who HAVE this role
   const assignedUsers = useMemo(() => {
     if (!editingRole) return [];
     return allUsers.filter(u => u.roleIds.includes(editingRole.id));
   }, [allUsers, editingRole]);
 
-  // Search users who DO NOT have this role
   const searchResults = useMemo(() => {
     if (!editingRole || !userSearchTerm) return [];
     const term = userSearchTerm.toLowerCase();
-    return allUsers.filter(u => 
-      !u.roleIds.includes(editingRole.id) && // Not already assigned
-      (u.username.toLowerCase().includes(term) || u.fullName.toLowerCase().includes(term))
-    );
+    return allUsers.filter(u => !u.roleIds.includes(editingRole.id) && (u.username.toLowerCase().includes(term) || u.fullName.toLowerCase().includes(term)));
   }, [userSearchTerm, allUsers, editingRole]);
 
   const handleAssignUser = (userId) => {
-    setAllUsers(prev => prev.map(u => 
-      u.id === userId ? { ...u, roleIds: [...u.roleIds, editingRole.id] } : u
-    ));
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, roleIds: [...u.roleIds, editingRole.id] } : u));
     setUserSearchTerm('');
     setShowUserResults(false);
   };
 
   const handleUnassignUser = (userId) => {
     if (confirm('آیا از سلب مسئولیت این نقش از کاربر اطمینان دارید؟')) {
-      setAllUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, roleIds: u.roleIds.filter(id => id !== editingRole.id) } : u
-      ));
+      setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, roleIds: u.roleIds.filter(id => id !== editingRole.id) } : u));
     }
   };
 
@@ -222,23 +291,33 @@ const Roles = ({ t, isRtl }) => {
   return (
     <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       
-      {/* HEADER */}
       <div className="flex items-center justify-between mb-4 shrink-0">
-         <div>
+          <div>
             <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
                <Shield className="text-indigo-600" size={24}/> مدیریت نقش‌ها
             </h1>
-         </div>
+          </div>
       </div>
 
-      {/* GRID */}
-      <FilterSection title="جستجو" onSearch={() => {}} onClear={() => {}} isRtl={isRtl}>
-         <InputField label="عنوان نقش" placeholder="جستجو..." isRtl={isRtl} />
+      <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => { setFilterValues({ formIds: [], userIds: [], isActive: 'all' }); setAppliedFilters({ formIds: [], userIds: [], isActive: 'all' }); }} isRtl={isRtl}>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-600">نام فرم</label>
+            <MultiSelect options={allForms} value={filterValues.formIds} onChange={v => setFilterValues({...filterValues, formIds: v})} placeholder="جستجوی فرم..." />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-600">نام کاربر</label>
+            <MultiSelect options={allUsers.map(u => ({ id: u.id, label: u.fullName }))} value={filterValues.userIds} onChange={v => setFilterValues({...filterValues, userIds: v})} placeholder="جستجوی کاربر..." />
+          </div>
+          <SelectField label="وضعیت" value={filterValues.isActive} onChange={e => setFilterValues({...filterValues, isActive: e.target.value})} isRtl={isRtl}>
+            <option value="all">همه</option>
+            <option value="active">فعال</option>
+            <option value="inactive">غیرفعال</option>
+          </SelectField>
       </FilterSection>
 
       <div className="flex-1 min-h-0">
-         <DataGrid 
-            columns={roleColumns} data={roles} isRtl={isRtl}
+          <DataGrid 
+            columns={roleColumns} data={filteredRoles} isRtl={isRtl}
             selectedIds={selectedRows} onSelectAll={(c) => setSelectedRows(c ? roles.map(r => r.id) : [])}
             onSelectRow={(id, c) => setSelectedRows(p => c ? [...p, id] : p.filter(r => r !== id))}
             onCreate={handleCreate} onDelete={handleDelete} onDoubleClick={handleEdit}
@@ -249,13 +328,12 @@ const Roles = ({ t, isRtl }) => {
                  <Button variant="ghost" size="iconSm" icon={Lock} className="text-amber-600" onClick={() => openAccessModal(row)} title="دسترسی‌ها" />
                </>
             )}
-         />
+          />
       </div>
 
-      {/* ROLE MODAL */}
       <Modal isOpen={isRoleModalOpen} onClose={() => setIsRoleModalOpen(false)} title={editingRole ? "ویرایش نقش" : "نقش جدید"} size="md"
-         footer={<><Button variant="secondary" onClick={() => setIsRoleModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveRole}>ذخیره</Button></>}>
-         <div className="space-y-4">
+          footer={<><Button variant="secondary" onClick={() => setIsRoleModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveRole}>ذخیره</Button></>}>
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
                <InputField label="عنوان نقش" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} isRtl={isRtl} />
                <InputField label="کد سیستمی" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} isRtl={isRtl} className="dir-ltr" />
@@ -268,15 +346,12 @@ const Roles = ({ t, isRtl }) => {
                <span className="text-[13px] font-bold text-slate-700">وضعیت نقش</span>
                <Toggle checked={formData.isActive} onChange={(val) => setFormData({...formData, isActive: val})} label={formData.isActive ? "فعال" : "غیرفعال"} />
             </div>
-         </div>
+          </div>
       </Modal>
 
-      {/* USER ASSIGNMENT MODAL (NEW) */}
       <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={`کاربران دارای نقش: ${editingRole?.title}`} size="lg"
-         footer={<Button variant="primary" onClick={() => setIsUserModalOpen(false)}>بستن</Button>}>
-         <div className="flex flex-col h-[500px]">
-            
-            {/* ADD USER SEARCH BAR */}
+          footer={<Button variant="primary" onClick={() => setIsUserModalOpen(false)}>بستن</Button>}>
+          <div className="flex flex-col h-[500px]">
             <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-3 relative z-[60]">
                <label className="text-xs font-bold text-indigo-800 mb-2 block flex items-center gap-2">
                   <UserPlus size={14}/> افزودن کاربر جدید به این نقش
@@ -289,7 +364,6 @@ const Roles = ({ t, isRtl }) => {
                      className="w-full h-9 bg-white border border-indigo-200 rounded text-xs pr-9 pl-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
                   />
                   <Search size={16} className="absolute top-2.5 right-2.5 text-indigo-400"/>
-                  
                   {showUserResults && userSearchTerm && (
                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[100]">
                         {searchResults.length > 0 ? searchResults.map(user => (
@@ -302,16 +376,12 @@ const Roles = ({ t, isRtl }) => {
                                  <Plus size={14}/>
                               </div>
                            </div>
-                        )) : (
-                           <div className="p-3 text-center text-xs text-slate-400">کاربری یافت نشد یا قبلاً اضافه شده است.</div>
-                        )}
+                        )) : <div className="p-3 text-center text-xs text-slate-400">کاربری یافت نشد یا قبلاً اضافه شده است.</div>}
                      </div>
                   )}
                   {showUserResults && userSearchTerm && <div className="fixed inset-0 z-[-1]" onClick={() => setShowUserResults(false)}></div>}
                </div>
             </div>
-
-            {/* ASSIGNED USERS GRID */}
             <div className="flex-1 overflow-hidden border border-slate-200 rounded-lg bg-white relative z-0">
                <DataGrid 
                   columns={assignedUsersColumns}
@@ -322,13 +392,12 @@ const Roles = ({ t, isRtl }) => {
                   )}
                />
             </div>
-         </div>
+          </div>
       </Modal>
 
-      {/* ACCESS MODAL */}
       <Modal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} title={`دسترسی‌های: ${editingRole?.title}`} size="xl"
-         footer={<><Button variant="secondary" onClick={() => setIsAccessModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveAccess}>اعمال</Button></>}>
-         <div className="flex h-[550px] border border-slate-200 rounded-lg overflow-hidden">
+          footer={<><Button variant="secondary" onClick={() => setIsAccessModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveAccess}>اعمال</Button></>}>
+          <div className="flex h-[550px] border border-slate-200 rounded-lg overflow-hidden">
             <div className="w-1/3 border-l border-slate-200 bg-slate-50 flex flex-col p-2">
                <TreeView data={MENU_DATA} selectedNodeId={selectedModule?.id} onSelectNode={setSelectedModule} renderNodeContent={renderPermissionNode} isRtl={isRtl} />
             </div>
@@ -362,7 +431,7 @@ const Roles = ({ t, isRtl }) => {
                   </>
                ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">یک آیتم انتخاب کنید</div>}
             </div>
-         </div>
+          </div>
       </Modal>
     </div>
   );
