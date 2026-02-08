@@ -131,6 +131,8 @@ const UserManagement = ({ t, isRtl }) => {
     { id: 4, title: 'مدیر سیستم', code: 'ADMIN' },
   ];
 
+  // MOCK PERMISSIONS FOR ROLES 
+  // IMPORTANT: formIds must match IDs in MENU_DATA (e.g., 'gl_docs')
   const MOCK_ROLE_PERMISSIONS = {
     1: [ // CFO
        { formId: 'gl_docs', actions: ['view', 'approve'], dataScopes: {} },
@@ -149,8 +151,6 @@ const UserManagement = ({ t, isRtl }) => {
 
   // --- STATES ---
   const [selectedRows, setSelectedRows] = useState([]);
-  
-  // Filter States
   const [filterValues, setFilterValues] = useState({ username: '', roleIds: [], isActive: 'all' });
   const [appliedFilters, setAppliedFilters] = useState({ username: '', roleIds: [], isActive: 'all' });
 
@@ -170,7 +170,7 @@ const UserManagement = ({ t, isRtl }) => {
   const [formSearchTerm, setFormSearchTerm] = useState('');
   const [showFormResults, setShowFormResults] = useState(false);
   
-  // Search Role State (in Permission Modal)
+  // Search Role State
   const [roleSearchTerm, setRoleSearchTerm] = useState('');
   const [isRoleSearchOpen, setIsRoleSearchOpen] = useState(false);
 
@@ -230,7 +230,17 @@ const UserManagement = ({ t, isRtl }) => {
     return Array.from(map.values());
   }, [assignedRoles, directPermissions, ALL_SYSTEM_FORMS]);
 
-  // --- HANDLERS: USER CRUD ---
+  // *** KEY FIX: SYNC SIDEBAR STATE WHEN PERMISSIONS CHANGE ***
+  useEffect(() => {
+    if (selectedPermDetail) {
+      const updated = effectivePermissions.find(p => p.id === selectedPermDetail.id);
+      if (updated) {
+        setSelectedPermDetail(updated);
+      }
+    }
+  }, [effectivePermissions]);
+
+  // --- HANDLERS ---
   const handleCreate = () => {
     setEditingUser(null);
     setUserFormData({ username: '', partyId: '', userType: 'کارشناس', isActive: true, password: '' });
@@ -263,7 +273,6 @@ const UserManagement = ({ t, isRtl }) => {
     }
   };
 
-  // --- HANDLERS: PERMISSIONS ---
   const handleOpenPermissions = (user) => {
     setViewingUser(user);
     setAssignedRoles(user.roleIds || []);
@@ -292,10 +301,10 @@ const UserManagement = ({ t, isRtl }) => {
         alert('این فرم قبلاً به لیست دسترسی‌های مستقیم اضافه شده است.');
         return;
     }
-
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
+    // After state update, the Grid will re-render, user clicks row to edit.
   };
 
   const handleUpdateDirectPermission = (formId, type, key, value) => {
@@ -327,6 +336,12 @@ const UserManagement = ({ t, isRtl }) => {
     });
   };
 
+  // --- HELPER: getPartyName (Restored) ---
+  const getPartyName = (id) => {
+    const p = MOCK_PARTIES.find(p => p.id === Number(id));
+    return p ? `${p.name} (${p.code})` : 'نامشخص';
+  };
+
   // --- FILTER LOGIC ---
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
@@ -356,12 +371,6 @@ const UserManagement = ({ t, isRtl }) => {
         r.title.toLowerCase().includes(roleSearchTerm.toLowerCase())
      );
   }, [roleSearchTerm, assignedRoles]);
-
-  // --- RENDER HELPERS (FIXED: Added missing function) ---
-  const getPartyName = (id) => {
-    const p = MOCK_PARTIES.find(p => p.id === Number(id));
-    return p ? `${p.name} (${p.code})` : 'نامشخص';
-  };
 
   // --- COLUMNS ---
   const columns = [
@@ -456,6 +465,7 @@ const UserManagement = ({ t, isRtl }) => {
                <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
             </SelectField>
             
+            {/* Password and Party on the SAME ROW */}
             <div className="col-span-2 grid grid-cols-2 gap-4">
                 {!editingUser ? (
                     <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="********" />
@@ -541,7 +551,7 @@ const UserManagement = ({ t, isRtl }) => {
                         />
                         <Search size={14} className="absolute top-2.5 right-2.5 text-slate-400"/>
                         {showFormResults && formSearchTerm && (
-                           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto">
+                           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto z-[100]">
                               {formSearchResults.length > 0 ? formSearchResults.map(f => (
                                  <div key={f.id} onClick={() => handleAddDirectForm(f)} className="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50 last:border-0">
                                     <div className="font-bold text-slate-700">{f.label[isRtl ? 'fa' : 'en']}</div>
