@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Loader2, ChevronDown, ChevronRight, Search, X, 
   Check, MoreHorizontal, Filter, Settings, ChevronLeft,
-  ChevronsLeft, ChevronsRight, Calendar, List
+  ChevronsLeft, ChevronsRight, Calendar, List, Circle
 } from 'lucide-react';
 
 // --- ENTERPRISE THEME TOKENS ---
@@ -282,9 +282,11 @@ export const DataGrid = ({
   );
 };
 
+// --- IMPROVED TREE MENU ---
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
   const [expanded, setExpanded] = useState({});
 
+  // تابع باز/بسته کردن آیتم‌ها
   const toggle = (id, e) => {
     e.stopPropagation();
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
@@ -294,45 +296,72 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expanded[item.id];
     const isActive = activeId === item.id;
-    const paddingStart = `${depth * 12 + 12}px`;
     
-    let layerStyle = "";
-    if (depth === 0) layerStyle = "font-black text-[12px] uppercase tracking-wider text-slate-500 mt-4 mb-1 px-4"; 
-    else if (depth === 1) layerStyle = "font-bold text-[13px] text-slate-800 hover:bg-slate-100";
-    else if (depth === 2) layerStyle = "font-medium text-[12px] text-slate-700 hover:bg-slate-100";
-    else layerStyle = "text-[12px] text-slate-600 hover:bg-slate-100";
+    // دریافت لیبل بر اساس زبان یا رشته ساده
+    const label = (typeof item.label === 'object' && item.label !== null) 
+      ? (isRtl ? item.label.fa : item.label.en) 
+      : item.label;
 
+    // --- Level 0: Section Headers (تیترهای اصلی) ---
     if (depth === 0) {
       return (
-        <div key={item.id} className="mb-2">
-          <div className={layerStyle}>{item.label}</div>
-          {hasChildren && <div>{item.children.map(child => renderItem(child, depth + 1))}</div>}
+        <div key={item.id} className="mb-4">
+          {/* Header */}
+          <div className="px-5 mt-4 mb-2 flex items-center gap-2 select-none group">
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">
+              {label}
+            </span>
+            <div className="h-px flex-1 bg-slate-100 group-hover:bg-slate-200 transition-colors"></div>
+          </div>
+          {/* Children Container */}
+          <div className="flex flex-col">
+            {hasChildren && item.children.map(child => renderItem(child, depth + 1))}
+          </div>
         </div>
       );
     }
 
+    // --- Level 1+: Interactive Tree Items (آیتم‌های درختی) ---
+    const paddingStart = isRtl ? 'pr-3' : 'pl-3';
+    
     return (
-      <div key={item.id} className="select-none">
+      <div key={item.id} className="relative">
+        {/* Connector Line for nested items (Level 2+) */}
+        {depth > 1 && (
+           <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-[19px]' : 'left-[19px]'} w-px bg-slate-200`}></div>
+        )}
+
         <div 
-          onClick={(e) => hasChildren ? toggle(item.id, e) : onSelect(item.id)}
+          onClick={(e) => {
+            if (hasChildren) toggle(item.id, e);
+            else onSelect && onSelect(item.id);
+          }}
           className={`
-            flex items-center gap-2 py-1.5 cursor-pointer transition-colors relative
-            ${isActive && !hasChildren ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600 font-bold' : ''}
-            ${layerStyle}
+            group flex items-center gap-2 py-2 my-0.5 rounded-lg cursor-pointer transition-all duration-200 select-none
+            ${isActive && !hasChildren 
+              ? 'bg-indigo-50 text-indigo-700 font-bold' 
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+            ${depth === 1 ? 'mx-2' : (isRtl ? 'mr-8 ml-2' : 'ml-8 mr-2')}
           `}
-          style={{ paddingInlineStart: paddingStart, paddingInlineEnd: '12px' }}
         >
-          {hasChildren && (
-            <div className="text-slate-400">
-               {isExpanded ? <ChevronDown size={14} /> : (isRtl ? <ChevronLeft size={14} /> : <ChevronRight size={14} />)}
-            </div>
-          )}
-          {!hasChildren && depth > 1 && <div className="w-1 h-1 rounded-full bg-slate-300"></div>}
-          <span className="truncate flex-1">{item.label}</span>
+          {/* Icon / Bullet */}
+          <div className="shrink-0 flex items-center justify-center w-5 h-5">
+             {hasChildren ? (
+               <ChevronDown 
+                 size={14} 
+                 className={`text-slate-400 transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`} 
+               />
+             ) : (
+               <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActive ? 'bg-indigo-600' : 'bg-slate-300 group-hover:bg-slate-400'}`}></div>
+             )}
+          </div>
+
+          <span className="text-[13px] truncate flex-1 leading-none pt-0.5">{label}</span>
         </div>
-        
+
+        {/* Recursive Children Rendering */}
         {hasChildren && isExpanded && (
-          <div className="animate-in slide-in-from-top-1 duration-200">
+          <div className="animate-in slide-in-from-top-1 fade-in duration-200 overflow-hidden">
             {item.children.map(child => renderItem(child, depth + 1))}
           </div>
         )}
@@ -340,8 +369,10 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     );
   };
 
+  // Render Root Items
   return <div className="py-2">{items.map(item => renderItem(item, 0))}</div>;
 };
+
 
 export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
   if (!isOpen) return null;
