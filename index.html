@@ -22,7 +22,6 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        // This sets Vazirmatn as the default 'sans' font for the whole app
                         sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', 'sans-serif'],
                     }
                 }
@@ -52,41 +51,30 @@
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
     <style>
         #root { height: 100vh; }
-        
-        /* 3. GLOBAL FONT ENFORCEMENT */
         body { 
             font-family: 'Vazirmatn', sans-serif !important;
             font-size: 13px; 
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
         }
-        
-        /* Custom Scrollbar Styling */
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Helper to hide scrollbars but keep functionality */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module" src="./app-data.js"></script>
-
     <script type="text/babel" data-type="module" src="./components/UIComponents.js"></script>
 
     <script type="text/babel" data-type="module" src="./components/ComponentShowcase.js"></script>
     <script type="text/babel" data-type="module" src="./components/KpiDashboard.js"></script>
     <script type="text/babel" data-type="module" src="./components/UserManagement.js"></script>
     <script type="text/babel" data-type="module" src="./components/Roles.js"></script>
+    <script type="text/babel" data-type="module" src="./components/Parties.js"></script>
     <script type="text/babel" data-type="module" src="./components/GeneralWorkspace.js"></script>
     <script type="text/babel" data-type="module" src="./components/LoginPage.js"></script>
 
