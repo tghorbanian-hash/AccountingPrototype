@@ -38,20 +38,31 @@
     <style>
         #root { height: 100vh; }
         
-        /* FIX: Enforce Vazirmatn for Persian/RTL globally */
+        /* FORCE Vazirmatn Font for RTL */
         body { 
             font-family: system-ui, -apple-system, sans-serif;
             font-size: 13px; 
         }
-        body[dir="rtl"] {
+        
+        /* Apply Vazirmatn to EVERYTHING in RTL mode */
+        body[dir="rtl"], body[dir="rtl"] * {
             font-family: 'Vazirmatn', sans-serif !important;
         }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        /* Custom Scrollbar Styling */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Hide Scrollbar for specific containers */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-slate-100 overflow-hidden">
