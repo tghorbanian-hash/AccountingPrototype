@@ -5,10 +5,13 @@ import {
   Printer, MoreHorizontal, Edit, Eye, Shield, DollarSign 
 } from 'lucide-react';
 
+// دسترسی ایمن به کامپوننت‌های UI
+// اگر فایل UIComponents درست لود نشود، این خط خطا می‌دهد
+const UI = window.UI || {}; 
 const { 
   Button, InputField, SelectField, Toggle, Badge, 
   DataGrid, TreeMenu, Modal, DatePicker, LOV, THEME 
-} = window.UI;
+} = UI;
 
 // --- MOCK DATA FOR SHOWCASE ---
 const MOCK_MENU = [
@@ -74,6 +77,11 @@ const MOCK_GRID_DATA = Array.from({ length: 50 }).map((_, i) => ({
 }));
 
 const ComponentShowcase = ({ t, isRtl }) => {
+  // اگر کامپوننت‌ها لود نشده باشند، پیام خطا نشان بده
+  if (!window.UI || !Button) {
+    return <div className="p-10 text-red-600 font-bold">Error: UI Components not loaded properly. Please check index.html order.</div>;
+  }
+
   const [activeMenu, setActiveMenu] = useState('form_accounts');
   const [selectedRows, setSelectedRows] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -173,7 +181,7 @@ const ComponentShowcase = ({ t, isRtl }) => {
         {/* Workspace (The Grid) */}
         <div className="flex-1 p-2 overflow-hidden flex flex-col gap-4">
           
-          {/* Example: Filters Section (Accordion style usually, keeping it simple here) */}
+          {/* Example: Filters Section */}
           <div className="bg-white border border-slate-300 rounded p-3 flex items-end gap-3 shrink-0 shadow-sm">
              <div className="grid grid-cols-4 gap-3 flex-1">
                 <InputField label="Document Number" placeholder="Ex: DOC-2024..." isRtl={isRtl} />
