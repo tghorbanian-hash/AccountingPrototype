@@ -465,8 +465,8 @@ export const DataGrid = ({
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {groupBy.map(field => (
              <span key={field} className="flex items-center gap-1 bg-white text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 text-[11px] font-bold shadow-sm">
-                <span>{columns.find(c => c.field === field)?.header || field}</span>
-                <button onClick={() => removeGroup(field)} className="hover:text-red-500"><X size={12}/></button>
+               <span>{columns.find(c => c.field === field)?.header || field}</span>
+               <button onClick={() => removeGroup(field)} className="hover:text-red-500"><X size={12}/></button>
              </span>
           ))}
           {onCreate && (
@@ -527,7 +527,7 @@ export const DataGrid = ({
                   </div>
                 </th>
               ))}
-              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] border-l border-slate-300">عملیات</th>
+              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5_rgba(0,0,0,0.05)] border-l border-slate-300">عملیات</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -587,7 +587,7 @@ export const DataGrid = ({
                          )}
                       </td>
                     ))}
-                    <td className="px-1 py-1 text-center sticky left-0 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5px_rgba(0,0,0,0.02)] z-10">
+                    <td className="px-1 py-1 text-center sticky left-0 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5_rgba(0,0,0,0.02)] z-10">
                       <div className="flex items-center justify-center gap-1 opacity-100">
                         {actions ? actions(row) : null}
                       </div>
