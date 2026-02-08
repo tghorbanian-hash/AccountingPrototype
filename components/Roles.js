@@ -1,7 +1,8 @@
 /* Filename: components/Roles.js */
 import React, { useState } from 'react';
 import { 
-  Shield, Edit, Save, Check, Lock, Layers, CheckSquare, Eye, Filter, AlertCircle
+  Shield, Edit, Save, Check, Lock, Layers, CheckSquare, Eye, Filter, AlertCircle,
+  FolderOpen, Trash2, Zap
 } from 'lucide-react';
 
 const Roles = ({ t, isRtl }) => {
@@ -111,7 +112,8 @@ const Roles = ({ t, isRtl }) => {
     setIsAccessModalOpen(false);
   };
 
-  // Helper Functions for updating permissions
+  // --- PERMISSION LOGIC ---
+
   const updateAction = (moduleId, actionId) => {
     setTempPermissions(prev => {
       const modulePerms = prev[moduleId] || { actions: [], dataScopes: {} };
@@ -129,6 +131,58 @@ const Roles = ({ t, isRtl }) => {
       const newValues = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
       return { ...prev, [moduleId]: { ...modulePerms, dataScopes: { ...modulePerms.dataScopes, [scopeId]: newValues } } };
     });
+  };
+
+  // --- RECURSIVE BULK ACTIONS ---
+  
+  // Helper to find all children IDs recursively
+  const getAllDescendantIds = (node) => {
+     let ids = [node.id];
+     if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+           ids = [...ids, ...getAllDescendantIds(child)];
+        });
+     }
+     return ids;
+  };
+
+  const handleBulkPermission = (mode) => {
+     if (!selectedModule) return;
+     
+     const targetIds = getAllDescendantIds(selectedModule);
+     const count = targetIds.length;
+
+     // Confirmation for safety
+     if (count > 1 && !confirm(`این عملیات روی ${count} آیتم زیرمجموعه اعمال می‌شود. آیا اطمینان دارید؟`)) return;
+
+     setTempPermissions(prev => {
+        const next = { ...prev };
+        
+        targetIds.forEach(id => {
+           if (mode === 'revoke') {
+              // Delete permissions for this module
+              delete next[id];
+           } else {
+              // Grant FULL permissions
+              const allActions = AVAILABLE_ACTIONS.map(a => a.id);
+              let allScopes = {};
+              
+              // Apply Data Scopes if any defined for this ID
+              if (DATA_SCOPES[id]) {
+                 DATA_SCOPES[id].forEach(scope => {
+                    allScopes[scope.id] = scope.options.map(o => o.value);
+                 });
+              }
+
+              next[id] = {
+                 actions: allActions,
+                 dataScopes: allScopes
+              };
+           }
+        });
+        
+        return next;
+     });
   };
 
   // Render node for TreeView
@@ -150,6 +204,8 @@ const Roles = ({ t, isRtl }) => {
     { header: 'تاریخ پایان', field: 'endDate', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs text-slate-500">{r.endDate || 'نامحدود'}</span> },
     { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
+
+  const hasChildren = selectedModule?.children && selectedModule.children.length > 0;
 
   return (
     <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
@@ -207,7 +263,7 @@ const Roles = ({ t, isRtl }) => {
          </div>
       </Modal>
 
-      {/* 4. ACCESS MODAL (Using New UI Components) */}
+      {/* 4. ACCESS MODAL */}
       <Modal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} title={`دسترسی‌های: ${editingRole?.title}`} size="xl"
          footer={<><Button variant="secondary" onClick={() => setIsAccessModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Save} onClick={saveAccess}>اعمال</Button></>}>
          <div className="flex h-[550px] border border-slate-200 rounded-lg overflow-hidden">
@@ -225,53 +281,74 @@ const Roles = ({ t, isRtl }) => {
             <div className="w-2/3 bg-white flex flex-col">
                {selectedModule ? (
                   <>
-                     <div className="p-4 border-b border-slate-100 bg-white">
-                        <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                           <span className="bg-indigo-100 text-indigo-700 p-1 rounded"><CheckSquare size={16}/></span>
-                           {selectedModule.label[isRtl ? 'fa' : 'en']}
-                        </h3>
-                     </div>
-                     <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
+                     <div className="p-4 border-b border-slate-100 bg-white flex items-center justify-between">
                         <div>
-                           <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">2</span>لایه ۲: عملیات
-                           </div>
-                           <SelectionGrid 
-                              items={AVAILABLE_ACTIONS} 
-                              selectedIds={tempPermissions[selectedModule.id]?.actions || []} 
-                              onToggle={(id) => updateAction(selectedModule.id, id)}
-                           />
+                           <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
+                              {hasChildren ? <FolderOpen size={16} className="text-indigo-500"/> : <CheckSquare size={16} className="text-indigo-500"/>}
+                              {selectedModule.label[isRtl ? 'fa' : 'en']}
+                           </h3>
+                           <p className="text-[10px] text-slate-400 mt-0.5 mr-6">{hasChildren ? 'این آیتم دارای زیرمجموعه است' : `شناسه: ${selectedModule.id}`}</p>
                         </div>
-
-                        {DATA_SCOPES[selectedModule.id] ? (
-                           <div className="animate-in slide-in-from-bottom-2 duration-300">
-                              <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2 border-t border-slate-100 pt-6">
-                                 <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">3</span>لایه ۳: فیلتر داده
-                              </div>
-                              <div className="space-y-4">
-                                 {DATA_SCOPES[selectedModule.id].map(scope => (
-                                    <div key={scope.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                       <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2"><Filter size={14}/>{scope.label}:</h4>
-                                       <div className="flex flex-wrap gap-2">
-                                          {scope.options.map(opt => (
-                                             <ToggleChip 
-                                                key={opt.value} 
-                                                label={opt.label} 
-                                                checked={tempPermissions[selectedModule.id]?.dataScopes?.[scope.id]?.includes(opt.value)} 
-                                                onClick={() => updateScope(selectedModule.id, scope.id, opt.value)}
-                                             />
-                                          ))}
-                                       </div>
-                                    </div>
-                                 ))}
-                              </div>
-                           </div>
-                        ) : (
-                           <div className="mt-6 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center opacity-70">
-                              <Shield size={24} className="mx-auto mb-2 text-slate-300"/><span className="text-xs text-slate-400">بدون محدودیت لایه ۳</span>
-                           </div>
-                        )}
+                        {/* BULK ACTIONS TOOLBAR */}
+                        <div className="flex items-center gap-2">
+                           <Button variant="outline" size="sm" icon={Trash2} onClick={() => handleBulkPermission('revoke')} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100">حذف تمام دسترسی‌ها</Button>
+                           <Button variant="success" size="sm" icon={Zap} onClick={() => handleBulkPermission('grant')}>اعطای دسترسی کامل</Button>
+                        </div>
                      </div>
+
+                     {hasChildren ? (
+                        <div className="flex flex-col items-center justify-center flex-1 text-slate-400 bg-slate-50/30">
+                           <Layers size={48} className="mb-4 opacity-10 text-indigo-500"/>
+                           <p className="font-bold text-slate-500 text-sm">شما یک سرشاخه را انتخاب کرده‌اید</p>
+                           <p className="text-xs mt-2 max-w-xs text-center">
+                              برای تنظیم دسترسی تکی، روی زیرمجموعه‌ها در درخت کلیک کنید. 
+                              <br/>
+                              یا از دکمه‌های بالا برای <span className="font-bold text-slate-700">اعمال گروهی</span> روی تمام فرزندان استفاده کنید.
+                           </p>
+                        </div>
+                     ) : (
+                        <div className="flex-1 overflow-y-auto p-5 space-y-8 custom-scrollbar">
+                           <div>
+                              <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
+                                 <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">2</span>لایه ۲: عملیات
+                              </div>
+                              <SelectionGrid 
+                                 items={AVAILABLE_ACTIONS} 
+                                 selectedIds={tempPermissions[selectedModule.id]?.actions || []} 
+                                 onToggle={(id) => updateAction(selectedModule.id, id)}
+                              />
+                           </div>
+
+                           {DATA_SCOPES[selectedModule.id] ? (
+                              <div className="animate-in slide-in-from-bottom-2 duration-300">
+                                 <div className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center gap-2 border-t border-slate-100 pt-6">
+                                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">3</span>لایه ۳: فیلتر داده
+                                 </div>
+                                 <div className="space-y-4">
+                                    {DATA_SCOPES[selectedModule.id].map(scope => (
+                                       <div key={scope.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                          <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2"><Filter size={14}/>{scope.label}:</h4>
+                                          <div className="flex flex-wrap gap-2">
+                                             {scope.options.map(opt => (
+                                                <ToggleChip 
+                                                   key={opt.value} 
+                                                   label={opt.label} 
+                                                   checked={tempPermissions[selectedModule.id]?.dataScopes?.[scope.id]?.includes(opt.value)} 
+                                                   onClick={() => updateScope(selectedModule.id, scope.id, opt.value)}
+                                                />
+                                             ))}
+                                          </div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           ) : (
+                              <div className="mt-6 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center opacity-70">
+                                 <Shield size={24} className="mx-auto mb-2 text-slate-300"/><span className="text-xs text-slate-400">بدون محدودیت لایه ۳</span>
+                              </div>
+                           )}
+                        </div>
+                     )}
                   </>
                ) : (
                   <div className="flex flex-col items-center justify-center h-full text-slate-300 select-none">
