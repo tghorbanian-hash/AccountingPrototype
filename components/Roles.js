@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Shield, Edit, Save, Check, Lock, Layers, CheckSquare, Eye, Filter, AlertCircle,
-  FolderOpen, Trash2, Zap, Users, Search, UserPlus, X, UserMinus
+  FolderOpen, Trash2, Zap, Users, Search, UserPlus, X, UserMinus, Plus
 } from 'lucide-react';
 
 const Roles = ({ t, isRtl }) => {
