@@ -1,20 +1,23 @@
-/* Filename: components/UserManagement.js
-   Style: Enterprise ERP - Adapted for new UIComponents
-*/
-
+/* Filename: components/UserManagement.js */
 import React, { useState } from 'react';
 import { 
   Plus, Edit, Trash2, Search, Filter, Save, X, 
   Shield, RefreshCw, Lock, User
 } from 'lucide-react';
 
-// دسترسی به کامپوننت‌های سیستم دیزاین جدید
-const { 
-  Button, InputField, SelectField, Toggle, Badge, 
-  DataGrid, Modal
-} = window.UI;
-
 const UserManagement = ({ t, isRtl }) => {
+  // FIX: Destructure window.UI inside the component to ensure it's loaded
+  const UI = window.UI || {};
+  const { 
+    Button, InputField, SelectField, Toggle, Badge, 
+    DataGrid, Modal
+  } = UI;
+
+  // Safeguard: If UI components aren't ready, return null or loader
+  if (!Button || !InputField) {
+    return <div className="p-4 text-center text-slate-500">Loading User Management Module...</div>;
+  }
+
   const [viewMode, setViewMode] = useState('list'); // 'list'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,7 +64,7 @@ const UserManagement = ({ t, isRtl }) => {
     { header: t.colUsername || 'Username', field: 'username', width: 'w-40', sortable: true },
     { header: t.colLinkedPerson || 'Person', field: 'personName', width: 'w-auto' },
     { 
-      header: t.colUserType || 'Type', 
+      header: t.colUserType || 'UserType', 
       width: 'w-32',
       render: (row) => (
         <Badge variant={row.userType === 'admin' ? 'purple' : 'neutral'}>
