@@ -17,8 +17,23 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // This sets Vazirmatn as the default 'sans' font for the whole app
+                        sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+    
     <script>
         var exports = {}; 
         var process = { env: { NODE_ENV: 'development' } };
@@ -38,15 +53,11 @@
     <style>
         #root { height: 100vh; }
         
-        /* FORCE Vazirmatn Font for RTL */
+        /* 3. GLOBAL FONT ENFORCEMENT */
         body { 
-            font-family: system-ui, -apple-system, sans-serif;
-            font-size: 13px; 
-        }
-        
-        /* Apply Vazirmatn to EVERYTHING in RTL mode */
-        body[dir="rtl"], body[dir="rtl"] * {
             font-family: 'Vazirmatn', sans-serif !important;
+            font-size: 13px; 
+            overflow: hidden; /* Prevent body scroll */
         }
         
         /* Custom Scrollbar Styling */
@@ -55,7 +66,7 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Hide Scrollbar for specific containers */
+        /* Helper to hide scrollbars but keep functionality */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -65,7 +76,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 overflow-hidden">
+<body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module" src="./app-data.js"></script>
