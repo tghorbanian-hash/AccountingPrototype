@@ -1,212 +1,231 @@
 /* Filename: app.js */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { 
-  BarChart3, Languages, Bell, Search, 
-  ChevronRight, LogOut, LayoutGrid, ChevronRightSquare,
-  Menu, Circle
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+
+const { 
+  Menu, X, ChevronRight, Bell, Settings, User, LogOut, 
+  Search, Sun, Moon, Globe, ChevronLeft 
+} = LucideIcons;
 
 const App = () => {
+  // 1. دریافت داده‌ها و کامپوننت‌ها از Window
   const MENU_DATA = window.MENU_DATA || [];
-  const translations = window.translations || { en: {}, fa: {} };
   const UI = window.UI || {};
-  const { TreeMenu } = UI;
+  const { Button, Badge, InputField, Modal } = UI;
   
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [lang, setLang] = useState('fa'); 
-  const [activeModuleId, setActiveModuleId] = useState('accounting');
-  const [activeId, setActiveId] = useState('gl_docs');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
-  const [authView, setAuthView] = useState('login');
-  const [loginMethod, setLoginMethod] = useState('standard');
-  const [loginData, setLoginData] = useState({ identifier: '', password: '' });
-  const [error, setError] = useState('');
+  // کامپوننت‌های صفحات
+  const { 
+    KpiDashboard, 
+    GeneralWorkspace, 
+    UserManagement, 
+    Roles, 
+    Parties, 
+    ComponentShowcase, 
+    LoginPage 
+  } = window;
 
-  const t = translations[lang] || {};
-  const isRtl = lang === 'fa';
+  // 2. وضعیت‌های اصلی (States)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isRtl, setIsRtl] = useState(true);
+  const [lang, setLang] = useState('fa');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeId, setActiveId] = useState('workspace_gen');
+  const [expandedMenus, setExpandedMenus] = useState(['system_settings', 'general_settings', 'base_info_root']);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  }, [lang, isRtl]);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (loginData.identifier === 'admin' && loginData.password === 'admin') {
-      setIsLoggedIn(true);
-      setError('');
-    } else setError(t.invalidCreds || 'Invalid credentials');
+  // 3. توابع کمکی
+  const t = (key) => {
+    return window.translations?.[lang]?.[key] || window.translations?.['en']?.[key] || key;
   };
 
-  const currentModule = useMemo(() => {
-    return MENU_DATA.find(m => m.id === activeModuleId) || MENU_DATA[0] || {};
-  }, [activeModuleId, MENU_DATA]);
-  
-  const renderContent = () => {
-    // 1. اضافه کردن Roles به لیست کامپوننت‌های دریافتی از window
-    const { KpiDashboard, UserManagement, GeneralWorkspace, ComponentShowcase, LoginPage, Roles } = window;
-
-    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
-    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
-    // 2. اضافه کردن شرط نمایش صفحه نقش‌ها
-    if (activeId === 'roles') return Roles ? <Roles t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Roles Component Not Loaded</div>;
-    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
-    if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
-
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
-          <div className="p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200">
-            <LayoutGrid size={64} className="text-slate-300" strokeWidth={1} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">{activeId}</h2>
-            <p className="text-slate-500 mt-2 text-sm font-medium">{t.emptyPage || 'This page is empty.'}</p>
-          </div>
-      </div>
+  const toggleMenu = (menuId) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuId) ? prev.filter(id => id !== menuId) : [...prev, menuId]
     );
   };
 
-  const { LoginPage } = window;
-  if (!isLoggedIn) {
-    if (!LoginPage) return <div className="p-10 text-center">Loading...</div>;
-    return <LoginPage t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView} loginMethod={loginMethod} setLoginMethod={setLoginMethod} loginData={loginData} setLoginData={setLoginData} recoveryData={{otp: ''}} setRecoveryData={() => {}} error={error} handleLogin={handleLogin} toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')} handleVerifyOtp={() => {}} handleUpdatePassword={() => {}} />;
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  // 4. رندر محتوای اصلی بر اساس activeId
+  const renderContent = () => {
+    if (!isAuthenticated) return <LoginPage onLogin={(userData) => { setUser(userData); setIsAuthenticated(true); }} t={t} isRtl={isRtl} />;
+
+    switch (activeId) {
+      case 'dashboards_gen':
+        return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : null;
+      case 'workspace_gen':
+        return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : null;
+      case 'users_list':
+        return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : null;
+      case 'roles':
+        return Roles ? <Roles t={t} isRtl={isRtl} /> : null;
+      case 'parties':
+        return Parties ? <Parties t={t} isRtl={isRtl} /> : null;
+      case 'ui_showcase':
+        return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : null;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <LucideIcons.Construction size={64} className="mb-4 opacity-20" />
+            <h2 className="text-xl font-bold">{t('emptyPage')}</h2>
+            <p className="text-sm mt-2">Module ID: {activeId}</p>
+          </div>
+        );
+    }
+  };
+
+  // 5. رندر منوی درختی (Recursive Sidebar)
+  const renderMenuItems = (items) => {
+    return items.map(item => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isExpanded = expandedMenus.includes(item.id);
+      const isActive = activeId === item.id;
+      const Icon = item.icon || ChevronRight;
+
+      return (
+        <div key={item.id} className="select-none">
+          <div 
+            onClick={() => hasChildren ? toggleMenu(item.id) : setActiveId(item.id)}
+            className={`
+              flex items-center gap-2 px-3 py-2 cursor-pointer transition-all duration-200 rounded-lg mx-2 mb-1
+              ${isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}
+            `}
+          >
+            <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
+            <span className="flex-1 text-xs font-medium">{item.label[lang]}</span>
+            {hasChildren && (
+              <LucideIcons.ChevronDown 
+                size={14} 
+                className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+              />
+            )}
+          </div>
+          {hasChildren && isExpanded && (
+            <div className={`mr-4 border-r border-slate-200 ml-2 pr-2 mb-2`}>
+              {renderMenuItems(item.children)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={(userData) => { setUser(userData); setIsAuthenticated(true); }} t={t} isRtl={isRtl} />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      
-      {/* SIDEBAR - Module Rail */}
-      <aside className={`bg-white w-[72px] flex flex-col items-center py-4 shrink-0 z-40 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-sm relative overflow-x-hidden`}>
-        <div className="bg-indigo-700 w-10 h-10 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0">
-          <BarChart3 size={20} strokeWidth={2.5} />
+    <div className={`flex h-screen bg-slate-100 ${isRtl ? 'dir-rtl' : 'dir-ltr'} font-vazir`}>
+      {/* Sidebar */}
+      <aside 
+        className={`
+          ${isSidebarOpen ? 'w-64' : 'w-0'} 
+          bg-white border-l border-slate-200 flex flex-col transition-all duration-300 overflow-hidden shrink-0 z-50
+        `}
+      >
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-indigo-900 text-white">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <LucideIcons.Layers size={20} />
+            </div>
+            <span className="font-black text-lg tracking-tight">STRATUM</span>
+          </div>
         </div>
-        
-        <div className="flex-1 flex flex-col gap-3 items-center w-full px-2 overflow-y-auto no-scrollbar">
-          {MENU_DATA.map(mod => {
-             const isActive = activeModuleId === mod.id;
-             return (
-              <button 
-                key={mod.id} onClick={() => setActiveModuleId(mod.id)}
-                className={`
-                  relative w-10 h-10 rounded-xl transition-all flex items-center justify-center shrink-0 group
-                  ${isActive 
-                    ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' 
-                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}
-                `}
-              >
-                {mod.icon ? <mod.icon size={20} strokeWidth={isActive ? 2 : 1.5} /> : <Circle size={10}/>}
-                
-                {isActive && (
-                  <span className={`absolute w-1.5 h-1.5 bg-indigo-600 rounded-full top-1.5 ${isRtl ? 'right-1' : 'left-1'}`}></span>
-                )}
 
-                <div className={`
-                  absolute ${isRtl ? 'right-full mr-4' : 'left-full ml-4'} top-1/2 -translate-y-1/2 
-                  bg-slate-900 text-white text-[11px] py-1.5 px-3 rounded-md opacity-0 invisible 
-                  group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl font-medium
-                `}>
-                  {mod.label ? mod.label[lang] : mod.id}
-                  <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-[-4px]' : 'left-[-4px]'} w-2 h-2 bg-slate-900 rotate-45`}></div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        
-        <div className="mt-auto flex flex-col gap-3 items-center pb-2 shrink-0">
-            <button onClick={() => setLang(l => l === 'en' ? 'fa' : 'en')} className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors">
-                 <Languages size={20} />
-            </button>
-            <div className="w-8 h-px bg-slate-200"></div>
-            <button onClick={() => setIsLoggedIn(false)} className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-              <LogOut size={20} />
-            </button>
-        </div>
-      </aside>
-
-      {/* SIDEBAR - Sub Menu */}
-      <aside className={`
-        bg-white border-${isRtl ? 'l' : 'r'} border-slate-200 
-        flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.01)]
-        ${sidebarCollapsed ? 'w-0 opacity-0' : 'w-72 opacity-100'}
-      `}>
-        <div className="h-16 flex items-center px-6 border-b border-slate-100 shrink-0 bg-slate-50/30">
-           <h2 className="text-sm font-black text-slate-800 truncate leading-tight">
-             {currentModule.label ? currentModule.label[lang] : 'Menu'}
-           </h2>
-        </div>
-        
-        <div className="flex-1 overflow-hidden">
-          {TreeMenu ? (
-            <TreeMenu 
-              items={currentModule.children || []} 
-              activeId={activeId} 
-              onSelect={setActiveId} 
-              isRtl={isRtl}
+        <div className="p-3">
+          <div className="relative">
+            <Search className="absolute right-3 top-2.5 text-slate-400" size={16} />
+            <input 
+              type="text" 
+              placeholder={t('searchMenu')}
+              className="w-full bg-slate-100 border-none rounded-xl py-2 pr-10 pl-4 text-xs focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          ) : (
-             <div className="p-4 text-center text-slate-400 text-xs">Loading Menu Component...</div>
-          )}
+          </div>
         </div>
-        
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-slate-100">
-             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-100 to-blue-50 border border-white shadow-sm flex items-center justify-center text-indigo-700 font-black text-xs">
-                AD
-             </div>
-             <div className="min-w-0">
-                <div className="text-[12px] font-bold text-slate-700 truncate">Admin User</div>
-                <div className="text-[10px] text-slate-400 truncate">Product Manager</div>
-             </div>
+
+        <nav className="flex-1 overflow-y-auto no-scrollbar py-2">
+          {renderMenuItems(MENU_DATA)}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100 bg-slate-50">
+          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-200 cursor-pointer transition-all">
+            <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold">
+              {user?.fullName?.charAt(0) || 'A'}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs font-bold text-slate-800 truncate">{user?.fullName || 'Administrator'}</p>
+              <p className="text-[10px] text-slate-500 truncate">{user?.username || 'admin'}</p>
+            </div>
+            <LogOut size={16} className="text-slate-400 hover:text-red-500" onClick={logout} />
           </div>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/50 relative">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-20">
-           <div className="flex items-center gap-4">
-             <button 
-               onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
-               className="p-2 -ml-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-             >
-                {sidebarCollapsed ? <Menu size={20} /> : <ChevronRightSquare size={20} className={isRtl ? '' : 'rotate-180'} />}
-             </button>
-             
-             <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-400 font-medium hidden sm:inline">{currentModule.label ? currentModule.label[lang] : ''}</span>
-                <ChevronRight size={14} className={`text-slate-300 hidden sm:inline ${isRtl ? 'rotate-180' : ''}`} />
-                <span className="text-slate-800 font-bold">{activeId}</span>
-             </div>
-           </div>
+      {/* Main Container */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Top Header */}
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
+            <div className="flex items-center gap-2 text-slate-500 text-sm">
+              <LucideIcons.Home size={16} />
+              <ChevronLeft size={14} className="opacity-50" />
+              <span className="font-medium text-slate-800">
+                {activeId === 'workspace_gen' ? t('ws_title') : activeId}
+              </span>
+            </div>
+          </div>
 
-           <div className="flex items-center gap-3">
-              <div className="relative hidden md:block">
-                 <Search size={16} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-slate-400`} />
-                 <input 
-                    placeholder={t.searchMenu || 'Search...'}
-                    className={`
-                       h-9 bg-slate-100 border-none rounded-full text-xs w-56 focus:w-72 transition-all
-                       ${isRtl ? 'pr-9 pl-4' : 'pl-9 pr-4'} focus:ring-2 focus:ring-indigo-100 outline-none
-                    `}
-                 />
-              </div>
-              <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors relative">
-                 <Bell size={18} />
-                 <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
-           </div>
+          <div className="flex items-center gap-3">
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg relative transition-colors">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="h-6 w-[1px] bg-slate-200 mx-1"></div>
+            <button 
+              className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition-all"
+              onClick={() => {
+                const newLang = lang === 'fa' ? 'en' : 'fa';
+                setLang(newLang);
+                setIsRtl(newLang === 'fa');
+              }}
+            >
+              <Globe size={18} />
+              <span className="text-xs font-bold">{lang === 'fa' ? 'EN' : 'FA'}</span>
+            </button>
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+              <Settings size={20} />
+            </button>
+          </div>
         </header>
 
-        <div className="flex-1 overflow-hidden relative p-0">
-           {renderContent()}
-        </div>
+        {/* Dynamic Page Content */}
+        <section className="flex-1 overflow-hidden relative bg-slate-50/50">
+          {renderContent()}
+        </section>
       </main>
     </div>
   );
 };
 
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);
+// Mount the App
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  const root = createRoot(rootElement);
+  root.render(<App />);
+}
+
+export default App;
