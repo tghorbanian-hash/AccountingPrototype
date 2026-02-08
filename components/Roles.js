@@ -45,16 +45,18 @@ const Roles = ({ t, isRtl }) => {
 
   // --- DEFINITIONS FOR LAYERS 2 & 3 ---
   const AVAILABLE_ACTIONS = [
-    { id: 'create', label: 'ایجاد / ثبت' },
+    { id: 'create', label: 'ایجاد' },
+    { id: 'view', label: 'مشاهده' },
     { id: 'edit', label: 'ویرایش' },
     { id: 'delete', label: 'حذف' },
-    { id: 'view', label: 'مشاهده' },
-    { id: 'print', label: 'چاپ / خروجی' },
-    { id: 'approve', label: 'تایید / قطعی کردن' },
+    { id: 'print', label: 'چاپ' },
+    { id: 'approve', label: 'تایید' },
+    { id: 'export', label: 'خروجی اکسل' },
+    { id: 'share', label: 'اشتراک گذاری' },
   ];
 
   const DATA_SCOPES = {
-    'doc_list': [ // شناسه صحیح برای لیست اسناد در MENU_DATA
+    'gl_docs': [ // شناسه صحیح برای لیست اسناد در MENU_DATA
       {
         id: 'docType',
         label: 'نوع سند',
@@ -461,14 +463,15 @@ const Roles = ({ t, isRtl }) => {
                               <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">2</span>
                               لایه ۲: عملیات مجاز (Operations)
                            </div>
-                           <div className="grid grid-cols-2 gap-3">
+                           {/* UPDATE: Changed to 4 columns for better layout */}
+                           <div className="grid grid-cols-4 gap-2">
                               {AVAILABLE_ACTIONS.map(action => {
                                  const isChecked = tempPermissions[selectedModule.id]?.actions?.includes(action.id);
                                  return (
                                     <div 
                                        key={action.id} 
                                        className={`
-                                          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none
+                                          flex flex-col items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none text-center
                                           ${isChecked ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}
                                        `}
                                        onClick={() => toggleAction(selectedModule.id, action.id)}
@@ -476,7 +479,7 @@ const Roles = ({ t, isRtl }) => {
                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
                                           {isChecked && <Check size={14} className="text-white"/>}
                                        </div>
-                                       <span className={`text-xs font-bold ${isChecked ? 'text-indigo-700' : 'text-slate-600'}`}>{action.label}</span>
+                                       <span className={`text-[10px] font-bold ${isChecked ? 'text-indigo-700' : 'text-slate-600'}`}>{action.label}</span>
                                     </div>
                                  );
                               })}
@@ -505,9 +508,10 @@ const Roles = ({ t, isRtl }) => {
                                                 <button
                                                    key={opt.value}
                                                    onClick={() => toggleDataScope(selectedModule.id, scope.id, opt.value)}
+                                                   // UPDATE: Changed background color for active state
                                                    className={`
                                                       px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1.5
-                                                      ${isActive ? 'bg-white border-green-500 text-green-700 shadow-sm ring-1 ring-green-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400'}
+                                                      ${isActive ? 'bg-green-50 border-green-500 text-green-700 shadow-sm ring-1 ring-green-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400'}
                                                    `}
                                                 >
                                                    {isActive && <Check size={12} className="text-green-600"/>}
