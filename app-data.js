@@ -9,7 +9,7 @@ const {
   CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
-  XCircle, FileText, CheckSquare, Eye, MousePointerClick
+  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component
 } = LucideIcons;
 
 // --- Helper Functions ---
@@ -26,6 +26,14 @@ window.flattenMenu = (items, parentModuleId = null) => {
 
 // --- Static Menu Structure ---
 window.MENU_DATA = [
+  {
+    id: 'showcase',
+    label: { en: 'UI Kit (Showcase)', fa: 'نمونه دیزاین (UI Kit)' },
+    icon: Component,
+    children: [
+      { id: 'ui_showcase', label: { en: 'All Components', fa: 'نمونه تمام کامپوننت‌ها' } }
+    ]
+  },
   { 
     id: 'dashboards', 
     label: { en: 'Dashboards', fa: 'داشبوردها' }, 
@@ -260,6 +268,7 @@ window.translations = {
     filters: 'Global Filters',
     all: 'All',
     emptyPage: 'This module is currently empty or under development.',
+    uiKitTitle: 'Design System Showcase',
     // User Management Translations
     usersListTitle: 'User Management',
     usersListSubtitle: 'Manage system access and user profiles',
@@ -387,6 +396,7 @@ window.translations = {
     filters: 'فیلترهای عمومی',
     all: 'همه',
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
+    uiKitTitle: 'نمایش دیزاین سیستم',
     // User Management Translations
     usersListTitle: 'مدیریت کاربران',
     usersListSubtitle: 'مدیریت دسترسی‌ها و پروفایل‌های کاربری سیستم',
