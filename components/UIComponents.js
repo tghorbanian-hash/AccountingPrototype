@@ -23,13 +23,13 @@ const THEME = {
     textMuted: 'text-slate-500',
     headerBg: 'bg-slate-50',
     rowHover: 'hover:bg-indigo-50/60',
-    rowSelected: 'bg-indigo-50 border-l-4 border-l-indigo-600', // نشانگر سطر انتخاب شده
+    rowSelected: 'bg-indigo-50 border-l-4 border-l-indigo-600', 
     groupHeader: 'bg-slate-100/90 backdrop-blur-sm text-slate-700 font-bold',
   },
   metrics: {
     radius: 'rounded-md', 
-    inputHeight: 'h-8',   // ارتفاع فشرده برای ورودی‌ها
-    buttonHeight: 'h-8',  // ارتفاع فشرده برای دکمه‌ها
+    inputHeight: 'h-8',
+    buttonHeight: 'h-8',
     fontSize: 'text-[12px]', 
     headerHeight: 'h-9',
   }
@@ -53,9 +53,9 @@ export const Button = ({
 
   const sizes = {
     default: THEME.metrics.buttonHeight,
-    sm: 'h-6 px-2 text-[11px]', // دکمه کوچک
+    sm: 'h-6 px-2 text-[11px]',
     icon: 'h-8 w-8 px-0',
-    iconSm: 'h-6 w-6 px-0', // دکمه آیکون خیلی کوچک برای داخل گرید
+    iconSm: 'h-6 w-6 px-0',
   };
 
   return (
@@ -153,7 +153,174 @@ export const Badge = ({ children, variant = 'neutral', className='' }) => {
   );
 };
 
-// --- 2. FILTER SECTION (Collapsible) ---
+// --- NEW COMPONENTS FOR ROLES & ACCESS ---
+
+// 1. ToggleChip: دکمه‌های انتخاب چندگانه کوچک (مثل تگ‌ها)
+export const ToggleChip = ({ label, checked, onClick, icon: Icon, colorClass = "green" }) => {
+  const styles = {
+    green: checked ? 'bg-green-50 border-green-500 text-green-700 ring-1 ring-green-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400',
+    indigo: checked ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-100' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-400',
+  };
+
+  const activeStyle = styles[colorClass] || styles.green;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1.5
+        ${activeStyle} shadow-sm
+      `}
+    >
+      {checked && (Icon ? <Icon size={12} className={checked ? `text-${colorClass}-600` : ''}/> : <Check size={12} />)}
+      {label}
+    </button>
+  );
+};
+
+// 2. SelectionGrid: گرید انتخاب آیتم‌ها (مثل عملیات CRUD)
+export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }) => {
+  const gridCols = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 6: 'grid-cols-6' };
+  
+  return (
+    <div className={`grid ${gridCols[columns] || 'grid-cols-4'} gap-2`}>
+      {items.map(item => {
+         const isChecked = selectedIds.includes(item.id);
+         return (
+            <div 
+               key={item.id} 
+               className={`
+                  flex flex-col items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none text-center
+                  ${isChecked ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}
+               `}
+               onClick={() => onToggle(item.id)}
+            >
+               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                  {isChecked && <Check size={14} className="text-white"/>}
+               </div>
+               <span className={`text-[10px] font-bold ${isChecked ? 'text-indigo-700' : 'text-slate-600'}`}>{item.label}</span>
+            </div>
+         );
+      })}
+    </div>
+  );
+};
+
+// 3. TreeView: درخت عمومی با قابلیت جستجو و رندر سفارشی
+export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder = "جستجو..." }) => {
+  const [expandedNodes, setExpandedNodes] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtering Logic
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    const filterNodes = (nodes) => {
+      return nodes.reduce((acc, node) => {
+        const label = (node.label[isRtl ? 'fa' : 'en'] || '').toLowerCase();
+        const matches = label.includes(searchTerm.toLowerCase());
+        let children = [];
+        if (node.children) children = filterNodes(node.children);
+        if (matches || children.length > 0) {
+          acc.push({ ...node, children, _matches: matches });
+        }
+        return acc;
+      }, []);
+    };
+    return filterNodes(data);
+  }, [data, searchTerm, isRtl]);
+
+  // Auto Expand on Search
+  useEffect(() => {
+    if (searchTerm) {
+      const allIds = {};
+      const traverse = (nodes) => {
+        nodes.forEach(n => {
+          if (n.children && n.children.length > 0) {
+            allIds[n.id] = true;
+            traverse(n.children);
+          }
+        });
+      };
+      traverse(filteredData);
+      setExpandedNodes(allIds);
+    } else {
+      setExpandedNodes({});
+    }
+  }, [searchTerm, filteredData]);
+
+  const toggleNode = (id, e) => {
+    e.stopPropagation();
+    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const renderTree = (items, depth = 0) => {
+    return items.map(item => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isExpanded = expandedNodes[item.id];
+      const isSelected = selectedNodeId === item.id;
+      
+      // Highlight Label
+      const label = item.label[isRtl ? 'fa' : 'en'];
+      const displayLabel = (searchTerm && item._matches) ? <mark className="bg-yellow-100 rounded px-0.5">{label}</mark> : label;
+
+      return (
+        <div key={item.id} className="select-none relative">
+           {depth > 0 && <div className={`absolute top-0 bottom-0 w-px bg-slate-200 ${isRtl ? 'right-[11px]' : 'left-[11px]'}`}></div>}
+           <div 
+             className={`
+               flex items-center gap-2 py-1.5 px-2 my-0.5 cursor-pointer rounded-lg transition-all
+               ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'hover:bg-slate-100 text-slate-700'}
+             `}
+             style={{ paddingRight: isRtl ? `${depth * 16 + 8}px` : '8px', paddingLeft: isRtl ? '8px' : `${depth * 16 + 8}px` }}
+             onClick={(e) => {
+               if(hasChildren) toggleNode(item.id, e);
+               else onSelectNode(item);
+             }}
+           >
+             {hasChildren ? (
+               <div className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10">
+                  <div className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`}>
+                    <ChevronDown size={14} />
+                  </div>
+               </div>
+             ) : (
+                <div className="shrink-0">{renderNodeContent ? renderNodeContent(item) : <div className="w-5 h-5"/>}</div>
+             )}
+             
+             <div className="flex items-center gap-2 truncate">
+                {hasChildren && <span className={`text-slate-400 ${isExpanded ? 'text-indigo-400' : ''}`}>{isExpanded ? <FolderOpen size={14}/> : <Folder size={14}/>}</span>}
+                <span className="text-[12px] truncate">{displayLabel}</span>
+             </div>
+           </div>
+           {hasChildren && isExpanded && <div className="overflow-hidden animate-in slide-in-from-top-1 duration-200">{renderTree(item.children, depth + 1)}</div>}
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="relative mb-2 shrink-0">
+         <input 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={searchPlaceholder} 
+            className={`w-full bg-slate-100 border border-slate-200 rounded-md text-[11px] h-8 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition-all ${isRtl ? 'pr-8 pl-2' : 'pl-8 pr-2'}`} 
+         />
+         <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2.5' : 'left-2.5'}`}/>
+         {searchTerm && <button onClick={() => setSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}><X size={12}/></button>}
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+         {filteredData.length > 0 ? renderTree(filteredData) : <div className="text-center p-4 text-slate-400 text-xs">موردی یافت نشد.</div>}
+      </div>
+    </div>
+  );
+};
+
+
+// --- EXISTING COMPLEX COMPONENTS ---
+
+// 2. FILTER SECTION
 export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "فیلترهای پیشرفته" }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -187,7 +354,7 @@ export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "ف�
   );
 };
 
-// --- 3. MODERN DATA GRID ---
+// 3. DATA GRID
 export const DataGrid = ({ 
   columns, 
   data = [], 
@@ -210,7 +377,6 @@ export const DataGrid = ({
   const [expandedGroups, setExpandedGroups] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // -- Sort Handler --
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -219,11 +385,8 @@ export const DataGrid = ({
     setSortConfig({ key, direction });
   };
 
-  // -- Data Processing (Search -> Sort -> Group) --
   const processedData = useMemo(() => {
     let result = [...data];
-
-    // 1. Search
     if (searchTerm) {
       result = result.filter(item => 
         Object.values(item).some(val => 
@@ -231,8 +394,6 @@ export const DataGrid = ({
         )
       );
     }
-
-    // 2. Sorting
     if (sortConfig.key) {
       result.sort((a, b) => {
         const valA = a[sortConfig.key];
@@ -242,10 +403,7 @@ export const DataGrid = ({
         return 0;
       });
     }
-
-    // 3. Grouping
     if (groupBy.length > 0) {
-      // Prioritize sorting by group fields
       result.sort((a, b) => {
         for (let field of groupBy) {
           if (a[field] < b[field]) return -1;
@@ -253,17 +411,13 @@ export const DataGrid = ({
         }
         return 0;
       });
-
       const flatList = [];
       let lastValues = {};
-      
       result.forEach(row => {
         let isVisible = true;
-        
         groupBy.forEach((field, level) => {
           const val = row[field];
           const groupKey = `grp-${level}-${field}-${val}`;
-          
           if (lastValues[level] !== val) {
             flatList.push({
               _type: 'GROUP_HEADER',
@@ -276,27 +430,21 @@ export const DataGrid = ({
             lastValues[level] = val;
             for(let l=level+1; l<groupBy.length; l++) lastValues[l] = null;
           }
-
           if (expandedGroups[groupKey] === false) {
              isVisible = false;
           }
         });
-
         if (isVisible) flatList.push(row);
       });
       result = flatList;
     }
-
     return result;
   }, [data, searchTerm, groupBy, expandedGroups, sortConfig]);
 
-  // -- Pagination --
   const totalItems = processedData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   
-  // Reset to page 1 if data filtered significantly
   useEffect(() => { if(currentPage > totalPages) setCurrentPage(1); }, [totalItems, pageSize]);
-  
   const paginatedData = processedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const toggleGroup = (groupKey) => {
@@ -309,18 +457,14 @@ export const DataGrid = ({
 
   return (
     <div className="flex flex-col h-full bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
-      
-      {/* TOOLBAR */}
       <div className="px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {/* Active Groups Chips */}
           {groupBy.map(field => (
              <span key={field} className="flex items-center gap-1 bg-white text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 text-[11px] font-bold shadow-sm">
                 <span>{columns.find(c => c.field === field)?.header || field}</span>
                 <button onClick={() => removeGroup(field)} className="hover:text-red-500"><X size={12}/></button>
              </span>
           ))}
-
           {onCreate && (
              <Button variant="primary" size="sm" icon={Plus} onClick={onCreate}>جدید</Button>
           )}
@@ -346,7 +490,6 @@ export const DataGrid = ({
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="flex-1 overflow-auto relative custom-scrollbar bg-white">
         <table className="w-full border-collapse text-[12px] relative">
           <thead className="bg-slate-100 sticky top-0 z-20 shadow-sm border-b border-slate-300">
@@ -373,7 +516,7 @@ export const DataGrid = ({
                         {sortConfig.key === col.field ? (
                            sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-indigo-600"/> : <ArrowDown size={12} className="text-indigo-600"/>
                         ) : (
-                           <div className="opacity-0 group-hover:opacity-50"><ArrowDown size={12}/></div> // Hint indicator
+                           <div className="opacity-0 group-hover:opacity-50"><ArrowDown size={12}/></div>
                         )}
                       </div>
                     )}
@@ -390,8 +533,6 @@ export const DataGrid = ({
                <tr><td colSpan={100} className="p-10 text-center text-slate-400 italic">اطلاعاتی یافت نشد.</td></tr>
             ) : (
               paginatedData.map((row, rowIndex) => {
-                
-                // Group Header Row
                 if (row._type === 'GROUP_HEADER') {
                   const isClosed = expandedGroups[row.key] === false;
                   return (
@@ -413,8 +554,6 @@ export const DataGrid = ({
                     </tr>
                   );
                 }
-
-                // Data Row
                 const isSelected = selectedIds.includes(row.id);
                 return (
                   <tr 
@@ -444,8 +583,6 @@ export const DataGrid = ({
                          )}
                       </td>
                     ))}
-                    
-                    {/* Actions Column */}
                     <td className="px-1 py-1 text-center sticky left-0 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5px_rgba(0,0,0,0.02)] z-10">
                       <div className="flex items-center justify-center gap-1 opacity-100">
                         {actions ? actions(row) : null}
@@ -459,7 +596,6 @@ export const DataGrid = ({
         </table>
       </div>
 
-      {/* PAGINATION FOOTER */}
       <div className="px-3 py-2 bg-slate-50 border-t border-slate-300 flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center gap-2">
            <select 
@@ -476,11 +612,9 @@ export const DataGrid = ({
              <span className="font-bold text-slate-800">{totalItems}</span> رکورد
            </span>
         </div>
-
         <div className="flex items-center gap-1">
            <Button variant="outline" size="iconSm" icon={ChevronsRight} disabled={currentPage === 1} onClick={() => setCurrentPage(1)} />
            <Button variant="outline" size="iconSm" icon={ChevronRight} disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)} />
-           
            <div className="flex items-center gap-1 px-2">
               <span className="text-[11px] text-slate-500">صفحه</span>
               <input 
@@ -490,7 +624,6 @@ export const DataGrid = ({
               />
               <span className="text-[11px] text-slate-500">از {totalPages}</span>
            </div>
-
            <Button variant="outline" size="iconSm" icon={ChevronLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(c => c + 1)} />
            <Button variant="outline" size="iconSm" icon={ChevronsLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)} />
         </div>
@@ -499,76 +632,14 @@ export const DataGrid = ({
   );
 };
 
-// --- 4. TREE MENU (With py-2 spacing) ---
+// 4. TREE MENU (Sidebar Navigation)
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
-  const [expanded, setExpanded] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const toggle = (id, e) => { e.stopPropagation(); setExpanded(prev => ({ ...prev, [id]: !prev[id] })); };
-  const getLabel = (item) => (typeof item.label === 'object' && item.label !== null) ? (isRtl ? item.label.fa : item.label.en) : item.label;
-  const handleExpandAll = () => { const all={}; const t=(n)=>{n.forEach(x=>{if(x.children)all[x.id]=true;if(x.children)t(x.children)})}; t(items); setExpanded(all); };
-  
-  const filter = (nodes, term) => { 
-    if(!term) return nodes; 
-    return nodes.reduce((acc,n)=>{ 
-      const l=getLabel(n)||''; 
-      const m=l.toLowerCase().includes(term.toLowerCase()); 
-      const c=n.children?filter(n.children,term):[]; 
-      if(m||c.length>0)acc.push({...n,children:c,_isMatch:m}); return acc; 
-    },[]);
-  };
-  const visible = useMemo(()=>filter(items,searchTerm),[items,searchTerm,isRtl]);
-
-  const render = (item, d=0) => {
-    const hasC=item.children?.length>0, isEx=searchTerm?true:expanded[item.id], label=getLabel(item);
-    
-    // Level 0 Headers
-    if(d===0 && hasC) {
-      return (
-        <div key={item.id} className="mb-3 mt-2">
-           <div onClick={(e)=>toggle(item.id,e)} className="px-4 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded-lg text-[11px] font-black text-slate-500 uppercase tracking-widest transition-colors">
-              <div className="text-slate-400">{isEx ? <ChevronDown size={14}/> : (isRtl ? <ChevronLeft size={14}/> : <ChevronRight size={14}/>)}</div>
-              <span>{label}</span>
-              <div className="h-px bg-slate-200 flex-1"></div>
-           </div>
-           {isEx && <div className="flex flex-col gap-0.5">{item.children.map(c => render(c, d+1))}</div>}
-        </div>
-      );
-    }
-
-    // Tree Items (Increased padding py-2)
-    return (
-      <div key={item.id} className="relative">
-        {d > 1 && !searchTerm && <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-[19px]' : 'left-[19px]'} w-px bg-slate-200`}></div>}
-        <div onClick={(e) => { hasC ? toggle(item.id, e) : onSelect && onSelect(item.id); }} 
-             className={`flex items-center gap-2 py-1.5 px-2 mx-2 rounded-lg cursor-pointer transition-all select-none ${activeId === item.id && !hasC ? 'bg-indigo-50 text-indigo-700 font-bold border-r-4 border-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${d === 0 ? 'mx-4' : (isRtl ? 'mr-8 ml-2' : 'ml-8 mr-2')}`}
-             style={{ paddingRight: d === 0 ? '8px' : (isRtl ? '8px' : '8px') }}>
-          <div className="shrink-0 flex items-center justify-center w-5 h-5">
-             {hasC ? <ChevronDown size={15} className={`text-slate-400 transition-transform duration-200 ${isEx ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`} /> : <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>}
-          </div>
-          <span className="text-[13px] truncate flex-1 pt-0.5 leading-normal">{searchTerm && item._isMatch ? <mark className="bg-yellow-100 rounded px-0.5">{label}</mark> : label}</span>
-        </div>
-        {hasC && isEx && <div className="overflow-hidden flex flex-col gap-0.5">{item.children.map(c => render(c, d + 1))}</div>}
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="px-3 py-3 flex flex-col gap-2 shrink-0 bg-white sticky top-0 z-10">
-        <div className="relative">
-          <input value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} placeholder={isRtl ? "جستجو..." : "Search..."} className={`w-full bg-slate-100 border-none rounded-lg text-xs h-9 focus:ring-2 focus:ring-indigo-100 outline-none transition-all ${isRtl ? 'pr-9 pl-2' : 'pl-9 pr-2'}`} />
-          <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-3' : 'left-3'}`}/>
-          {searchTerm && <button onClick={()=>setSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}><X size={12} /></button>}
-        </div>
-        <div className="flex justify-end gap-1 px-1">
-          <button onClick={handleExpandAll} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="باز کردن همه"><FolderOpen size={16}/></button>
-          <button onClick={()=>setExpanded({})} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="بستن همه"><Folder size={16}/></button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">{visible.length>0?visible.map(i=>render(i)):<div className="text-center text-slate-400 text-xs mt-8 italic">موردی یافت نشد</div>}</div>
-    </div>
+  // Uses TreeView internally but tailored for navigation
+  const renderNode = (item) => (
+     <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>
   );
+  
+  return <TreeView data={items} selectedNodeId={activeId} onSelectNode={(item) => onSelect(item.id)} renderNodeContent={renderNode} isRtl={isRtl} searchPlaceholder={isRtl ? "جستجوی منو..." : "Search Menu..."} />;
 };
 
 export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
@@ -607,5 +678,4 @@ export const LOV = ({ label, placeholder, isRtl }) => (
   </div>
 );
 
-// --- Exports ---
-window.UI = { Button, InputField, SelectField, Toggle, Badge, DataGrid, FilterSection, TreeMenu, Modal, DatePicker, LOV, THEME };
+window.UI = { Button, InputField, SelectField, Toggle, Badge, DataGrid, FilterSection, TreeMenu, TreeView, SelectionGrid, ToggleChip, Modal, DatePicker, LOV, THEME };
