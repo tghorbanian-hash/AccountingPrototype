@@ -182,24 +182,15 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Helper to get localized label
   const getLabel = (item) => (typeof item.label === 'object' && item.label !== null) ? (isRtl ? item.label.fa : item.label.en) : item.label;
 
-  // Filter Items Recursive Logic
   const filterItems = (nodes, term) => {
     if (!term) return nodes;
     return nodes.reduce((acc, node) => {
       const label = getLabel(node) || '';
       const matches = label.toLowerCase().includes(term.toLowerCase());
       const filteredChildren = node.children ? filterItems(node.children, term) : [];
-      
-      // If node matches or has matching children, include it
       if (matches || filteredChildren.length > 0) {
-        // If searching, force expand parents of matched children
-        if (filteredChildren.length > 0) {
-           // We can't easily update state during render, so we rely on default open or specific props
-           // For simplicity in this prototype, we'll return the filtered structure
-        }
         acc.push({ ...node, children: filteredChildren, _isMatch: matches });
       }
       return acc;
@@ -210,14 +201,11 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
 
   const renderItem = (item, depth = 0) => {
     const hasChildren = item.children && item.children.length > 0;
-    
-    // Auto-expand if searching
     const isExpanded = searchTerm ? true : expanded[item.id];
     const isActive = activeId === item.id;
     const label = getLabel(item);
 
-    // --- Level 0 Logic (Headers vs Items) ---
-    // FIX: Only treat as Header if it HAS children. If it's a leaf at Level 0, it's a clickable item.
+    // --- Level 0 Logic ---
     if (depth === 0 && hasChildren) {
       return (
         <div key={item.id} className="mb-4 animate-in fade-in slide-in-from-top-1">
@@ -234,12 +222,10 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
       );
     }
 
-    // --- Interactive Items (Level 1+ OR Level 0 Leaf) ---
-    const paddingStart = depth === 0 ? (isRtl ? 'mr-2' : 'ml-2') : (isRtl ? 'mr-8' : 'ml-8');
-    
+    // --- Interactive Items ---
+    // FIX: Removed 'leading-none' to prevent text clipping in Persian
     return (
       <div key={item.id} className="relative">
-        {/* Connector Line */}
         {depth > 1 && !searchTerm && (
            <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-[19px]' : 'left-[19px]'} w-px bg-slate-200`}></div>
         )}
@@ -262,7 +248,9 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
                <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActive ? 'bg-indigo-600' : 'bg-slate-300 group-hover:bg-slate-400'}`}></div>
              )}
           </div>
-          <span className="text-[13px] truncate flex-1 leading-none pt-0.5">
+          
+          {/* FIX: Use 'leading-normal' or 'leading-snug' instead of 'leading-none' */}
+          <span className="text-[13px] truncate flex-1 leading-snug pt-0.5">
             {searchTerm && item._isMatch ? <mark className="bg-yellow-100 rounded px-0.5 text-slate-900">{label}</mark> : label}
           </span>
         </div>
@@ -278,7 +266,6 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search Bar */}
       <div className="px-4 py-2 shrink-0">
         <div className="relative">
           <input 
@@ -299,7 +286,6 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
         </div>
       </div>
       
-      {/* Tree Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
         {visibleItems.length > 0 ? (
           visibleItems.map(item => renderItem(item, 0))
