@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 
 // --- Get Data and Components from Window ---
-const { MENU_DATA, translations, flattenMenu } = window;
+// اطمینان حاصل می‌کنیم که داده‌ها وجود دارند تا از کرش کردن جلوگیری شود
+const MENU_DATA = window.MENU_DATA || [];
+const translations = window.translations || { en: {}, fa: {} };
 const { KpiDashboard, LoginPage, UserManagement, GeneralWorkspace, ComponentShowcase } = window;
 
 // --- Tree Navigation Item Component ---
@@ -15,7 +17,7 @@ const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleE
   const hasChildren = item.children && item.children.length > 0;
   const isExpanded = expandedItems.includes(item.id);
   const isActive = activeId === item.id;
-  const label = item.label[lang];
+  const label = item.label ? item.label[lang] : item.id;
   
   const handleItemClick = (e) => {
     e.stopPropagation();
@@ -89,7 +91,7 @@ const App = () => {
   const [loginData, setLoginData] = useState({ identifier: '', password: '' });
   const [error, setError] = useState('');
   
-  const t = translations[lang];
+  const t = translations[lang] || {};
   const isRtl = lang === 'fa';
 
   useEffect(() => {
@@ -106,15 +108,18 @@ const App = () => {
     if (loginData.identifier === 'admin' && loginData.password === 'admin') {
       setIsLoggedIn(true);
       setError('');
-    } else setError(t.invalidCreds);
+    } else setError(t.invalidCreds || 'Invalid credentials');
   };
 
-  const currentModule = useMemo(() => MENU_DATA.find(m => m.id === activeModuleId), [activeModuleId]);
+  // Safe retrieval of current module
+  const currentModule = useMemo(() => {
+    return MENU_DATA.find(m => m.id === activeModuleId) || MENU_DATA[0] || {};
+  }, [activeModuleId]);
   
   const renderContent = () => {
-    if (activeId === 'workspace_gen') return <GeneralWorkspace t={t} isRtl={isRtl} />;
-    if (activeId === 'users_list') return <UserManagement t={t} isRtl={isRtl} />;
-    if (activeId === 'dashboards_gen') return <KpiDashboard t={t} isRtl={isRtl} />;
+    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading Workspace...</div>;
+    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div>Loading Users...</div>;
+    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading Dashboard...</div>;
 
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
@@ -123,7 +128,7 @@ const App = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-800">{activeId}</h2>
-            <p className="text-slate-500 mt-2 text-sm font-medium">{t.emptyPage}</p>
+            <p className="text-slate-500 mt-2 text-sm font-medium">{t.emptyPage || 'This page is empty.'}</p>
           </div>
       </div>
     );
@@ -131,6 +136,7 @@ const App = () => {
 
   // --- 1. Login Screen ---
   if (!isLoggedIn) {
+    if (!LoginPage) return <div className="p-10 text-center">Loading Login Module...</div>;
     return (
       <LoginPage 
         t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView}
@@ -185,9 +191,9 @@ const App = () => {
                 relative p-3 rounded-xl transition-all w-full flex justify-center group
                 ${activeModuleId === mod.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50'}
               `}
-              title={mod.label[lang]}
+              title={mod.label ? mod.label[lang] : mod.id}
             >
-              <mod.icon size={22} strokeWidth={1.5} />
+              {mod.icon ? <mod.icon size={22} strokeWidth={1.5} /> : <div className="w-5 h-5 bg-slate-300 rounded-full"/>}
               {activeModuleId === mod.id && (
                 <div className={`absolute w-1 h-8 bg-indigo-600 rounded-full top-1/2 -translate-y-1/2 ${isRtl ? 'right-0' : 'left-0'}`}></div>
               )}
@@ -196,7 +202,7 @@ const App = () => {
                 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 invisible 
                 group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50
               `}>
-                {mod.label[lang]}
+                {mod.label ? mod.label[lang] : mod.id}
               </div>
             </button>
           ))}
@@ -215,7 +221,7 @@ const App = () => {
       `}>
         <div className="h-16 flex items-center px-6 border-b border-slate-200/60 shrink-0">
            <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest truncate">
-             {currentModule.label[lang]}
+             {currentModule.label ? currentModule.label[lang] : 'Menu'}
            </h2>
         </div>
         
@@ -255,7 +261,7 @@ const App = () => {
              </button>
              
              <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-400 font-medium">{currentModule.label[lang]}</span>
+                <span className="text-slate-400 font-medium">{currentModule.label ? currentModule.label[lang] : ''}</span>
                 <ChevronRight size={14} className={`text-slate-300 ${isRtl ? 'rotate-180' : ''}`} />
                 <span className="text-slate-800 font-bold">{activeId}</span>
              </div>
@@ -265,7 +271,7 @@ const App = () => {
               <div className="relative">
                  <Search size={16} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-slate-400`} />
                  <input 
-                    placeholder={t.searchMenu}
+                    placeholder={t.searchMenu || 'Search...'}
                     className={`
                        h-9 bg-slate-100 border-none rounded-full text-xs w-48 focus:w-64 transition-all
                        ${isRtl ? 'pr-9 pl-4' : 'pl-9 pr-4'} focus:ring-2 focus:ring-indigo-100 outline-none
