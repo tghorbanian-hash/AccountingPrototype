@@ -3,7 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { 
   Loader2, ChevronDown, ChevronRight, Search, X, 
   Check, MoreHorizontal, Filter, Settings, ChevronLeft,
-  ChevronsLeft, ChevronsRight, Calendar, List, Circle
+  ChevronsLeft, ChevronsRight, Calendar, List, Circle,
+  Maximize2, Minimize2, FolderOpen, Folder
 } from 'lucide-react';
 
 // --- ENTERPRISE THEME TOKENS ---
@@ -36,7 +37,6 @@ const THEME = {
 export const Button = ({ 
   children, variant = 'primary', icon: Icon, isLoading, className = '', onClick, disabled, size = 'default' 
 }) => {
-  // FIX: Removed leading-none to prevent text clipping
   const baseStyle = `flex items-center justify-center gap-1.5 px-3 ${THEME.metrics.radius} font-medium text-[12px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap active:scale-[0.98]`;
   const variants = {
     primary: `${THEME.colors.primary} shadow-sm`,
@@ -173,11 +173,12 @@ export const DataGrid = ({ columns, data = [], actions, onSelectAll, onSelectRow
   );
 };
 
-// --- IMPROVED TREE MENU ---
+// --- IMPROVED TREE MENU WITH BULK ACTIONS ---
 export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
-  const [expanded, setExpanded] = useState({});
+  const [expanded, setExpanded] = useState({}); // Default: All Closed
   const [searchTerm, setSearchTerm] = useState('');
 
+  // --- Handlers ---
   const toggle = (id, e) => {
     e.stopPropagation();
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
@@ -185,6 +186,26 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
 
   const getLabel = (item) => (typeof item.label === 'object' && item.label !== null) ? (isRtl ? item.label.fa : item.label.en) : item.label;
 
+  // --- Bulk Actions Logic ---
+  const handleExpandAll = () => {
+    const allIds = {};
+    const traverse = (nodes) => {
+      nodes.forEach(node => {
+        if (node.children && node.children.length > 0) {
+          allIds[node.id] = true;
+          traverse(node.children);
+        }
+      });
+    };
+    traverse(items);
+    setExpanded(allIds);
+  };
+
+  const handleCollapseAll = () => {
+    setExpanded({});
+  };
+
+  // --- Filtering Logic ---
   const filterItems = (nodes, term) => {
     if (!term) return nodes;
     return nodes.reduce((acc, node) => {
@@ -200,30 +221,45 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
 
   const visibleItems = useMemo(() => filterItems(items, searchTerm), [items, searchTerm, isRtl]);
 
+  // --- Rendering ---
   const renderItem = (item, depth = 0) => {
     const hasChildren = item.children && item.children.length > 0;
+    // If searching, force expand matched parents. Otherwise use state.
     const isExpanded = searchTerm ? true : expanded[item.id];
     const isActive = activeId === item.id;
     const label = getLabel(item);
 
-    // --- Level 0 Logic ---
-    if (depth === 0 && hasChildren) {
-      return (
-        <div key={item.id} className="mb-4 animate-in fade-in slide-in-from-top-1">
-          <div className="px-5 mt-4 mb-2 flex items-center gap-2 select-none group">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">
-              {label}
-            </span>
-            <div className="h-px flex-1 bg-slate-100 group-hover:bg-slate-200 transition-colors"></div>
+    // Styling for Level 0 (Headers/Main Modules)
+    if (depth === 0) {
+      if (hasChildren) {
+        return (
+          <div key={item.id} className="mb-2">
+            {/* Level 0 Header - Now Clickable for Collapse/Expand */}
+            <div 
+              onClick={(e) => toggle(item.id, e)}
+              className="px-5 mt-3 mb-1 flex items-center gap-2 select-none group cursor-pointer hover:bg-slate-50 py-1 rounded transition-colors"
+            >
+              <div className="text-slate-400 transition-transform duration-200">
+                  {isExpanded ? <ChevronDown size={14} /> : (isRtl ? <ChevronLeft size={14} /> : <ChevronRight size={14} />)}
+              </div>
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-indigo-700 transition-colors">
+                {label}
+              </span>
+              <div className="h-px flex-1 bg-slate-100 group-hover:bg-indigo-50 transition-colors"></div>
+            </div>
+            
+            {/* Children Container */}
+            {isExpanded && (
+              <div className="flex flex-col animate-in slide-in-from-top-1 fade-in duration-200">
+                {item.children.map(child => renderItem(child, depth + 1))}
+              </div>
+            )}
           </div>
-          <div className="flex flex-col">
-            {item.children.map(child => renderItem(child, depth + 1))}
-          </div>
-        </div>
-      );
+        );
+      }
     }
 
-    // --- Interactive Items ---
+    // Interactive Items (Level 1+)
     return (
       <div key={item.id} className="relative">
         {depth > 1 && !searchTerm && (
@@ -249,7 +285,6 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
              )}
           </div>
           
-          {/* FIX: Removed 'leading-none', added 'pt-0.5' for visual alignment */}
           <span className="text-[13px] truncate flex-1 leading-normal pt-0.5">
             {searchTerm && item._isMatch ? <mark className="bg-yellow-100 rounded px-0.5 text-slate-900">{label}</mark> : label}
           </span>
@@ -266,7 +301,8 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-2 shrink-0">
+      {/* Search & Actions Toolbar */}
+      <div className="px-4 py-2 shrink-0 flex flex-col gap-2">
         <div className="relative">
           <input 
             value={searchTerm}
@@ -284,8 +320,27 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
             </button>
           )}
         </div>
+        
+        {/* Bulk Action Buttons */}
+        <div className="flex items-center gap-1 justify-end">
+          <button 
+             onClick={handleExpandAll}
+             title={isRtl ? "باز کردن همه" : "Expand All"}
+             className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+          >
+             <FolderOpen size={14} />
+          </button>
+          <button 
+             onClick={handleCollapseAll}
+             title={isRtl ? "بستن همه" : "Collapse All"}
+             className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+          >
+             <Folder size={14} />
+          </button>
+        </div>
       </div>
       
+      {/* Tree Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
         {visibleItems.length > 0 ? (
           visibleItems.map(item => renderItem(item, 0))
