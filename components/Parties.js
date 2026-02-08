@@ -40,7 +40,7 @@ const Parties = ({ t, isRtl }) => {
         <div className="min-h-[32px] bg-white border border-slate-200 rounded-md flex flex-wrap items-center gap-1 p-1 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
           {value.length === 0 && <span className="text-slate-400 text-[11px] px-1">{placeholder}</span>}
           {value.map(id => (
-            <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1">
+            <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1 font-bold">
               {options.find(o => o.id === id)?.label}
               <X size={10} onClick={(e) => { e.stopPropagation(); onChange(value.filter(v => v !== id)); }}/>
             </span>
@@ -112,7 +112,6 @@ const Parties = ({ t, isRtl }) => {
 
   const handleEdit = (row) => {
     setEditingParty(row);
-    // Fix: Ensure addresses and roles are arrays even if missing in record to avoid .map error
     setFormData({
       ...row,
       addresses: row.addresses || [''],
@@ -227,7 +226,6 @@ const Parties = ({ t, isRtl }) => {
           </div>
 
           <div className="grid grid-cols-4 gap-4 items-end">
-            <div className="col-span-1 flex items-center h-8"><Toggle checked={formData.isActive} onChange={v => setFormData({...formData, isActive: v})} label="وضعیت فعال" /></div>
             {formData.type === 'person' ? (
               <>
                 <InputField label="نام *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
@@ -250,7 +248,6 @@ const Parties = ({ t, isRtl }) => {
                 <InputField label="شناسه ملی *" value={formData.nationalId} onChange={e => setFormData({...formData, nationalId: e.target.value})} />
                 <InputField label="شماره ثبت" value={formData.regNo} onChange={e => setFormData({...formData, regNo: e.target.value})} />
                 <InputField label="وب‌سایت" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} />
-                <InputField label="شناسه ملی" value={formData.nationalId} disabled className="bg-slate-100" />
               </>
             )}
             <SelectField label="تابعیت *" value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})}>
@@ -259,6 +256,11 @@ const Parties = ({ t, isRtl }) => {
             <InputField label="تلفن" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
             <InputField label="تلفن همراه" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} />
             <InputField label="پست الکترونیک" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            
+            {/* فیلد وضعیت به عنوان آخرین آیتم فیلدهای اصلی */}
+            <div className="col-span-1 flex items-center h-8 bg-slate-50 px-2 rounded border border-slate-200 shadow-sm">
+              <Toggle checked={formData.isActive} onChange={v => setFormData({...formData, isActive: v})} label="وضعیت" />
+            </div>
           </div>
 
           <div className="space-y-2 border-t pt-4">
