@@ -526,7 +526,7 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
     if(d===0 && hasC) {
       return (
         <div key={item.id} className="mb-3 mt-2">
-           <div onClick={(e)=>toggle(item.id,e)} className="px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded-lg text-[11px] font-black text-slate-500 uppercase tracking-widest transition-colors">
+           <div onClick={(e)=>toggle(item.id,e)} className="px-4 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-slate-100 rounded-lg text-[11px] font-black text-slate-500 uppercase tracking-widest transition-colors">
               <div className="text-slate-400">{isEx ? <ChevronDown size={14}/> : (isRtl ? <ChevronLeft size={14}/> : <ChevronRight size={14}/>)}</div>
               <span>{label}</span>
               <div className="h-px bg-slate-200 flex-1"></div>
@@ -541,7 +541,7 @@ export const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
       <div key={item.id} className="relative">
         {d > 1 && !searchTerm && <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-[19px]' : 'left-[19px]'} w-px bg-slate-200`}></div>}
         <div onClick={(e) => { hasC ? toggle(item.id, e) : onSelect && onSelect(item.id); }} 
-             className={`flex items-center gap-2 py-2 px-2 mx-2 rounded-lg cursor-pointer transition-all select-none ${activeId === item.id && !hasC ? 'bg-indigo-50 text-indigo-700 font-bold border-r-4 border-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${d === 0 ? 'mx-4' : (isRtl ? 'mr-8 ml-2' : 'ml-8 mr-2')}`}
+             className={`flex items-center gap-2 py-1.5 px-2 mx-2 rounded-lg cursor-pointer transition-all select-none ${activeId === item.id && !hasC ? 'bg-indigo-50 text-indigo-700 font-bold border-r-4 border-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${d === 0 ? 'mx-4' : (isRtl ? 'mr-8 ml-2' : 'ml-8 mr-2')}`}
              style={{ paddingRight: d === 0 ? '8px' : (isRtl ? '8px' : '8px') }}>
           <div className="shrink-0 flex items-center justify-center w-5 h-5">
              {hasC ? <ChevronDown size={15} className={`text-slate-400 transition-transform duration-200 ${isEx ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`} /> : <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>}
