@@ -6,12 +6,11 @@ import {
   Menu
 } from 'lucide-react';
 
-// --- دریافت داده‌ها و کامپوننت‌ها از Window ---
-// نکته: ComponentShowcase در فایل index قبل از این فایل لود شده است
+// --- Get Data and Components from Window ---
 const { MENU_DATA, translations, flattenMenu } = window;
 const { KpiDashboard, LoginPage, UserManagement, GeneralWorkspace, ComponentShowcase } = window;
 
-// --- کامپوننت داخلی: آیتم‌های منوی درختی (Nav Item) ---
+// --- Tree Navigation Item Component ---
 const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleExpand, isRtl, depth = 0 }) => {
   const hasChildren = item.children && item.children.length > 0;
   const isExpanded = expandedItems.includes(item.id);
@@ -27,7 +26,6 @@ const TreeNavItem = ({ item, lang, activeId, setActiveId, expandedItems, toggleE
     }
   };
 
-  // استایل‌دهی بر اساس عمق منو (Hierarchy)
   const getDepthStyle = () => {
     if (depth === 0) return "text-slate-800 font-bold bg-slate-100/50 mb-1 mx-2 mt-2 border-b border-slate-100";
     return "text-slate-600 font-medium text-[12px] hover:text-indigo-700";
@@ -80,7 +78,7 @@ const App = () => {
   const [lang, setLang] = useState('en');
   
   // Navigation State
-  const [activeModuleId, setActiveModuleId] = useState('showcase'); // پیش‌فرض روی شوکیس
+  const [activeModuleId, setActiveModuleId] = useState('showcase'); // Default to Showcase
   const [activeId, setActiveId] = useState('ui_showcase');
   const [expandedItems, setExpandedItems] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -114,12 +112,10 @@ const App = () => {
   const currentModule = useMemo(() => MENU_DATA.find(m => m.id === activeModuleId), [activeModuleId]);
   
   const renderContent = () => {
-    // مسیردهی به کامپوننت‌های مختلف
     if (activeId === 'workspace_gen') return <GeneralWorkspace t={t} isRtl={isRtl} />;
     if (activeId === 'users_list') return <UserManagement t={t} isRtl={isRtl} />;
     if (activeId === 'dashboards_gen') return <KpiDashboard t={t} isRtl={isRtl} />;
 
-    // صفحه خالی برای ماژول‌های پیاده‌سازی نشده
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
           <div className="p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200">
@@ -147,7 +143,7 @@ const App = () => {
     );
   }
 
-  // --- 2. SHOWCASE MODE (حالت تمام صفحه برای تست UI Kit) ---
+  // --- 2. SHOWCASE MODE ---
   if (activeId === 'ui_showcase') {
     return (
       <div className="h-screen w-full bg-white relative">
@@ -161,12 +157,13 @@ const App = () => {
         >
           <LogOut size={14} /> Exit Showcase
         </button>
-        <ComponentShowcase t={t} isRtl={isRtl} />
+        {/* Safe check for ComponentShowcase */}
+        {ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div className="p-10 text-center">Loading Showcase...</div>}
       </div>
     );
   }
 
-  // --- 3. STANDARD APP SHELL (پوسته اصلی برنامه) ---
+  // --- 3. STANDARD APP SHELL ---
   return (
     <div className={`min-h-screen bg-slate-50 flex ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       <style>{`
@@ -174,7 +171,7 @@ const App = () => {
         .font-vazir { font-family: 'Vazirmatn', sans-serif; }
       `}</style>
       
-      {/* A. Module Rail (نوار باریک ماژول‌ها) */}
+      {/* A. Module Rail */}
       <aside className={`bg-white w-[70px] flex flex-col items-center py-4 shrink-0 z-30 border-${isRtl ? 'l' : 'r'} border-slate-200 shadow-[0_0_15px_rgba(0,0,0,0.03)]`}>
         <div className="bg-indigo-700 p-2.5 rounded-xl text-white mb-6 shadow-lg shadow-indigo-500/30">
           <BarChart3 size={24} strokeWidth={2} />
@@ -194,8 +191,6 @@ const App = () => {
               {activeModuleId === mod.id && (
                 <div className={`absolute w-1 h-8 bg-indigo-600 rounded-full top-1/2 -translate-y-1/2 ${isRtl ? 'right-0' : 'left-0'}`}></div>
               )}
-              
-              {/* Tooltip */}
               <div className={`
                 absolute ${isRtl ? 'right-full mr-3' : 'left-full ml-3'} top-1/2 -translate-y-1/2 
                 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 invisible 
@@ -212,7 +207,7 @@ const App = () => {
         </button>
       </aside>
 
-      {/* B. Sub-Menu Pane (پنل منوی فرعی) */}
+      {/* B. Sub-Menu Pane */}
       <aside className={`
         bg-slate-50/50 border-${isRtl ? 'l' : 'r'} border-slate-200 
         flex flex-col transition-all duration-300 ease-in-out overflow-hidden
@@ -233,7 +228,6 @@ const App = () => {
           ))}
         </nav>
         
-        {/* User Profile Mini */}
         <div className="p-4 border-t border-slate-200/60">
           <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-slate-200">
              <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs">
@@ -247,7 +241,7 @@ const App = () => {
         </div>
       </aside>
 
-      {/* C. Main Viewport (فضای اصلی کار) */}
+      {/* C. Main Viewport */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 relative shadow-inner">
         
         {/* C1. Header */}
@@ -260,7 +254,6 @@ const App = () => {
                 {sidebarCollapsed ? <Menu size={20} /> : <ChevronRightSquare size={20} className={isRtl ? '' : 'rotate-180'} />}
              </button>
              
-             {/* Breadcrumb-ish Indicator */}
              <div className="flex items-center gap-2 text-sm">
                 <span className="text-slate-400 font-medium">{currentModule.label[lang]}</span>
                 <ChevronRight size={14} className={`text-slate-300 ${isRtl ? 'rotate-180' : ''}`} />
