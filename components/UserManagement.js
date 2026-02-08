@@ -17,6 +17,7 @@ const UserManagement = ({ t, isRtl }) => {
   if (!Button) return <div className="p-4">Loading UI...</div>;
 
   // --- INTERNAL COMPONENT: MULTI-SELECT WITH SEARCH ---
+  // Added z-index to dropdown to prevent clipping
   const MultiSelect = ({ options, value = [], onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -70,7 +71,7 @@ const UserManagement = ({ t, isRtl }) => {
         </div>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-[60] max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
             <div className="p-2 border-b border-slate-50 sticky top-0 bg-white">
               <input 
                 value={searchTerm}
@@ -105,6 +106,7 @@ const UserManagement = ({ t, isRtl }) => {
     const traverse = (nodes, pathPrefix = '') => {
       nodes.forEach(node => {
         const currentPath = pathPrefix ? `${pathPrefix} / ${node.label[isRtl ? 'fa' : 'en']}` : node.label[isRtl ? 'fa' : 'en'];
+        // Assuming leaf nodes are forms
         if (!node.children || node.children.length === 0) {
           forms.push({ ...node, fullPath: currentPath });
         } else {
@@ -131,48 +133,56 @@ const UserManagement = ({ t, isRtl }) => {
     { id: 4, title: 'مدیر سیستم', code: 'ADMIN' },
   ];
 
-  // MOCK PERMISSIONS FOR ROLES 
-  // IMPORTANT: formIds must match IDs in MENU_DATA (e.g., 'gl_docs')
+  // --- CORRECTED DATA: Using ACTUAL form IDs from app-data.js ---
   const MOCK_ROLE_PERMISSIONS = {
-    1: [ // CFO
-       { formId: 'gl_docs', actions: ['view', 'approve'], dataScopes: {} },
-       { formId: 'rpt_balance', actions: ['view', 'print'], dataScopes: {} }
+    1: [ // CFO (Financial)
+       { formId: 'doc_list', actions: ['view', 'approve'], dataScopes: {} }, // From app-data
+       { formId: 'doc_review', actions: ['view'], dataScopes: {} }, 
+       { formId: 'payment_req', actions: ['approve'], dataScopes: {} } 
     ],
     2: [ // SALES
-       { formId: 'gl_docs', actions: ['create', 'view'], dataScopes: {} },
-       { formId: 'inv_list', actions: ['create', 'view'], dataScopes: {} }
+       { formId: 'payment_req', actions: ['create', 'view'], dataScopes: {} },
+       { formId: 'doc_list', actions: ['view'], dataScopes: {} } // Overlap
+    ],
+    4: [ // ADMIN
+       { formId: 'users_list', actions: ['create', 'edit', 'delete', 'view'], dataScopes: {} },
+       { formId: 'roles', actions: ['create', 'edit', 'delete', 'view'], dataScopes: {} },
+       { formId: 'access_mgmt', actions: ['view'], dataScopes: {} }
     ]
   };
 
   const [users, setUsers] = useState([
-    { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', roleIds: [1, 4], isActive: true, lastLogin: '1402/11/15' },
-    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', roleIds: [2], isActive: true, lastLogin: '1402/11/10' },
+    { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', roleIds: [4], isActive: true, lastLogin: '1402/11/15' },
+    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', roleIds: [1], isActive: true, lastLogin: '1402/11/10' },
   ]);
 
   // --- STATES ---
   const [selectedRows, setSelectedRows] = useState([]);
+  
   const [filterValues, setFilterValues] = useState({ username: '', roleIds: [], isActive: 'all' });
   const [appliedFilters, setAppliedFilters] = useState({ username: '', roleIds: [], isActive: 'all' });
 
-  // Create/Edit States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userFormData, setUserFormData] = useState({ username: '', partyId: '', userType: '', isActive: true, password: '' });
 
-  // Permissions Modal States
   const [isPermModalOpen, setIsPermModalOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
   const [assignedRoles, setAssignedRoles] = useState([]); 
   const [directPermissions, setDirectPermissions] = useState([]); 
   const [selectedPermDetail, setSelectedPermDetail] = useState(null);
   
-  // Search Form State (in Permission Modal)
   const [formSearchTerm, setFormSearchTerm] = useState('');
   const [showFormResults, setShowFormResults] = useState(false);
   
-  // Search Role State
   const [roleSearchTerm, setRoleSearchTerm] = useState('');
   const [isRoleSearchOpen, setIsRoleSearchOpen] = useState(false);
+
+  // --- HELPER: getPartyName ---
+  const getPartyName = (id) => {
+    const p = MOCK_PARTIES.find(p => p.id === Number(id));
+    return p ? `${p.name} (${p.code})` : 'نامشخص';
+  };
 
   // --- LOGIC: MERGE PERMISSIONS ---
   const effectivePermissions = useMemo(() => {
@@ -185,6 +195,7 @@ const UserManagement = ({ t, isRtl }) => {
       
       rolePerms.forEach(p => {
         const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
+        // If form doesn't exist in menu, skip it (prevents errors)
         if (!formInfo) return; 
 
         if (!map.has(p.formId)) {
@@ -230,7 +241,7 @@ const UserManagement = ({ t, isRtl }) => {
     return Array.from(map.values());
   }, [assignedRoles, directPermissions, ALL_SYSTEM_FORMS]);
 
-  // *** KEY FIX: SYNC SIDEBAR STATE WHEN PERMISSIONS CHANGE ***
+  // Sync Sidebar State
   useEffect(() => {
     if (selectedPermDetail) {
       const updated = effectivePermissions.find(p => p.id === selectedPermDetail.id);
@@ -304,7 +315,6 @@ const UserManagement = ({ t, isRtl }) => {
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
-    // After state update, the Grid will re-render, user clicks row to edit.
   };
 
   const handleUpdateDirectPermission = (formId, type, key, value) => {
@@ -336,17 +346,9 @@ const UserManagement = ({ t, isRtl }) => {
     });
   };
 
-  // --- HELPER: getPartyName (Restored) ---
-  const getPartyName = (id) => {
-    const p = MOCK_PARTIES.find(p => p.id === Number(id));
-    return p ? `${p.name} (${p.code})` : 'نامشخص';
-  };
-
-  // --- FILTER LOGIC ---
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchName = !appliedFilters.username || user.username.toLowerCase().includes(appliedFilters.username.toLowerCase());
-      
       let matchRole = true;
       if (appliedFilters.roleIds && appliedFilters.roleIds.length > 0) {
         if (!user.roleIds || user.roleIds.length === 0) {
@@ -359,7 +361,6 @@ const UserManagement = ({ t, isRtl }) => {
     });
   }, [users, appliedFilters]);
 
-  // Search Results
   const formSearchResults = useMemo(() => {
      if (!formSearchTerm) return [];
      return ALL_SYSTEM_FORMS.filter(f => f.fullPath.includes(formSearchTerm));
@@ -390,9 +391,10 @@ const UserManagement = ({ t, isRtl }) => {
     { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
 
+  // Widened columns for modal grid
   const permColumns = [
     { header: 'مسیر فرم', field: 'path', width: 'w-full', render: (r) => <div className="text-[11px] font-medium flex items-center gap-2"><FileText size={12} className="text-indigo-400"/>{r.path}</div> },
-    { header: 'منبع دسترسی', field: 'source', width: 'w-64', render: (r) => (
+    { header: 'منبع دسترسی', field: 'source', width: 'w-48', render: (r) => (
        <div className="flex flex-wrap gap-1">
           {r.sources.map((s, idx) => (
              <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>
@@ -416,7 +418,6 @@ const UserManagement = ({ t, isRtl }) => {
   return (
     <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       
-      {/* HEADER */}
       <div className="flex items-center justify-between mb-4 shrink-0">
          <div>
             <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -425,7 +426,6 @@ const UserManagement = ({ t, isRtl }) => {
          </div>
       </div>
 
-      {/* FILTER */}
       <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: '', roleIds: []}); setAppliedFilters({username: '', roleIds: []})}} isRtl={isRtl}>
          <InputField label="نام کاربری" value={filterValues.username} onChange={(e) => setFilterValues({...filterValues, username: e.target.value})} placeholder="جستجو..." isRtl={isRtl} />
          <div>
@@ -439,7 +439,6 @@ const UserManagement = ({ t, isRtl }) => {
          </div>
       </FilterSection>
 
-      {/* GRID */}
       <div className="flex-1 min-h-0">
          <DataGrid 
             title="لیست کاربران" columns={columns} data={filteredUsers} isRtl={isRtl}
@@ -456,7 +455,6 @@ const UserManagement = ({ t, isRtl }) => {
          />
       </div>
 
-      {/* EDIT MODAL */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={editingUser ? "ویرایش کاربر" : "تعریف کاربر جدید"} size="md"
          footer={<><Button variant="secondary" onClick={() => setIsEditModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Check} onClick={handleSaveUser}>ذخیره</Button></>}>
          <div className="grid grid-cols-2 gap-4">
@@ -465,7 +463,6 @@ const UserManagement = ({ t, isRtl }) => {
                <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
             </SelectField>
             
-            {/* Password and Party on the SAME ROW */}
             <div className="col-span-2 grid grid-cols-2 gap-4">
                 {!editingUser ? (
                     <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="********" />
@@ -488,7 +485,6 @@ const UserManagement = ({ t, isRtl }) => {
          </div>
       </Modal>
 
-      {/* PERMISSIONS MODAL */}
       <Modal isOpen={isPermModalOpen} onClose={() => setIsPermModalOpen(false)} title={`مدیریت دسترسی‌های: ${viewingUser?.username}`} size="xl"
          footer={<Button variant="primary" onClick={() => setIsPermModalOpen(false)}>تایید و بستن</Button>}>
          <div className="flex flex-col h-[600px]">
@@ -525,7 +521,7 @@ const UserManagement = ({ t, isRtl }) => {
                        <ChevronDown size={14} className="text-slate-400"/>
                    </div>
                    {isRoleSearchOpen && (
-                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-40 overflow-y-auto">
+                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-[60] max-h-40 overflow-y-auto">
                            {roleSearchResults.length > 0 ? roleSearchResults.map(r => (
                                <div key={r.id} onClick={() => handleAddRole(r.id)} className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-[11px] text-slate-700 border-b border-slate-50">
                                    {r.title}
@@ -540,8 +536,10 @@ const UserManagement = ({ t, isRtl }) => {
             </div>
 
             <div className="flex flex-1 border border-slate-200 rounded-lg overflow-hidden">
-               <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col transition-all duration-300 bg-white`}>
-                  <div className="p-2 border-b border-slate-100 bg-white relative z-20">
+               <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col transition-all duration-300 bg-white relative`}>
+                  
+                  {/* SEARCH FORM WRAPPER - High Z-Index */}
+                  <div className="p-2 border-b border-slate-100 bg-white relative z-[50]">
                      <div className="relative">
                         <input 
                            value={formSearchTerm}
@@ -566,7 +564,8 @@ const UserManagement = ({ t, isRtl }) => {
                      </div>
                   </div>
 
-                  <div className="flex-1 overflow-hidden">
+                  {/* GRID CONTAINER - Lower Z-Index */}
+                  <div className="flex-1 overflow-hidden z-0">
                      <DataGrid 
                         columns={permColumns} data={effectivePermissions} isRtl={isRtl}
                         onSelectRow={(id) => {
