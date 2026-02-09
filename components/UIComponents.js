@@ -1,870 +1,811 @@
-/* Filename: app-data.js */
+/* Filename: components/UIComponents.js */
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Loader2, ChevronDown, ChevronRight, Search, X, 
+  Check, Filter, Settings, ChevronLeft,
+  ChevronsLeft, ChevronsRight, List, MoreVertical,
+  Plus, Trash2, Download, Printer, Edit, Eye, 
+  Maximize2, Minimize2, FolderOpen, Folder, FileText,
+  AlertCircle, ArrowRight, ArrowUp, ArrowDown, Info
+} from 'lucide-react';
 
-// دریافت تمام آیکون‌ها از ماژول Lucide
-import * as LucideIcons from 'lucide-react';
+// --- ENTERPRISE THEME TOKENS ---
+const THEME = {
+  colors: {
+    primary: 'bg-indigo-700 hover:bg-indigo-800 text-white',
+    primaryLight: 'bg-indigo-50 text-indigo-700',
+    secondary: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300',
+    accent: 'text-indigo-700',
+    surface: 'bg-white',
+    background: 'bg-slate-100',
+    border: 'border-slate-200',
+    textMain: 'text-slate-800',
+    textMuted: 'text-slate-500',
+    headerBg: 'bg-slate-50',
+    rowHover: 'hover:bg-indigo-50/60',
+    rowSelected: 'bg-indigo-50 border-l-4 border-l-indigo-600', 
+    groupHeader: 'bg-slate-100/90 backdrop-blur-sm text-slate-700 font-bold',
+  },
+  metrics: {
+    radius: 'rounded-md', 
+    inputHeight: 'h-8',
+    buttonHeight: 'h-8',
+    fontSize: 'text-[12px]', 
+    headerHeight: 'h-9',
+  }
+};
 
-// استخراج آیکون‌های مورد نیاز برای منوها و صفحات
-const { 
-  LayoutDashboard, Receipt, Wallet, BarChart3, Settings, Languages, Bell, Search, 
-  ArrowUpRight, ArrowDownLeft, Plus, MoreVertical, ChevronRight, ChevronLeft, Users, 
-  CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
-  RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
-  Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
-  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
-  Shield, Database, Network, Banknote, MapPin, ListTodo, ArrowLeftRight, Coins, Check,
-  Link2, AlertTriangle
-} = LucideIcons;
+// --- 1. ATOMIC COMPONENTS ---
 
-// --- توابع کمکی (Helper Functions) ---
-window.flattenMenu = (items, parentModuleId = null) => {
-  return items.reduce((acc, item) => {
-    const currentModuleId = parentModuleId || item.id;
-    acc.push({ ...item, moduleId: currentModuleId });
-    if (item.children) {
-      acc.push(...window.flattenMenu(item.children, currentModuleId));
+const Button = ({ 
+  children, variant = 'primary', icon: Icon, isLoading, className = '', onClick, disabled, size = 'default', title
+}) => {
+  const baseStyle = `flex items-center justify-center gap-1.5 px-3 ${THEME.metrics.radius} font-medium ${THEME.metrics.fontSize} transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap active:scale-[0.98] outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-100`;
+  
+  const variants = {
+    primary: `${THEME.colors.primary} shadow-sm border border-transparent`,
+    secondary: `${THEME.colors.secondary} shadow-sm`,
+    ghost: `bg-transparent text-slate-600 hover:bg-slate-200 hover:text-slate-900`,
+    danger: `bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 shadow-sm`,
+    success: `bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm`,
+    outline: `bg-transparent border border-slate-300 text-slate-600 hover:border-indigo-300 hover:text-indigo-600`,
+  };
+
+  const sizes = {
+    default: THEME.metrics.buttonHeight,
+    sm: 'h-6 px-2 text-[11px]',
+    icon: 'h-8 w-8 px-0',
+    iconSm: 'h-6 w-6 px-0',
+  };
+
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={isLoading || disabled} 
+      title={title}
+      className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className}`}
+    >
+      {isLoading ? <Loader2 size={size === 'sm' || size === 'iconSm' ? 12 : 14} className="animate-spin" /> : (Icon && <Icon size={size === 'sm' || size === 'iconSm' ? 14 : 16} strokeWidth={2} />)}
+      {children}
+    </button>
+  );
+};
+
+const InputField = ({ label, icon: Icon, isRtl, className = '', ...props }) => {
+  return (
+    <div className={`w-full ${className}`}>
+      {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+      <div className="relative group">
+        {Icon && (
+          <div className={`absolute inset-y-0 ${isRtl ? 'right-2' : 'left-2'} flex items-center text-slate-400 group-focus-within:text-indigo-600 transition-colors`}>
+            <Icon size={14} />
+          </div>
+        )}
+        <input 
+          {...props}
+          className={`
+            w-full ${THEME.colors.surface} border ${THEME.colors.border}
+            ${THEME.metrics.radius} ${THEME.metrics.inputHeight}
+            ${Icon ? (isRtl ? 'pr-8 pl-2' : 'pl-8 pr-2') : 'px-2'} 
+            outline-none 
+            focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+            transition-all text-[12px] text-slate-800 placeholder:text-slate-400
+          `}
+        />
+      </div>
+    </div>
+  );
+};
+
+const SelectField = ({ label, children, isRtl, className = '', ...props }) => (
+  <div className={`w-full ${className}`}>
+    {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+    <div className="relative group">
+      <select 
+        {...props}
+        className={`
+          w-full ${THEME.colors.surface} border ${THEME.colors.border}
+          ${THEME.metrics.radius} ${THEME.metrics.inputHeight} pl-2 pr-8 appearance-none
+          outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+          transition-all text-[12px] text-slate-800 cursor-pointer hover:border-slate-300
+        `}
+      >
+        {children}
+      </select>
+      <div className={`absolute inset-y-0 ${isRtl ? 'left-2' : 'right-2'} flex items-center pointer-events-none text-slate-400 group-hover:text-slate-600`}>
+        <ChevronDown size={14} />
+      </div>
+    </div>
+  </div>
+);
+
+const Toggle = ({ checked, onChange, label, disabled }) => (
+  <div 
+    className={`flex items-center gap-2 select-none ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer group'}`}
+    onClick={() => !disabled && onChange(!checked)}
+  >
+    <div className={`
+      w-8 h-4 rounded-full p-0.5 transition-all duration-200 ease-in-out relative border
+      ${checked ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-200 border-slate-300 group-hover:border-slate-400'}
+    `}>
+      <div className={`
+        w-3 h-3 bg-white rounded-full shadow-sm transform transition-transform duration-200
+        ${checked ? (document.dir === 'rtl' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}
+      `}></div>
+    </div>
+    {label && <span className="text-[12px] font-medium text-slate-700">{label}</span>}
+  </div>
+);
+
+const Badge = ({ children, variant = 'neutral', className='' }) => {
+  const styles = {
+    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    danger: 'bg-red-50 text-red-700 border-red-200',
+    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    neutral: 'bg-slate-100 text-slate-600 border-slate-200',
+    purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0 rounded-md text-[11px] font-bold border ${styles[variant] || styles.neutral} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
+// --- NEW COMPONENTS FOR ROLES & ACCESS ---
+
+// 1. ToggleChip
+const ToggleChip = ({ label, checked, onClick, colorClass = "green" }) => {
+  const styles = {
+    green: checked 
+      ? 'bg-emerald-50 border-emerald-400 text-emerald-700 font-bold ring-1 ring-emerald-100 shadow-sm' 
+      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
+    indigo: checked 
+      ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold ring-1 ring-indigo-100 shadow-sm' 
+      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
+  };
+
+  const activeStyle = styles[colorClass] || styles.green;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        px-3 py-1.5 rounded-lg text-[11px] border transition-all duration-200
+        ${activeStyle} text-center min-w-[80px]
+      `}
+    >
+      {label}
+    </button>
+  );
+};
+
+// 2. SelectionGrid
+const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }) => {
+  const gridCols = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 6: 'grid-cols-6' };
+  
+  return (
+    <div className={`grid ${gridCols[columns] || 'grid-cols-4'} gap-2`}>
+      {items.map(item => {
+         const isChecked = selectedIds.includes(item.id);
+         return (
+            <div 
+               key={item.id} 
+               className={`
+                  flex items-center justify-center p-2 rounded-lg border transition-all duration-200 cursor-pointer select-none text-center h-10
+                  ${isChecked 
+                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold shadow-sm ring-1 ring-indigo-100' 
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}
+               `}
+               onClick={() => onToggle(item.id)}
+            >
+               <span className="text-[11px]">{item.label}</span>
+            </div>
+         );
+      })}
+    </div>
+  );
+};
+
+// 3. TreeView
+const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder }) => {
+  const [expandedNodes, setExpandedNodes] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Default placeholder based on language
+  const defaultPlaceholder = searchPlaceholder || (isRtl ? "جستجو..." : "Search...");
+
+  // Filtering Logic
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    const filterNodes = (nodes) => {
+      return nodes.reduce((acc, node) => {
+        const label = (node.label[isRtl ? 'fa' : 'en'] || '').toLowerCase();
+        const matches = label.includes(searchTerm.toLowerCase());
+        let children = [];
+        if (node.children) children = filterNodes(node.children);
+        if (matches || children.length > 0) {
+          acc.push({ ...node, children, _matches: matches });
+        }
+        return acc;
+      }, []);
+    };
+    return filterNodes(data);
+  }, [data, searchTerm, isRtl]);
+
+  // Auto Expand on Search
+  useEffect(() => {
+    if (searchTerm) {
+      const allIds = {};
+      const traverse = (nodes) => {
+        nodes.forEach(n => {
+          if (n.children && n.children.length > 0) {
+            allIds[n.id] = true;
+            traverse(n.children);
+          }
+        });
+      };
+      traverse(filteredData);
+      setExpandedNodes(allIds);
+    } else {
+      setExpandedNodes({});
     }
-    return acc;
-  }, []);
+  }, [searchTerm, filteredData]);
+
+  const toggleNode = (id, e) => {
+    e.stopPropagation();
+    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const renderTree = (items, depth = 0) => {
+    return items.map(item => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isExpanded = expandedNodes[item.id];
+      const isSelected = selectedNodeId === item.id;
+      
+      const label = item.label[isRtl ? 'fa' : 'en'];
+      const displayLabel = (searchTerm && item._matches) ? <mark className="bg-yellow-100 rounded px-0.5">{label}</mark> : label;
+
+      return (
+        <div key={item.id} className="select-none relative">
+           {depth > 0 && <div className={`absolute top-0 bottom-0 w-px bg-slate-200 ${isRtl ? 'right-[11px]' : 'left-[11px]'}`}></div>}
+           <div 
+             className={`
+               flex items-center gap-2 py-1.5 px-2 my-0.5 cursor-pointer rounded-lg transition-all
+               ${isSelected ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'hover:bg-slate-100 text-slate-700'}
+             `}
+             style={{ paddingRight: isRtl ? `${depth * 16 + 8}px` : '8px', paddingLeft: isRtl ? '8px' : `${depth * 16 + 8}px` }}
+             onClick={() => onSelectNode(item)}
+           >
+             {hasChildren ? (
+               <div 
+                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors z-10"
+                  onClick={(e) => toggleNode(item.id, e)}
+               >
+                  <div className={`transition-transform duration-200 ${isExpanded ? '' : (isRtl ? 'rotate-90' : '-rotate-90')}`}>
+                    <ChevronDown size={14} />
+                  </div>
+               </div>
+             ) : (
+                <div className="shrink-0">{renderNodeContent ? renderNodeContent(item) : <div className="w-5 h-5"/>}</div>
+             )}
+             
+             <div className="flex items-center gap-2 truncate">
+                {hasChildren && <span className={`text-slate-400 ${isExpanded ? 'text-indigo-400' : ''}`}>{isExpanded ? <FolderOpen size={14}/> : <Folder size={14}/>}</span>}
+                <span className="text-[12px] truncate">{displayLabel}</span>
+             </div>
+           </div>
+           {hasChildren && isExpanded && <div className="overflow-hidden animate-in slide-in-from-top-1 duration-200">{renderTree(item.children, depth + 1)}</div>}
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="relative mb-2 shrink-0">
+         <input 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={defaultPlaceholder} 
+            className={`w-full bg-slate-100 border border-slate-200 rounded-md text-[11px] h-8 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition-all ${isRtl ? 'pr-8 pl-2' : 'pl-8 pr-2'}`} 
+         />
+         <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2.5' : 'left-2.5'}`}/>
+         {searchTerm && <button onClick={() => setSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}><X size={12}/></button>}
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+         {filteredData.length > 0 ? renderTree(filteredData) : <div className="text-center p-4 text-slate-400 text-xs">{isRtl ? 'موردی یافت نشد.' : 'No items found.'}</div>}
+      </div>
+    </div>
+  );
 };
 
-// --- ساختار منوی اصلی سیستم (MENU_DATA) ---
-window.MENU_DATA = [
-  {
-    id: 'showcase',
-    label: { en: 'UI Kit (Showcase)', fa: 'نمونه دیزاین (UI Kit)' },
-    icon: Component,
-    children: [
-      { id: 'ui_showcase', label: { en: 'All Components', fa: 'نمونه تمام کامپوننت‌ها' } }
-    ]
-  },
-  { 
-    id: 'dashboards', 
-    label: { en: 'Dashboards', fa: 'داشبوردها' }, 
-    icon: LayoutDashboard,
-    children: [
-      { id: 'dashboards_gen', label: { en: 'General Dashboards', fa: 'داشبوردهای عمومی' } },
-      { id: 'dashboards_spec', label: { en: 'Specific Dashboards', fa: 'داشبوردهای اختصاصی' } }
-    ]
-  },
-  { 
-    id: 'workspace', 
-    label: { en: 'Workspace', fa: 'میز کار' }, 
-    icon: Briefcase,
-    children: [
-      { id: 'workspace_gen', label: { en: 'General Workspace', fa: 'میزکار عمومی' } },
-      { id: 'workspace_spec', label: { en: 'Specific Workspace', fa: 'میزکار اختصاصی' } }
-    ]
-  },
-  { 
-    id: 'accounting', 
-    label: { en: 'Accounting', fa: 'حسابداری و مالی' }, 
-    icon: BarChart3,
-    children: [
-      { 
-        id: 'gl', 
-        label: { en: 'General Ledger', fa: 'دفتر کل' },
-        children: [
-          {
-            id: 'gl_settings',
-            label: { en: 'GL Settings', fa: 'تنظیمات دفتر کل' },
-            children: [
-              { id: 'auto_num', label: { en: 'Auto Numbering', fa: 'شماره‌گذاری اتوماتیک' } },
-              { id: 'year_end_setup', label: { en: 'Year-end Settings', fa: 'تنظیمات عملیات پایان سال' } },
-              { id: 'allowed_modules', label: { en: 'Allowed Modules', fa: 'ماژول‌های مجاز' } },
-            ]
-          },
-          {
-            id: 'gl_base_info',
-            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
-            children: [
-              { id: 'ledgers', label: { en: 'Ledgers', fa: 'دفاتر' } },
-              { id: 'acc_structure', label: { en: 'Account Structure', fa: 'ساختار حساب' } },
-              { id: 'details', label: { en: 'Details', fa: 'تفصیل‌ها' } },
-              { id: 'fiscal_periods', label: { en: 'Fiscal Periods', fa: 'دوره‌های مالی' } },
-              { id: 'doc_types', label: { en: 'Document Types', fa: 'انواع اسناد' } },
-              { id: 'std_desc', label: { en: 'Standard Descriptions', fa: 'شرح‌های استاندارد' } },
-            ]
-          },
-          {
-            id: 'gl_docs',
-            label: { en: 'Document Management', fa: 'مدیریت اسناد' },
-            children: [
-              { id: 'doc_list', label: { en: 'Document List', fa: 'فهرست اسناد' } },
-              { id: 'doc_review', label: { en: 'Document Review', fa: 'بررسی اسناد' } },
-              { id: 'doc_finalize', label: { en: 'Finalize Documents', fa: 'قطعی کردن اسناد' } },
-            ]
-          },
-          {
-            id: 'gl_reports',
-            label: { en: 'Reports & Analytics', fa: 'گزارش‌ها و تحلیل‌ها' },
-            children: [
-              { id: 'print_doc', label: { en: 'Print Accounting Doc', fa: 'چاپ سند حسابداری' } },
-              { id: 'acc_review', label: { en: 'Account Review', fa: 'مرور حساب‌ها' } },
-            ]
-          }
-        ]
-      },
-      { 
-        id: 'treasury', 
-        label: { en: 'Treasury', fa: 'خزانه‌داری' },
-        children: [
-          {
-            id: 'tr_settings',
-            label: { en: 'Treasury Settings', fa: 'تنظیمات خزانه‌داری' },
-            children: [
-              { id: 'balance_control', label: { en: 'Balance Control', fa: 'کنترل مانده منابع' } }
-            ]
-          },
-          {
-            id: 'tr_base_info',
-            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
-            children: [
-              { id: 'banks', label: { en: 'Banks', fa: 'بانک‌ها' } },
-              { id: 'acc_types', label: { en: 'Account Types', fa: 'انواع حساب‌های بانکی' } },
-              { id: 'acc_setup', label: { en: 'Account Setup', fa: 'استقرار حساب‌ها' } },
-              { id: 'safes', label: { en: 'Safes', fa: 'صندوق‌ها' } },
-              { id: 'promissory', label: { en: 'Promissory Notes', fa: 'سفته‌ها' } },
-              { id: 'cheque_types', label: { en: 'Cheque Types', fa: 'انواع چک' } },
-              { id: 'petty_cashiers', label: { en: 'Petty Cashiers', fa: 'تنخواه دارها' } },
-              { id: 'cheque_books', label: { en: 'Cheque Books', fa: 'دسته چک' } },
-              { id: 'print_template', label: { en: 'Print Templates', fa: 'الگوی چاپ چک' } },
-              { id: 'reasons', label: { en: 'Reasons/Descriptions', fa: 'بابت‌ها/ شرح‌ها' } },
-              { id: 'blank_promissory', label: { en: 'Blank Promissory', fa: 'سفته سفید' } },
-            ]
-          },
-          {
-            id: 'tr_init',
-            label: { en: 'Initial Operations', fa: 'عملیات ابتدای دوره/ سال' },
-            children: [
-              { id: 'ap_setup', label: { en: 'A/P Setup', fa: 'استقرار حساب‌های پرداختنی' } },
-              { id: 'ar_setup', label: { en: 'A/R Setup', fa: 'استقرار اسناد دریافتنی' } },
-              { id: 'opening_balance', label: { en: 'Opening Balance', fa: 'موجودی ابتدای دوره' } },
-            ]
-          },
-          {
-            id: 'tr_ops',
-            label: { en: 'Receipt & Payment', fa: 'عملیات دریافت و پرداخت' },
-            children: [
-              { id: 'receipts', label: { en: 'Receipts', fa: 'دریافت‌ها' } },
-              { id: 'payments', label: { en: 'Payments', fa: 'پرداخت‌ها' } },
-              { id: 'transfers', label: { en: 'Transfers', fa: 'عملیات انتقال' } },
-              { id: 'petty_summary', label: { en: 'Petty Cash Summary', fa: 'صورت خلاصه تنخواه' } },
-              { id: 'batch_ops', label: { en: 'Batch Operations', fa: 'عملیات گروهی' } },
-            ]
-          },
-          {
-            id: 'tr_requests',
-            label: { en: 'Request Management', fa: 'مدیریت درخواست‌ها' },
-            children: [
-              { id: 'payment_req', label: { en: 'Payment Requests', fa: 'درخواست پرداخت' } },
-              { id: 'my_requests', label: { en: 'My Requests', fa: 'درخواست‌های من' } },
-            ]
-          },
-          {
-            id: 'tr_reports',
-            label: { en: 'Reports & Analytics', fa: 'گزارش‌ها و تحلیل‌ها' },
-            children: [
-              { id: 'print_req', label: { en: 'Print Request', fa: 'چاپ درخواست' } },
-              { id: 'print_cheque', label: { en: 'Print Cheque', fa: 'چاپ چک' } },
-              { id: 'review_req', label: { en: 'Review Requests', fa: 'مرور درخواست‌ها' } },
-              { id: 'review_rp', label: { en: 'Review R/P', fa: 'مرور دریافت/ پرداخت' } },
-            ]
-          }
-        ]
-      },
-      { id: 'budgeting', label: { en: 'Budgeting', fa: 'بودجه‌ریزی' } },
-    ]
-  },
-  {
-    id: 'hr',
-    label: { en: 'Human Capital', fa: 'سرمایه انسانی' },
-    icon: Users,
-    children: [
-      { id: 'employees', label: { en: 'Employee Management', fa: 'مدیریت کارکنان' } },
-      { id: 'compensation', label: { en: 'Compensation', fa: 'جبران خدمات' } },
-    ]
-  },
-  {
-    id: 'workflow',
-    label: { en: 'Workflow', fa: 'مدیریت گردش کار' },
-    icon: GitBranch,
-    children: [
-      { id: 'processes', label: { en: 'Process Management', fa: 'مدیریت فرایندها' } },
-      { id: 'inbox', label: { en: 'Inbox Management', fa: 'مدیریت کارتابل' } },
-      { id: 'tasks', label: { en: 'Task Management', fa: 'مدیریت کارها' } },
-    ]
-  },
-  {
-    id: 'system_settings',
-    label: { en: 'Settings', fa: 'تنظیمات سیستم' },
-    icon: Settings,
-    children: [
-      { 
-        id: 'general_settings', 
-        label: { en: 'General Settings', fa: 'تنظیمات عمومی' },
-        children: [
-          {
-            id: 'base_info_root',
-            label: { en: 'Base Information', fa: 'اطلاعات پایه' },
-            children: [
-              { id: 'org_info', label: { en: 'Organization Info', fa: 'اطلاعات سازمان' }, icon: Building2 },
-              { id: 'org_chart', label: { en: 'Organization Chart', fa: 'چارت سازمانی' }, icon: Network },
-              { id: 'currency_settings', label: { en: 'Currency Settings', fa: 'تنظیمات ارزها' }, icon: Banknote },
-              { id: 'branches', label: { en: 'Branches', fa: 'شعبه ها' }, icon: MapPin },
-              { id: 'cost_centers', label: { en: 'Cost Centers', fa: 'مراکز هزینه' }, icon: Layers },
-              { id: 'projects', label: { en: 'Projects', fa: 'پروژه ها' }, icon: ListTodo },
-              { id: 'parties', label: { en: 'Parties & Companies', fa: 'اشخاص و شرکت‌ها' }, icon: Users }
-            ]
-          }
-        ]
-      },
-      { id: 'integrations', label: { en: 'Integrations', fa: 'ارتباط با سایر سیستم‌ها' } },
-    ]
-  },
-  {
-    id: 'permissions',
-    label: { en: 'Access', fa: 'حقوق دسترسی' },
-    icon: Key,
-    children: [
-      { id: 'users_list', label: { en: 'Users', fa: 'کاربران' } },
-      { id: 'roles', label: { en: 'Roles', fa: 'نقش‌ها' } },
-      { id: 'access_mgmt', label: { en: 'Access Management', fa: 'مدیریت دسترسی‌ها' } },
-    ]
-  }
-];
 
-// --- Mock Data (داده‌های تستی) ---
-window.MOCK_TRANSACTIONS = [
-  { id: 1, title: { en: 'Monthly Server Hosting', fa: 'هزینه میزبانی سرور ماهانه' }, amount: 1200, type: 'expense', date: '2024-03-01', category: 'IT' },
-  { id: 2, title: { en: 'Consultancy Fee', fa: 'هزینه مشاوره' }, amount: 4500, type: 'income', date: '2024-03-02', category: 'Service' },
-  { id: 3, title: { en: 'Office Supplies', fa: 'لوازم اداری' }, amount: 350, type: 'expense', date: '2024-03-03', category: 'Admin' },
-  { id: 4, title: { en: 'Client Payment', fa: 'پرداخت مشتری' }, amount: 12500, type: 'income', date: '2024-03-04', category: 'Sales' },
-];
+// --- EXISTING COMPLEX COMPONENTS ---
 
-window.MOCK_STATS = [
-  { id: 1, label: { en: 'Total Balance', fa: 'موجودی کل' }, value: '$124,500.00', change: '+12.5%', icon: Wallet, color: 'text-blue-600' },
-  { id: 2, label: { en: 'Monthly Revenue', fa: 'درآمد ماهانه' }, value: '$45,200.00', change: '+8.2%', icon: ArrowUpRight, color: 'text-green-600' },
-  { id: 3, label: { en: 'Total Expenses', fa: 'مجموع هزینه‌ها' }, value: '$12,800.00', change: '-2.4%', icon: ArrowDownLeft, color: 'text-red-600' },
-  { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
-];
+// 2. FILTER SECTION
+const FilterSection = ({ children, onSearch, onClear, isRtl, title }) => {
+  const [isOpen, setIsOpen] = useState(true);
 
-// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض) ---
-window.DEFAULT_VALUES_SCHEMA = [
-  {
-    moduleId: 'accounting',
-    label: { en: 'Accounting & Finance', fa: 'حسابداری و مالی' },
-    icon: BarChart3,
-    groups: [
-      {
-        groupId: 'gl',
-        label: { en: 'General Ledger', fa: 'دفتر کل' },
-        fields: [
-          { 
-            key: 'defaultDocType', 
-            label: { en: 'Default Document Type', fa: 'نوع سند پیش‌فرض' },
-            type: 'select',
-            options: [
-              { value: 'general', label: { en: 'General', fa: 'عمومی' } },
-              { value: 'opening', label: { en: 'Opening', fa: 'افتتاحیه' } },
-              { value: 'closing', label: { en: 'Closing', fa: 'اختتامیه' } }
-            ]
-          },
-          { 
-            key: 'autoPost', 
-            label: { en: 'Auto Post Documents', fa: 'قطعی شدن خودکار اسناد' },
-            type: 'toggle'
-          }
-        ]
-      },
-      {
-        groupId: 'treasury',
-        label: { en: 'Treasury', fa: 'خزانه‌داری' },
-        fields: [
-          {
-            key: 'paymentType',
-            label: { en: 'Default Payment Type', fa: 'نوع پرداخت پیش‌فرض' },
-            type: 'select',
-            options: [
-              { value: 'expense', label: { en: 'Expense', fa: 'هزینه' } },
-              { value: 'prepayment', label: { en: 'Prepayment', fa: 'پیش‌پرداخت' } },
-              { value: 'transfer', label: { en: 'Transfer', fa: 'انتقال' } }
-            ]
-          },
-          {
-             key: 'defaultBank',
-             label: { en: 'Default Bank Account', fa: 'حساب بانکی پیش‌فرض' },
-             type: 'select',
-             options: [
-                { value: 'mellat', label: { en: 'Mellat Bank - Main', fa: 'بانک ملت - اصلی' } },
-                { value: 'pasargad', label: { en: 'Pasargad Bank', fa: 'بانک پاسارگاد' } }
-             ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    moduleId: 'hr',
-    label: { en: 'Human Resources', fa: 'منابع انسانی' },
-    icon: Users,
-    groups: [
-      {
-        groupId: 'recruitment',
-        label: { en: 'Recruitment', fa: 'استخدام' },
-        fields: [
-          {
-             key: 'probationPeriod',
-             label: { en: 'Default Probation (Months)', fa: 'مدت آزمایشی پیش‌فرض (ماه)' },
-             type: 'select',
-             options: [
-                { value: '1', label: { en: '1 Month', fa: '۱ ماه' } },
-                { value: '3', label: { en: '3 Months', fa: '۳ ماه' } }
-             ]
-          }
-        ]
-      }
-    ]
-  }
-];
+  // Defaults based on isRtl
+  const defaultTitle = title || (isRtl ? "فیلترهای پیشرفته" : "Advanced Filters");
+  const clearLabel = isRtl ? "پاک کردن" : "Clear";
+  const searchLabel = isRtl ? "اعمال فیلتر" : "Apply Filter";
 
-// --- دیکشنری ترجمه (Translations) ---
-window.translations = {
-  en: {
-    loginTitle: 'Secure Sign In',
-    loginSubtitle: 'Enter your credentials to access the financial portal',
-    usernameLabel: 'Username',
-    passwordLabel: 'Password',
-    emailLabel: 'Corporate Email',
-    loginBtn: 'Sign In',
-    logoutBtn: 'Logout',
-    standardMethod: 'Standard',
-    adMethod: 'Active Directory',
-    invalidCreds: 'Invalid username or password',
-    forgotPass: 'Forgot Password?',
-    backToLogin: 'Back to Login',
-    resetMethodTitle: 'Reset Password',
-    resetMethodSubtitle: 'Choose how you want to recover your account',
-    viaSms: 'Via SMS OTP',
-    viaEmail: 'Via Email Link',
-    mobileLabel: 'Mobile Number',
-    sendOtp: 'Send Code',
-    enterOtp: 'Enter 6-digit Code',
-    verifyOtp: 'Verify & Continue',
-    invalidOtp: 'Invalid OTP code',
-    newPasswordLabel: 'New Password',
-    confirmPasswordLabel: 'Confirm New Password',
-    updatePassword: 'Update Password',
-    resetSuccess: 'Password Updated Successfully',
-    emailSent: 'Reset Link Sent',
-    emailSentDesc: 'Please check your corporate inbox for the recovery link.',
-    searchMenu: 'Search all menus...',
-    welcome: 'Welcome Back, Admin',
-    financialOverview: 'Financial Overview',
-    language: 'English',
-    recentTransactions: 'Recent Transactions',
-    budgetAlloc: 'Budget Allocation',
-    fiscalYear: 'Fiscal Year',
-    ledger: 'Ledger',
-    company: 'Company',
-    filters: 'Global Filters',
-    all: 'All',
-    emptyPage: 'This module is currently empty or under development.',
-    uiKitTitle: 'Design System Showcase',
+  return (
+    <div className={`bg-white border border-slate-300 rounded-lg shadow-sm mb-3 transition-all duration-300 ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div 
+        className="flex items-center justify-between px-3 py-2 bg-slate-50 cursor-pointer select-none border-b border-transparent hover:bg-slate-100"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center gap-2 text-indigo-700 font-bold text-[12px]">
+          <Filter size={14} />
+          <span>{defaultTitle}</span>
+        </div>
+        <div className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+          <ChevronDown size={16} />
+        </div>
+      </div>
 
-    // Cost Centers & Projects Translations (NEW)
-    cc_title: "Cost Centers",
-    cc_subtitle: "Manage cost centers and their detail codes",
-    cc_code: "Center Code",
-    cc_title_field: "Title",
-    cc_type: "Type",
-    cc_address: "Address",
-    cc_type_prod: "Production",
-    cc_type_serv: "Service",
-    cc_type_admin: "Administrative",
-    cc_new: "New Cost Center",
-    cc_edit: "Edit Cost Center",
-    
-    proj_title: "Projects",
-    proj_subtitle: "Manage projects, budgets and timelines",
-    proj_code: "Project Code",
-    proj_name: "Project Name",
-    proj_start: "Start Date",
-    proj_end: "End Date",
-    proj_manager: "Project Manager",
-    proj_budget: "Initial Budget",
-    proj_new: "New Project",
-    proj_edit: "Edit Project",
-    
-    detail_code: "Detail Code",
-    detail_assigned: "Assigned",
-    detail_not_assigned: "Not Assigned",
-    detail_assign_btn: "Assign Code",
-    detail_assign_msg: "Detail code assigned successfully.",
-    active_status: "Active Status",
-
-    // Previous Translations...
-    profileTitle: 'User Profile',
-    profileSubtitle: 'Manage your account settings and preferences',
-    personalInfo: 'Personal Information',
-    security: 'Security',
-    preferences: 'System Preferences',
-    defaultValues: 'Default Values',
-    defaultValuesDesc: 'Set default values for faster data entry across the system.',
-    changePass: 'Change Password',
-    changePassDesc: 'Update your password securely.',
-    currentPass: 'Current Password',
-    theme: 'Theme',
-    themeLight: 'Light Mode',
-    themeDark: 'Dark Mode',
-    langSettings: 'Language',
-    saveDefaults: 'Save Default Values',
-    defaultsSaved: 'Default values saved successfully.',
-    
-    org_title: "Organization Info",
-    org_subtitle: "Manage company base information and branches",
-    org_code: "Org Code",
-    org_name: "Org Name",
-    org_regNo: "Registration No",
-    org_phone: "Phone",
-    org_fax: "Fax",
-    org_logo: "Upload Logo",
-    org_address: "Addresses",
-    org_newAddr: "Enter new address...",
-    org_addrCount: "Addr. Count",
-    org_editTitle: "Edit Organization Info",
-    org_newTitle: "New Organization",
-    org_noAddr: "No addresses registered.",
-    org_selectLogo: "Select Logo Image",
-    
-    curr_title: "Currency Settings",
-    curr_subtitle: "Manage system currencies and exchange rates",
-    curr_global: "Global System Settings",
-    curr_base: "Base Currency",
-    curr_op: "Operational Currency",
-    curr_rep1: "Reporting Currency 1",
-    curr_rep2: "Reporting Currency 2",
-    curr_history: "Rates History",
-    curr_update: "Update Rates",
-    curr_code: "Code",
-    curr_desc: "Description",
-    curr_symbol: "Symbol",
-    curr_method: "Rate Method",
-    curr_method_auto: "Automatic",
-    curr_method_manual: "Manual",
-    curr_decimals: "Decimals",
-    curr_active: "Active",
-    curr_reciprocal: "Reciprocal",
-    curr_reciprocal_desc: "Auto-calculate inverse rate",
-    curr_status: "Status",
-    curr_manage_rates: "Manage Rates",
-    curr_defined_rates: "Defined Rates",
-    curr_target: "Target Currency",
-    curr_rate: "Exchange Rate (1 Unit)",
-    curr_no_rates: "No exchange rates defined.",
-    curr_history_title: "Exchange Rates Update History",
-    curr_source: "Source",
-    curr_target_curr: "Target",
-    curr_date: "Date",
-    curr_time: "Time",
-    curr_rate_val: "Rate",
-    curr_edit: "Edit Currency",
-    curr_new: "New Currency",
-    curr_save_global_success: "Global settings saved successfully.",
-    curr_update_success: "Exchange rates updated successfully.",
-    
-    btn_save: "Save",
-    btn_cancel: "Cancel",
-    btn_search: "Apply Filter",
-    btn_clear: "Clear",
-    btn_add: "Add",
-    btn_close: "Close",
-    confirm_delete: "Are you sure you want to delete {0} records?",
-    confirm_delete_single: "Are you sure you want to delete this record?",
-    
-    acc_mgmt_title: "Accounting Document Management",
-    acc_mgmt_subtitle: "List of all financial documents with search and batch operation capabilities",
-    grid_title: "Document List",
-    col_docNo: "Doc No",
-    col_date: "Date",
-    col_dept: "Department",
-    col_desc: "Description",
-    col_debtor: "Debtor",
-    col_status: "Status",
-    col_active: "Active",
-    col_actions: "Actions",
-    status_final: "Final",
-    status_draft: "Draft",
-    status_reviewed: "Reviewed",
-    filter_fromDoc: "From Doc No",
-    filter_toDoc: "To Doc No",
-    filter_fromDate: "From Date",
-    filter_toDate: "To Date",
-    filter_status: "Document Status",
-    filter_costCenter: "Cost Center",
-    filter_subsidiary: "Subsidiary Account",
-    filter_allStatus: "All Statuses",
-    modal_newDoc: "New Document",
-    modal_editDoc: "Edit Document",
-    modal_warning: "Note: Changes to final documents require financial manager approval.",
-    field_docType: "Document Type",
-    field_general: "General",
-    field_opening: "Opening",
-    field_party: "Party",
-    field_selectParty: "Select Person...",
-    field_amount: "Document Amount",
-    field_isActive: "Active Document",
-    
-    usersListTitle: 'User Management',
-    usersListSubtitle: 'Manage system access and user profiles',
-    createNewUser: 'New User',
-    searchUserPlaceholder: 'Search by username...',
-    filter: 'Filter',
-    colId: 'ID',
-    colUsername: 'Username',
-    colLinkedPerson: 'Linked Person',
-    colUserType: 'User Type',
-    colStatus: 'Status',
-    colActions: 'Actions',
-    active: 'Active',
-    inactive: 'Inactive',
-    roleAdmin: 'System Admin',
-    roleUser: 'System User',
-    editUserTitle: 'Edit User Profile',
-    newUserTitle: 'Define New User',
-    newUserSubtitle: 'Fill in the form to create a new user account',
-    editingId: 'Editing ID',
-    fieldId: 'User ID',
-    fieldUsername: 'Username',
-    fieldStatus: 'Account Status',
-    fieldUserType: 'User Type',
-    fieldLinkedPerson: 'Linked Person (Entity)',
-    selectPersonPlaceholder: '- Select a Person -',
-    linkedPersonHelp: 'Link this user account to a predefined person entity in the system.',
-    fieldPassword: 'Password Management',
-    enterPassword: 'Enter new password...',
-    resetDefault: 'Reset to Default',
-    passwordResetMsg: 'Password has been reset to "DefaultPassword123!"',
-    cancel: 'Cancel',
-    saveChanges: 'Save & Close',
-    confirmDelete: 'Are you sure you want to delete this user?',
-    recordsFound: 'records found',
-    edit: 'Edit',
-    delete: 'Delete',
-    viewPermissions: 'View Permissions',
-    permModalTitle: 'User Access & Permissions',
-    permColSource: 'Access Source',
-    permColForms: 'Accessible Forms',
-    permColOps: 'Allowed Operations',
-    permTypeRole: 'Role',
-    permTypeUser: 'User',
-    permSelectSource: 'Select a Source',
-    permSelectForm: 'Select a Form',
-    ws_title: "User Workspace",
-    ws_subtitle: "Exchange & Accounting Management System",
-    kpi_cash: "Cash & Bank Balance",
-    kpi_receivable: "Accounts Receivable",
-    kpi_payable: "Accounts Payable",
-    kpi_profit: "Monthly Net Profit",
-    btn_invoice: "+ Buy/Sell Currency",
-    btn_check: "Receive Check",
-    btn_payment_req: "Payment Request",
-    btn_expense: "Record Expense",
-    btn_account: "New Contact/Account",
-    table_title: "Recent Transactions",
-    th_id: "ID",
-    th_date: "Date",
-    th_desc: "Description",
-    th_amount: "Amount",
-    th_status: "Status",
-    row1_desc: "USD Purchase - 5,000$",
-    row2_desc: "Office Rent - Jan 2026",
-    row3_desc: "EUR Sale - 2,200€",
-    status_paid: "Paid",
-    status_pending: "Pending",
-    sidebar_title: "Critical Alerts",
-    alert1_title: "Check Due Soon",
-    alert1_sub: "Mellat Bank - Tomorrow",
-    alert2_title: "Overdue Invoice",
-    alert2_sub: "Client A - 10 Days Delay",
-    alert3_title: "Credit Limit Warning",
-    alert3_sub: "Exchange Partner B - Near Limit",
-    mod_exp_title: "Record New Expense",
-    mod_acc_title: "New Contact",
-    lbl_category: "Category",
-    lbl_amount: "Amount",
-    opt_rent: "Rent",
-    opt_salary: "Salary",
-    btn_save_data: "Save Data",
-    ph_name: "Contact Name",
-    ph_phone: "Phone Number"
-  },
-  fa: {
-    loginTitle: 'ورود ایمن به سیستم',
-    loginSubtitle: 'برای دسترسی به پرتال مالی، اطلاعات خود را وارد کنید',
-    usernameLabel: 'نام کاربری',
-    passwordLabel: 'رمز عبور',
-    emailLabel: 'ایمیل سازمانی',
-    loginBtn: 'ورود به سیستم',
-    logoutBtn: 'خروج',
-    standardMethod: 'استاندارد',
-    adMethod: 'اکتیو دایرکتوری',
-    invalidCreds: 'نام کاربری یا رمز عبور اشتباه است',
-    forgotPass: 'رمز عبور را فراموش کرده‌اید؟',
-    backToLogin: 'بازگشت به ورود',
-    resetMethodTitle: 'بازیابی رمز عبور',
-    resetMethodSubtitle: 'روش بازیابی حساب کاربری خود را انتخاب کنید',
-    viaSms: 'پیامک (کد یکبار مصرف)',
-    viaEmail: 'ایمیل (لینک بازیابی)',
-    mobileLabel: 'شماره موبایل',
-    sendOtp: 'ارسال کد',
-    enterOtp: 'کد ۶ رقمی را وارد کنید',
-    verifyOtp: 'تایید و ادامه',
-    invalidOtp: 'کد تایید وارد شده صحیح نیست',
-    newPasswordLabel: 'رمز عبور جدید',
-    confirmPasswordLabel: 'تکرار رمز عبور جدید',
-    updatePassword: 'بروزرسانی رمز عبور',
-    resetSuccess: 'رمز عبور با موفقیت تغییر یافت',
-    emailSent: 'لینک بازیابی ارسال شد',
-    emailSentDesc: 'لطفاً صندوق ورودی ایمیل سازمانی خود را بررسی کنید.',
-    searchMenu: 'جستجو در تمام منوها...',
-    welcome: 'خوش آمدید، مدیر سیستم',
-    financialOverview: 'مرور وضعیت مالی',
-    language: 'فارسی',
-    recentTransactions: 'تراکنش‌های اخیر',
-    budgetAlloc: 'توزیع بودجه',
-    fiscalYear: 'سال مالی',
-    ledger: 'دفتر',
-    company: 'شرکت',
-    filters: 'فیلترهای عمومی',
-    all: 'همه',
-    emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
-    uiKitTitle: 'نمایش دیزاین سیستم',
-
-    // Cost Centers & Projects Translations (NEW)
-    cc_title: "مراکز هزینه",
-    cc_subtitle: "مدیریت مراکز هزینه و کدهای تفصیلی مرتبط",
-    cc_code: "کد مرکز",
-    cc_title_field: "عنوان مرکز",
-    cc_type: "نوع مرکز",
-    cc_address: "آدرس",
-    cc_type_prod: "تولیدی",
-    cc_type_serv: "خدماتی",
-    cc_type_admin: "اداری",
-    cc_new: "مرکز هزینه جدید",
-    cc_edit: "ویرایش مرکز هزینه",
-    
-    proj_title: "پروژه‌ها",
-    proj_subtitle: "مدیریت پروژه‌ها، بودجه و زمان‌بندی",
-    proj_code: "کد پروژه",
-    proj_name: "نام پروژه",
-    proj_start: "تاریخ شروع",
-    proj_end: "تاریخ اتمام",
-    proj_manager: "مسئول پروژه",
-    proj_budget: "بودجه اولیه",
-    proj_new: "پروژه جدید",
-    proj_edit: "ویرایش پروژه",
-    
-    detail_code: "کد تفصیلی",
-    detail_assigned: "تخصیص یافته",
-    detail_not_assigned: "فاقد کد",
-    detail_assign_btn: "تخصیص کد",
-    detail_assign_msg: "کد تفصیلی با موفقیت تخصیص یافت.",
-    active_status: "وضعیت فعال",
-
-    // Previous Translations...
-    profileTitle: 'پروفایل کاربری',
-    profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
-    personalInfo: 'اطلاعات فردی',
-    security: 'امنیت',
-    preferences: 'تنظیمات سیستم',
-    defaultValues: 'مقادیر پیش‌فرض',
-    defaultValuesDesc: 'تعیین مقادیر پیش‌فرض برای افزایش سرعت ورود اطلاعات در سیستم.',
-    changePass: 'تغییر رمز عبور',
-    changePassDesc: 'به‌روزرسانی امن کلمه عبور',
-    currentPass: 'رمز عبور فعلی',
-    theme: 'تم سیستم',
-    themeLight: 'حالت روشن',
-    themeDark: 'حالت تاریک',
-    langSettings: 'زبان',
-    saveDefaults: 'ذخیره مقادیر پیش‌فرض',
-    defaultsSaved: 'مقادیر پیش‌فرض با موفقیت ذخیره شد.',
-    
-    org_title: "معرفی سازمان",
-    org_subtitle: "مدیریت اطلاعات پایه شرکت و شعبه‌ها",
-    org_code: "کد شرکت",
-    org_name: "نام شرکت",
-    org_regNo: "شماره ثبت",
-    org_phone: "تلفن",
-    org_fax: "فکس",
-    org_logo: "انتخاب تصویر لوگو",
-    org_address: "آدرس‌ها",
-    org_newAddr: "آدرس جدید را وارد کنید...",
-    org_addrCount: "تعداد آدرس",
-    org_editTitle: "ویرایش اطلاعات سازمان",
-    org_newTitle: "تعریف سازمان جدید",
-    org_noAddr: "آدرسی ثبت نشده است",
-    org_selectLogo: "انتخاب لوگو",
-    
-    curr_title: "تنظیمات ارزها",
-    curr_subtitle: "مدیریت ارزهای سیستم و نرخ‌های تبدیل",
-    curr_global: "تنظیمات کلان سیستم",
-    curr_base: "ارز اصلی سیستم (Base)",
-    curr_op: "ارز عملیاتی (Operational)",
-    curr_rep1: "ارز گزارشگری ۱",
-    curr_rep2: "ارز گزارشگری ۲",
-    curr_history: "تاریخچه نرخ‌ها",
-    curr_update: "بروزرسانی نرخ‌ها",
-    curr_code: "کد ارز",
-    curr_desc: "عنوان ارز",
-    curr_symbol: "علامت",
-    curr_method: "نحوه دریافت نرخ",
-    curr_method_auto: "اتوماتیک",
-    curr_method_manual: "دستی",
-    curr_decimals: "تعداد اعشار",
-    curr_active: "فعال",
-    curr_reciprocal: "تبدیل دو طرفه",
-    curr_reciprocal_desc: "محاسبه نرخ معکوس",
-    curr_status: "وضعیت",
-    curr_manage_rates: "مدیریت تبدیل‌ها",
-    curr_defined_rates: "نرخ‌های تعریف شده",
-    curr_target: "ارز مقصد",
-    curr_rate: "نرخ تبدیل (۱ واحد)",
-    curr_no_rates: "هیچ نرخ تبدیلی تعریف نشده است.",
-    curr_history_title: "تاریخچه بروزرسانی نرخ‌ها",
-    curr_source: "ارز مبدا",
-    curr_target_curr: "ارز مقصد",
-    curr_date: "تاریخ",
-    curr_time: "ساعت",
-    curr_rate_val: "نرخ تبدیل",
-    curr_edit: "ویرایش ارز",
-    curr_new: "تعریف ارز جدید",
-    curr_save_global_success: "تنظیمات کلان سیستم با موفقیت ذخیره شد.",
-    curr_update_success: "نرخ‌های جدید بروزرسانی شد.",
-
-    btn_save: "ذخیره",
-    btn_cancel: "انصراف",
-    btn_search: "اعمال فیلتر",
-    btn_clear: "پاک کردن",
-    btn_add: "افزودن",
-    btn_close: "بستن",
-    confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
-    confirm_delete_single: "آیا از حذف این رکورد اطمینان دارید؟",
-    
-    acc_mgmt_title: "مدیریت اسناد حسابداری",
-    acc_mgmt_subtitle: "لیست کلیه اسناد مالی با قابلیت جستجو و عملیات گروهی",
-    grid_title: "لیست اسناد",
-    col_docNo: "شماره سند",
-    col_date: "تاریخ",
-    col_dept: "دپارتمان",
-    col_desc: "شرح سند",
-    col_debtor: "بدهکار (ریال)",
-    col_status: "وضعیت",
-    col_active: "فعال",
-    col_actions: "عملیات",
-    status_final: "نهایی",
-    status_draft: "پیش‌نویس",
-    status_reviewed: "بررسی شده",
-    filter_fromDoc: "از شماره سند",
-    filter_toDoc: "تا شماره سند",
-    filter_fromDate: "از تاریخ",
-    filter_toDate: "تا تاریخ",
-    filter_status: "وضعیت سند",
-    filter_costCenter: "مرکز هزینه",
-    filter_subsidiary: "معین",
-    filter_allStatus: "همه وضعیت‌ها",
-    modal_newDoc: "سند جدید",
-    modal_editDoc: "ویرایش سند",
-    modal_warning: "لطفاً دقت کنید: تغییرات در اسناد نهایی نیازمند تایید مدیر مالی می‌باشد.",
-    field_docType: "نوع سند",
-    field_general: "عمومی",
-    field_opening: "افتتاحیه",
-    field_party: "طرف حساب",
-    field_selectParty: "انتخاب شخص...",
-    field_amount: "مبلغ سند",
-    field_isActive: "سند فعال باشد",
-    
-    usersListTitle: 'مدیریت کاربران',
-    usersListSubtitle: 'مدیریت دسترسی‌ها و پروفایل‌های کاربری سیستم',
-    createNewUser: 'کاربر جدید',
-    searchUserPlaceholder: 'جستجو بر اساس نام کاربری...',
-    filter: 'فیلتر',
-    colId: 'شناسه',
-    colUsername: 'نام کاربری',
-    colLinkedPerson: 'شخص مرتبط',
-    colUserType: 'نوع کاربر',
-    colStatus: 'وضعیت',
-    colActions: 'عملیات',
-    active: 'فعال',
-    inactive: 'غیرفعال',
-    roleAdmin: 'مدیر سیستم',
-    roleUser: 'کاربر سیستم',
-    editUserTitle: 'ویرایش اطلاعات کاربر',
-    newUserTitle: 'تعریف کاربر جدید',
-    newUserSubtitle: 'برای ایجاد حساب کاربری جدید، فرم زیر را تکمیل کنید',
-    editingId: 'در حال ویرایش شناسه',
-    fieldId: 'شناسه کاربری',
-    fieldUsername: 'نام کاربری',
-    fieldStatus: 'وضعیت حساب',
-    fieldUserType: 'نوع کاربر',
-    fieldLinkedPerson: 'شخص مرتبط (طرف حساب)',
-    selectPersonPlaceholder: '- انتخاب شخص -',
-    linkedPersonHelp: 'این حساب کاربری به یکی از اشخاص تعریف شده در سیستم متصل می‌شود.',
-    fieldPassword: 'مدیریت رمز عبور',
-    enterPassword: 'رمز عبور جدید را وارد کنید...',
-    resetDefault: 'بازنشانی به پیش‌فرض',
-    passwordResetMsg: 'رمز عبور کاربر به "DefaultPassword123!" تغییر یافت.',
-    cancel: 'انصراف',
-    saveChanges: 'ذخیره و بستن',
-    confirmDelete: 'آیا از حذف این کاربر اطمینان دارید؟',
-    recordsFound: 'رکورد یافت شد',
-    edit: 'ویرایش',
-    delete: 'حذف',
-    viewPermissions: 'مشاهده دسترسی‌ها',
-    permModalTitle: 'مدیریت دسترسی‌ها و مجوزها',
-    permColSource: 'منبع دسترسی',
-    permColForms: 'فرم‌های در دسترس',
-    permColOps: 'عملیات مجاز',
-    permTypeRole: 'نقش',
-    permTypeUser: 'کاربر',
-    permSelectSource: 'یک منبع دسترسی انتخاب کنید',
-    permSelectForm: 'یک فرم را انتخاب کنید',
-    ws_title: "میز کار کاربر",
-    ws_subtitle: "سیستم مدیریت حسابداری و صرافی",
-    kpi_cash: "موجودی نقد و بانک",
-    kpi_receivable: "مطالبات (بدهکاران)",
-    kpi_payable: "بدهی‌ها (بستانکاران)",
-    kpi_profit: "سود خالص ماهانه",
-    btn_invoice: "+ خرید و فروش ارز",
-    btn_check: "ثبت چک دریافتی",
-    btn_payment_req: "درخواست پرداخت",
-    btn_expense: "ثبت هزینه",
-    btn_account: "تعریف طرف حساب",
-    table_title: "آخرین تراکنش‌ها",
-    th_id: "شناسه",
-    th_date: "تاریخ",
-    th_desc: "شرح",
-    th_amount: "مبلغ",
-    th_status: "وضعیت",
-    row1_desc: "خرید دلار - ۵۰۰۰ واحد",
-    row2_desc: "اجاره دفتر - ژانویه ۲۰۲۶",
-    row3_desc: "فروش یورو - ۲۲۰۰ واحد",
-    status_paid: "تسویه شده",
-    status_pending: "در انتظار",
-    sidebar_title: "هشدارهای حساس",
-    alert1_title: "سررسید چک",
-    alert1_sub: "بانک ملت - موعد فردا",
-    alert2_title: "فاکتور معوقه",
-    alert2_sub: "مشتری الف - ۱۰ روز تاخیر",
-    alert3_title: "هشدار حد اعتبار",
-    alert3_sub: "همکار صراف ب - نزدیک سقف",
-    mod_exp_title: "ثبت هزینه جدید",
-    mod_acc_title: "تعریف طرف حساب جدید",
-    lbl_category: "دسته بندی",
-    lbl_amount: "مبلغ",
-    opt_rent: "اجاره",
-    opt_salary: "حقوق",
-    btn_save_data: "ذخیره اطلاعات",
-    ph_name: "نام طرف حساب",
-    ph_phone: "شماره تماس"
-  }
+      <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+        <div className="p-3 border-t border-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3 relative z-10">
+            {children}
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button variant="ghost" onClick={onClear} size="sm" icon={X}>{clearLabel}</Button>
+            <Button variant="primary" onClick={onSearch} size="sm" icon={Search}>{searchLabel}</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
+
+// 3. DATA GRID
+const DataGrid = ({ 
+  columns, 
+  data = [], 
+  onSelectAll, 
+  onSelectRow, 
+  selectedIds = [], 
+  isLoading, 
+  isRtl, 
+  title,
+  groupBy = [], 
+  setGroupBy,
+  onCreate,
+  onDelete,
+  onDoubleClick,
+  actions 
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  // Translations
+  const txtSearch = isRtl ? "جستجو..." : "Search...";
+  const txtLoading = isRtl ? "در حال بارگذاری..." : "Loading...";
+  const txtNoData = isRtl ? "اطلاعاتی یافت نشد." : "No records found.";
+  const txtRows = isRtl ? "سطر" : "Rows";
+  const txtRecord = isRtl ? "رکورد" : "Records";
+  const txtPage = isRtl ? "صفحه" : "Page";
+  const txtOf = isRtl ? "از" : "of";
+  const txtNew = isRtl ? "جدید" : "New";
+  const txtDelete = isRtl ? "حذف" : "Delete";
+  const txtExcel = isRtl ? "خروجی اکسل" : "Export Excel";
+  const txtCols = isRtl ? "تنظیمات ستون‌ها" : "Column Settings";
+  const txtOps = isRtl ? "عملیات" : "Actions";
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const processedData = useMemo(() => {
+    let result = [...data];
+    if (searchTerm) {
+      result = result.filter(item => 
+        Object.values(item).some(val => 
+          String(val).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const valA = a[sortConfig.key];
+        const valB = b[sortConfig.key];
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    if (groupBy.length > 0) {
+      result.sort((a, b) => {
+        for (let field of groupBy) {
+          if (a[field] < b[field]) return -1;
+          if (a[field] > b[field]) return 1;
+        }
+        return 0;
+      });
+      const flatList = [];
+      let lastValues = {};
+      result.forEach(row => {
+        let isVisible = true;
+        groupBy.forEach((field, level) => {
+          const val = row[field];
+          const groupKey = `grp-${level}-${field}-${val}`;
+          if (lastValues[level] !== val) {
+            flatList.push({
+              _type: 'GROUP_HEADER',
+              field,
+              value: val,
+              level,
+              key: groupKey,
+              count: result.filter(r => r[field] === val).length 
+            });
+            lastValues[level] = val;
+            for(let l=level+1; l<groupBy.length; l++) lastValues[l] = null;
+          }
+          if (expandedGroups[groupKey] === false) {
+             isVisible = false;
+          }
+        });
+        if (isVisible) flatList.push(row);
+      });
+      result = flatList;
+    }
+    return result;
+  }, [data, searchTerm, groupBy, expandedGroups, sortConfig]);
+
+  const totalItems = processedData.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  
+  useEffect(() => { if(currentPage > totalPages) setCurrentPage(1); }, [totalItems, pageSize]);
+  const paginatedData = processedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const toggleGroup = (groupKey) => {
+    setExpandedGroups(prev => ({ ...prev, [groupKey]: prev[groupKey] === false ? true : false }));
+  };
+
+  const removeGroup = (field) => {
+    if(setGroupBy) setGroupBy(groupBy.filter(g => g !== field));
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden relative z-0">
+      <div className="px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {groupBy.map(field => (
+             <span key={field} className="flex items-center gap-1 bg-white text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 text-[11px] font-bold shadow-sm">
+               <span>{columns.find(c => c.field === field)?.header || field}</span>
+               <button onClick={() => removeGroup(field)} className="hover:text-red-500"><X size={12}/></button>
+             </span>
+          ))}
+          {onCreate && (
+             <Button variant="primary" size="sm" icon={Plus} onClick={onCreate}>{txtNew}</Button>
+          )}
+          {selectedIds.length > 0 && onDelete && (
+             <Button variant="danger" size="sm" icon={Trash2} onClick={() => onDelete(selectedIds)}>{txtDelete} ({selectedIds.length})</Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+           <div className="relative">
+             <input 
+               placeholder={txtSearch} 
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+               className={`h-7 w-40 bg-white border border-slate-300 rounded text-[11px] outline-none focus:border-indigo-500 transition-all ${isRtl ? 'pr-7 pl-2' : 'pl-7 pr-2'}`}
+             />
+             <Search size={12} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2' : 'left-2'}`} />
+           </div>
+           <div className="flex items-center gap-1 border-r border-slate-300 pr-2 mr-1">
+             <Button variant="ghost" size="iconSm" icon={Download} title={txtExcel} />
+             <Button variant="ghost" size="iconSm" icon={Settings} title={txtCols} />
+           </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto relative custom-scrollbar bg-white">
+        <table className="w-full border-collapse text-[12px] relative">
+          <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm border-b border-slate-300">
+            <tr>
+              <th className="w-10 px-2 py-2 text-center">
+                <input 
+                  type="checkbox" 
+                  className="rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                  checked={data.length > 0 && selectedIds.length === data.length}
+                  onChange={(e) => onSelectAll && onSelectAll(e.target.checked)}
+                />
+              </th>
+              {columns.map((col, idx) => (
+                <th 
+                  key={idx} 
+                  className={`px-3 py-2 font-bold text-slate-700 text-start whitespace-nowrap ${col.width || ''} hover:bg-slate-200 cursor-pointer transition-colors select-none`}
+                  style={{ minWidth: col.minWidth }}
+                  onClick={() => col.sortable && handleSort(col.field)}
+                >
+                  <div className="flex items-center gap-1">
+                    {col.header}
+                    {col.sortable && (
+                      <div className="flex flex-col text-slate-400">
+                        {sortConfig.key === col.field ? (
+                           sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-indigo-600"/> : <ArrowDown size={12} className="text-indigo-600"/>
+                        ) : (
+                           <div className="opacity-0 group-hover:opacity-50"><ArrowDown size={12}/></div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5_rgba(0,0,0,0.05)] border-l border-slate-300">{txtOps}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {isLoading ? (
+               <tr><td colSpan={100} className="p-10 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-2"/>{txtLoading}</td></tr>
+            ) : paginatedData.length === 0 ? (
+               <tr><td colSpan={100} className="p-10 text-center text-slate-400 italic">{txtNoData}</td></tr>
+            ) : (
+              paginatedData.map((row, rowIndex) => {
+                if (row._type === 'GROUP_HEADER') {
+                  const isClosed = expandedGroups[row.key] === false;
+                  return (
+                    <tr key={row.key} className="bg-slate-50 sticky top-9 z-10">
+                      <td colSpan={100} className="px-3 py-1.5 border-y border-slate-200">
+                        <div 
+                          className="flex items-center gap-2 cursor-pointer select-none"
+                          onClick={() => toggleGroup(row.key)}
+                          style={{ paddingRight: `${row.level * 16}px` }}
+                        >
+                           <div className={`p-0.5 rounded hover:bg-slate-200 transition-transform duration-200 ${isClosed ? (isRtl ? 'rotate-90' : '-rotate-90') : ''}`}>
+                             <ChevronDown size={14} className="text-slate-500" />
+                           </div>
+                           <span className="font-bold text-slate-800 text-[11px]">{columns.find(c => c.field === row.field)?.header}:</span>
+                           <span className="text-indigo-700 font-medium">{row.value}</span>
+                           <Badge variant="neutral" className="mr-2 text-[10px] h-4 py-0">{row.count}</Badge>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+                const isSelected = selectedIds.includes(row.id);
+                return (
+                  <tr 
+                    key={row.id || rowIndex} 
+                    onDoubleClick={() => onDoubleClick && onDoubleClick(row)}
+                    className={`
+                      transition-all duration-100 group
+                      ${isSelected ? THEME.colors.rowSelected : 'hover:bg-slate-50'}
+                    `}
+                  >
+                    <td className="px-2 py-1.5 border-r border-slate-100 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        checked={isSelected}
+                        onChange={(e) => onSelectRow && onSelectRow(row.id, e.target.checked)}
+                      />
+                    </td>
+                    {columns.map((col, cIdx) => (
+                      <td key={cIdx} className="px-3 py-1.5 border-r border-slate-100 text-slate-700 truncate max-w-xs align-middle">
+                         {col.type === 'toggle' ? (
+                           <div className="flex justify-center"><Toggle checked={row[col.field]} onChange={() => {}} disabled /></div>
+                         ) : col.render ? (
+                           col.render(row)
+                         ) : (
+                           row[col.field]
+                         )}
+                      </td>
+                    ))}
+                    <td className="px-1 py-1 text-center sticky left-0 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5_rgba(0,0,0,0.02)] z-10">
+                      <div className="flex items-center justify-center gap-1 opacity-100">
+                        {actions ? actions(row) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="px-3 py-2 bg-slate-50 border-t border-slate-300 flex items-center justify-between shrink-0 select-none">
+        <div className="flex items-center gap-2">
+           <select 
+             value={pageSize}
+             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+             className="bg-white border border-slate-300 rounded text-[11px] font-bold text-slate-700 py-0.5 px-1 outline-none focus:border-indigo-500 cursor-pointer"
+           >
+              <option value={10}>10 {txtRows}</option>
+              <option value={25}>25 {txtRows}</option>
+              <option value={50}>50 {txtRows}</option>
+           </select>
+           <div className="h-3 w-px bg-slate-300 mx-1"></div>
+           <span className="text-[11px] text-slate-500">
+             <span className="font-bold text-slate-800">{totalItems}</span> {txtRecord}
+           </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+           <Button variant="outline" size="iconSm" icon={ChevronsRight} disabled={currentPage === 1} onClick={() => setCurrentPage(1)} />
+           <Button variant="outline" size="iconSm" icon={ChevronRight} disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)} />
+           <div className="flex items-center gap-1 px-2">
+              <span className="text-[11px] text-slate-500">{txtPage}</span>
+              <input 
+                value={currentPage}
+                onChange={(e) => setCurrentPage(Number(e.target.value))}
+                className="w-8 h-6 text-center border border-slate-300 rounded text-[11px] font-bold outline-none focus:border-indigo-500"
+              />
+              <span className="text-[11px] text-slate-500">{txtOf} {totalPages}</span>
+           </div>
+           <Button variant="outline" size="iconSm" icon={ChevronLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(c => c + 1)} />
+           <Button variant="outline" size="iconSm" icon={ChevronsLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 4. TREE MENU
+const TreeMenu = ({ items, activeId, onSelect, isRtl }) => {
+  const renderNode = (item) => (
+     <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeId === item.id ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`}></div>
+  );
+  
+  return <TreeView data={items} selectedNodeId={activeId} onSelectNode={(item) => onSelect(item.id)} renderNodeContent={renderNode} isRtl={isRtl} searchPlaceholder={isRtl ? "جستجوی منو..." : "Search Menu..."} />;
+};
+
+const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
+  if (!isOpen) return null;
+  const sizes = { sm: 'max-w-sm', md: 'max-w-xl', lg: 'max-w-4xl', xl: 'max-w-6xl', full: 'max-w-[95vw] h-[90vh]' };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className={`bg-white rounded-lg shadow-2xl flex flex-col w-full ${sizes[size]} max-h-[90vh] animate-in zoom-in-95 border border-slate-200`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0 rounded-t-lg">
+          <h3 className="font-bold text-slate-800 text-sm">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-red-500"><X size={18} /></button>
+        </div>
+        <div className="p-4 overflow-y-auto flex-1">{children}</div>
+        {footer && <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0 rounded-b-lg">{footer}</div>}
+      </div>
+    </div>
+  );
+};
+
+const DatePicker = ({ label, isRtl, className = '', ...props }) => (
+  <div className={`w-full ${className}`}>
+    {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+    <div className="relative">
+       <input type="date" {...props} className={`w-full ${THEME.colors.surface} border ${THEME.colors.border} ${THEME.metrics.radius} ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-[12px] text-slate-800 uppercase font-mono transition-all`} />
+    </div>
+  </div>
+);
+
+const LOV = ({ label, placeholder, isRtl }) => (
+  <div className="w-full">
+    {label && <label className="block text-[11px] font-bold text-slate-600 mb-1">{label}</label>}
+    <div className="flex relative">
+      <input placeholder={placeholder} className={`flex-1 ${THEME.colors.surface} border ${THEME.colors.border} rounded-r-md border-l-0 ${THEME.metrics.inputHeight} px-2 outline-none focus:border-indigo-500 text-[12px]`} />
+      <button className={`bg-slate-50 border ${THEME.colors.border} px-2 hover:bg-slate-100 rounded-l-md border-r-0`}><List size={14}/></button>
+    </div>
+  </div>
+);
+
+// 5. NEW GENERIC COMPONENTS (For DRY Compliance)
+
+const SideMenu = ({ items, activeId, onChange, title, isRtl, className = '' }) => {
+  return (
+    <div className={`w-full ${className}`}>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        {title && (
+          <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
+              {title}
+            </h3>
+          </div>
+        )}
+        <div className="p-2 space-y-1">
+          {items.map(item => {
+            const isActive = activeId === item.id;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onChange(item.id)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-bold transition-all duration-200
+                  ${isActive 
+                    ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200/50' 
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}
+                `}
+              >
+                {Icon && <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />}
+                <span>{item.label}</span>
+                {isActive && (
+                  <div className={`ml-auto ${isRtl ? 'rotate-180' : ''}`}>
+                    <ChevronRight size={14} className="text-indigo-400" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Accordion = ({ title, icon: Icon, isOpen, onToggle, children, actions, isRtl, className = '' }) => {
+  return (
+    <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${className}`}>
+      <button 
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`p-1.5 rounded-lg transition-colors ${isOpen ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+            {Icon && <Icon size={18} />}
+          </div>
+          <span className="font-bold text-slate-800 text-sm">{title}</span>
+        </div>
+        <div className="flex items-center gap-3">
+            {actions && <div onClick={e => e.stopPropagation()}>{actions}</div>}
+            <div className={`text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+               <ChevronDown size={18} />
+            </div>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="p-4 pt-2 border-t border-slate-100 animate-in slide-in-from-top-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Callout = ({ title, children, icon: Icon, action, variant = 'info', className = '' }) => {
+  const variants = {
+     info: 'bg-blue-50 border-blue-100 text-blue-900',
+     warning: 'bg-amber-50 border-amber-100 text-amber-900',
+     success: 'bg-emerald-50 border-emerald-100 text-emerald-900',
+     danger: 'bg-red-50 border-red-100 text-red-900',
+  };
+  
+  const iconColors = {
+     info: 'text-blue-600',
+     warning: 'text-amber-600',
+     success: 'text-emerald-600',
+     danger: 'text-red-600',
+  };
+
+  return (
+    <div className={`${variants[variant]} border p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${className}`}>
+       <div className="flex items-start gap-3">
+          {Icon && (
+             <div className={`p-1.5 bg-white rounded-lg shadow-sm ${iconColors[variant]}`}>
+                <Icon size={18}/>
+             </div>
+          )}
+          <div>
+             {title && <h4 className="font-bold text-xs mb-0.5">{title}</h4>}
+             <div className="text-[11px] opacity-80 leading-relaxed">{children}</div>
+          </div>
+       </div>
+       {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+};
+
+window.UI = { Button, InputField, SelectField, Toggle, Badge, DataGrid, FilterSection, TreeMenu, TreeView, SelectionGrid, ToggleChip, Modal, DatePicker, LOV, SideMenu, Accordion, Callout, THEME };
