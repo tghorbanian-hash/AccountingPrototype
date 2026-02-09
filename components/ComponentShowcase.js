@@ -41,7 +41,7 @@ const ComponentShowcase = ({ t, isRtl }) => {
   };
 
   const handleDelete = (ids) => {
-    if(confirm(`آیا از حذف ${ids.length} رکورد اطمینان دارید؟`)) {
+    if(confirm(t.confirm_delete.replace('{0}', ids.length))) {
       alert(`Deleted: ${ids.join(', ')}`);
       setSelectedRows([]);
     }
@@ -58,22 +58,27 @@ const ComponentShowcase = ({ t, isRtl }) => {
 
   // --- Columns ---
   const columns = [
-    { header: 'شماره سند', field: 'docNo', width: 'w-28', sortable: true },
-    { header: 'تاریخ', field: 'date', width: 'w-24', sortable: true },
-    { header: 'دپارتمان', field: 'dept', width: 'w-32', sortable: true },
-    { header: 'شرح سند', field: 'description', width: 'w-auto' },
-    { header: 'بدهکار (ریال)', field: 'debtor', width: 'w-32 text-end font-mono tracking-tight' },
+    { header: t.col_docNo, field: 'docNo', width: 'w-28', sortable: true },
+    { header: t.col_date, field: 'date', width: 'w-24', sortable: true },
+    { header: t.col_dept, field: 'dept', width: 'w-32', sortable: true },
+    { header: t.col_desc, field: 'description', width: 'w-auto' },
+    { header: t.col_debtor, field: 'debtor', width: 'w-32 text-end font-mono tracking-tight' },
     { 
-      header: 'وضعیت', 
+      header: t.col_status, 
       field: 'status',
       width: 'w-24 text-center',
       sortable: true,
       render: (row) => {
-        const map = { 'نهایی': 'success', 'پیش‌نویس': 'warning', 'بررسی شده': 'info' };
-        return <Badge variant={map[row.status]}>{row.status}</Badge>;
+        const map = { 
+          'نهایی': { variant: 'success', label: t.status_final }, 
+          'پیش‌نویس': { variant: 'warning', label: t.status_draft }, 
+          'بررسی شده': { variant: 'info', label: t.status_reviewed } 
+        };
+        const statusConfig = map[row.status] || { variant: 'neutral', label: row.status };
+        return <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>;
       }
     },
-    { header: 'فعال', field: 'isActive', type: 'toggle', width: 'w-16 text-center' },
+    { header: t.col_active, field: 'isActive', type: 'toggle', width: 'w-16 text-center' },
   ];
 
   return (
@@ -82,34 +87,35 @@ const ComponentShowcase = ({ t, isRtl }) => {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-4 shrink-0">
          <div>
-            <h1 className="text-xl font-black text-slate-800">مدیریت اسناد حسابداری</h1>
-            <p className="text-slate-500 text-xs mt-1">لیست کلیه اسناد مالی با قابلیت جستجو و عملیات گروهی</p>
+            <h1 className="text-xl font-black text-slate-800">{t.acc_mgmt_title}</h1>
+            <p className="text-slate-500 text-xs mt-1">{t.acc_mgmt_subtitle}</p>
          </div>
       </div>
 
       {/* FILTER SECTION (COLLAPSIBLE) */}
       <FilterSection 
-        onSearch={() => alert('جستجو انجام شد!')} 
-        onClear={() => alert('فیلترها پاک شدند')}
+        onSearch={() => alert('Search Triggered')} 
+        onClear={() => alert('Filters Cleared')}
         isRtl={isRtl}
+        title={t.filters}
       >
-         <InputField label="از شماره سند" placeholder="مثلا 1000" isRtl={isRtl} />
-         <InputField label="تا شماره سند" placeholder="مثلا 2000" isRtl={isRtl} />
-         <DatePicker label="از تاریخ" isRtl={isRtl} />
-         <DatePicker label="تا تاریخ" isRtl={isRtl} />
-         <SelectField label="وضعیت سند" isRtl={isRtl}>
-            <option>همه وضعیت‌ها</option>
-            <option>نهایی</option>
-            <option>پیش‌نویس</option>
+         <InputField label={t.filter_fromDoc} placeholder="1000" isRtl={isRtl} />
+         <InputField label={t.filter_toDoc} placeholder="2000" isRtl={isRtl} />
+         <DatePicker label={t.filter_fromDate} isRtl={isRtl} />
+         <DatePicker label={t.filter_toDate} isRtl={isRtl} />
+         <SelectField label={t.filter_status} isRtl={isRtl}>
+            <option>{t.filter_allStatus}</option>
+            <option>{t.status_final}</option>
+            <option>{t.status_draft}</option>
          </SelectField>
-         <LOV label="مرکز هزینه" placeholder="انتخاب مرکز..." isRtl={isRtl} />
-         <LOV label="معین" placeholder="انتخاب حساب..." isRtl={isRtl} />
+         <LOV label={t.filter_costCenter} placeholder={t.filter_costCenter} isRtl={isRtl} />
+         <LOV label={t.filter_subsidiary} placeholder={t.filter_subsidiary} isRtl={isRtl} />
       </FilterSection>
 
       {/* DATA GRID */}
       <div className="flex-1 min-h-0">
         <DataGrid 
-          title="لیست اسناد"
+          title={t.grid_title}
           columns={columns}
           data={MOCK_DATA}
           isRtl={isRtl}
@@ -131,10 +137,10 @@ const ComponentShowcase = ({ t, isRtl }) => {
           // Row Actions (Rendered per row)
           actions={(row) => (
              <>
-               <Button variant="ghost" size="iconSm" icon={Edit} className="text-indigo-600 hover:bg-indigo-50" onClick={() => handleEdit(row)} title="ویرایش" />
-               <Button variant="ghost" size="iconSm" icon={Eye} className="text-slate-500 hover:text-slate-800" onClick={() => handleView(row)} title="مشاهده" />
+               <Button variant="ghost" size="iconSm" icon={Edit} className="text-indigo-600 hover:bg-indigo-50" onClick={() => handleEdit(row)} title={t.edit} />
+               <Button variant="ghost" size="iconSm" icon={Eye} className="text-slate-500 hover:text-slate-800" onClick={() => handleView(row)} title={t.view} />
                {row.status === 'پیش‌نویس' && (
-                 <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDelete([row.id])} title="حذف" />
+                 <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDelete([row.id])} title={t.delete} />
                )}
              </>
           )}
@@ -145,12 +151,12 @@ const ComponentShowcase = ({ t, isRtl }) => {
       <Modal 
          isOpen={isModalOpen} 
          onClose={() => setIsModalOpen(false)} 
-         title={editingRow ? `ویرایش سند ${editingRow.docNo}` : "سند جدید"}
+         title={editingRow ? `${t.modal_editDoc} ${editingRow.docNo}` : t.modal_newDoc}
          size="lg"
          footer={
             <>
-               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>انصراف</Button>
-               <Button variant="primary" icon={Save}>ذخیره</Button>
+               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t.btn_cancel}</Button>
+               <Button variant="primary" icon={Save}>{t.btn_save}</Button>
             </>
          }
       >
@@ -158,28 +164,28 @@ const ComponentShowcase = ({ t, isRtl }) => {
             <div className="bg-indigo-50 border border-indigo-100 p-3 rounded flex items-start gap-3">
                <Shield className="text-indigo-600 shrink-0 mt-0.5" size={16} />
                <div className="text-[11px] text-indigo-900 leading-relaxed">
-                  لطفاً دقت کنید: تغییرات در اسناد نهایی نیازمند تایید مدیر مالی می‌باشد.
+                  {t.modal_warning}
                </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-               <InputField label="شماره سند" value={editingRow?.docNo || "Auto"} disabled />
-               <DatePicker label="تاریخ سند" defaultValue={editingRow?.date} />
-               <SelectField label="نوع سند">
-                  <option>عمومی</option>
-                  <option>افتتاحیه</option>
+               <InputField label={t.col_docNo} value={editingRow?.docNo || "Auto"} disabled />
+               <DatePicker label={t.col_date} defaultValue={editingRow?.date} />
+               <SelectField label={t.field_docType}>
+                  <option>{t.field_general}</option>
+                  <option>{t.field_opening}</option>
                </SelectField>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
-               <LOV label="طرف حساب" placeholder="انتخاب شخص..." />
-               <InputField label="مبلغ سند" value={editingRow?.debtor} dir="ltr" className="font-mono text-left"/>
+               <LOV label={t.field_party} placeholder={t.field_selectParty} />
+               <InputField label={t.field_amount} value={editingRow?.debtor} dir="ltr" className="font-mono text-left"/>
             </div>
 
-            <InputField label="شرح سند" value={editingRow?.description} />
+            <InputField label={t.col_desc} value={editingRow?.description} />
 
             <div className="flex items-center gap-2 pt-2 mt-2 border-t border-slate-100">
-               <Toggle label="سند فعال باشد" checked={true} onChange={()=>{}} />
+               <Toggle label={t.field_isActive} checked={true} onChange={()=>{}} />
             </div>
          </div>
       </Modal>
