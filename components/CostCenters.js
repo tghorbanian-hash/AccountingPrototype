@@ -16,10 +16,17 @@ const CostCenters = ({ t, isRtl }) => {
   ]);
 
   const [filters, setFilters] = useState({ code: '', title: '', type: '' });
+  
+  // Create/Edit Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
   const [formData, setFormData] = useState({});
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Detail Code Assignment Modal States
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [targetForDetail, setTargetForDetail] = useState(null);
+  const [detailCodeInput, setDetailCodeInput] = useState('');
 
   // --- Handlers ---
   const filteredData = useMemo(() => {
@@ -31,6 +38,7 @@ const CostCenters = ({ t, isRtl }) => {
     });
   }, [data, filters]);
 
+  // CRUD Handlers
   const handleOpenModal = (record = null) => {
     if (record) {
       setFormData({ ...record });
@@ -65,11 +73,18 @@ const CostCenters = ({ t, isRtl }) => {
     setData(prev => prev.map(item => item.id === id ? { ...item, active: newVal } : item));
   };
 
-  const handleAssignDetailCode = (row) => {
-    // Mock assignment
-    const newDetailCode = '9' + row.code.padStart(3, '0'); // Simple logic for demo
-    setData(prev => prev.map(item => item.id === row.id ? { ...item, detailCode: newDetailCode } : item));
-    alert(`${t.detail_assign_msg} (${newDetailCode})`);
+  // Detail Code Handlers
+  const handleOpenDetailModal = (row) => {
+    setTargetForDetail(row);
+    setDetailCodeInput(row.detailCode || '');
+    setIsDetailModalOpen(true);
+  };
+
+  const handleSaveDetailCode = () => {
+    if (targetForDetail) {
+      setData(prev => prev.map(item => item.id === targetForDetail.id ? { ...item, detailCode: detailCodeInput || null } : item));
+      setIsDetailModalOpen(false);
+    }
   };
 
   // --- Columns ---
@@ -94,16 +109,17 @@ const CostCenters = ({ t, isRtl }) => {
       header: t.detail_code, 
       width: 'w-40',
       render: (row) => row.detailCode ? (
-        <div className="flex items-center gap-2">
-           <Badge variant="success" className="font-mono">{row.detailCode}</Badge>
-        </div>
+        <button onClick={() => handleOpenDetailModal(row)} className="flex items-center gap-2 group">
+           <Badge variant="success" className="font-mono group-hover:bg-emerald-100 transition-colors">{row.detailCode}</Badge>
+           <Edit size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"/>
+        </button>
       ) : (
-        <div className="flex items-center gap-2">
+        <button onClick={() => handleOpenDetailModal(row)} className="flex items-center gap-2">
            <Badge variant="danger">{t.detail_not_assigned}</Badge>
-           <button onClick={() => handleAssignDetailCode(row)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+           <span className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               <Link2 size={12}/> {t.detail_assign_btn}
-           </button>
-        </div>
+           </span>
+        </button>
       )
     },
     { 
@@ -167,6 +183,7 @@ const CostCenters = ({ t, isRtl }) => {
         />
       </div>
 
+      {/* Create/Edit Modal */}
       <Modal 
         isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} 
         title={currentRecord ? t.cc_edit : t.cc_new}
@@ -181,23 +198,54 @@ const CostCenters = ({ t, isRtl }) => {
            <InputField label={`${t.cc_code} *`} value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} isRtl={isRtl} className="dir-ltr" />
            <InputField label={`${t.cc_title_field} *`} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} isRtl={isRtl} />
            
-           <div className="md:col-span-2">
+           {/* Combined Row for Type and Active */}
+           <div className="md:col-span-2 grid grid-cols-2 gap-5">
               <SelectField label={t.cc_type} value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} isRtl={isRtl}>
                  <option value="production">{t.cc_type_prod}</option>
                  <option value="service">{t.cc_type_serv}</option>
                  <option value="admin">{t.cc_type_admin}</option>
               </SelectField>
+              
+              <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 flex items-center justify-between h-[50px] mt-auto">
+                 <span className="text-xs font-bold text-slate-700 px-2">{t.active_status}</span>
+                 <Toggle checked={formData.active} onChange={val => setFormData({...formData, active: val})} />
+              </div>
            </div>
            
            <div className="md:col-span-2">
               <InputField label={t.cc_address} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} isRtl={isRtl} />
            </div>
-
-           <div className="md:col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-700">{t.active_status}</span>
-              <Toggle checked={formData.active} onChange={val => setFormData({...formData, active: val})} />
-           </div>
         </div>
+      </Modal>
+
+      {/* Detail Code Assignment Modal */}
+      <Modal 
+        isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)}
+        title={t.detail_assign_btn}
+        size="sm"
+        footer={
+           <>
+             <Button variant="ghost" onClick={() => setIsDetailModalOpen(false)}>{t.btn_cancel}</Button>
+             <Button variant="primary" onClick={handleSaveDetailCode}>{t.btn_save}</Button>
+           </>
+        }
+      >
+         <div className="p-2 space-y-3">
+            <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg leading-relaxed">
+               {isRtl 
+                 ? `در حال تخصیص کد تفصیلی به: ${targetForDetail?.title}` 
+                 : `Assigning detail code for: ${targetForDetail?.title}`}
+            </div>
+            <InputField 
+               label={t.detail_code} 
+               value={detailCodeInput} 
+               onChange={(e) => setDetailCodeInput(e.target.value)} 
+               isRtl={isRtl}
+               className="dir-ltr text-center font-bold"
+               placeholder="Example: 9001"
+               autoFocus
+            />
+         </div>
       </Modal>
     </div>
   );
