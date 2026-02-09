@@ -201,12 +201,19 @@ const Parties = ({ t, isRtl }) => {
   ];
 
   return (
-    <div className={`flex flex-col h-full bg-slate-50/50 p-4 gap-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
+    <div className={`flex flex-col h-full bg-slate-50/50 p-4 md:p-6 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       
-      <div className="flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-          <Users className="text-indigo-600" size={24}/> {t.parties_title || 'مدیریت اشخاص و شرکت‌ها'}
-        </h1>
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200">
+            <Users size={24} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-slate-800">{t.parties_title || 'مدیریت اشخاص و شرکت‌ها'}</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">{t.parties_subtitle || 'مدیریت اشخاص و شرکت ها و تعریف نقش آنها'}</p>
+          </div>
+        </div>
       </div>
 
       <FilterSection 
