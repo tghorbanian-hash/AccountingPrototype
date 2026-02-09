@@ -29,7 +29,7 @@ const CurrencySettings = ({ t, isRtl }) => {
 
   const [filters, setFilters] = useState({ search: '', method: '' });
 
-  // 3. Conversions (Mock DB: { 'USD': [ {target: 'IRR', rate: 60000}, ... ] })
+  // 3. Conversions (Mock DB)
   const [conversions, setConversions] = useState({
     'USD': [{ target: 'IRR', rate: 600000 }, { target: 'EUR', rate: 0.92 }, { target: 'AED', rate: 3.67 }],
     'EUR': [{ target: 'IRR', rate: 650000 }, { target: 'USD', rate: 1.09 }],
@@ -54,7 +54,6 @@ const CurrencySettings = ({ t, isRtl }) => {
 
   // --- Logic & Handlers ---
 
-  // Filter Logic
   const filteredData = useMemo(() => {
     return currencies.filter(item => {
       const matchSearch = filters.search 
@@ -65,13 +64,10 @@ const CurrencySettings = ({ t, isRtl }) => {
     });
   }, [currencies, filters]);
 
-  // Global Settings Save
   const handleSaveGlobals = () => {
-    // API Call would go here
     alert(isRtl ? 'تنظیمات کلان سیستم با موفقیت ذخیره شد.' : 'Global settings saved successfully.');
   };
 
-  // Fetch Automatic Rates (Mock)
   const handleFetchRates = () => {
     setIsLoadingRates(true);
     setTimeout(() => {
@@ -86,7 +82,6 @@ const CurrencySettings = ({ t, isRtl }) => {
       
       setHistoryLog(prev => [...newLogs, ...prev]);
       
-      // Update conversions mock
       setConversions(prev => ({
         ...prev,
         'USD': prev['USD'].map(c => c.target === 'IRR' ? { ...c, rate: newLogs[0].rate } : c)
@@ -97,7 +92,6 @@ const CurrencySettings = ({ t, isRtl }) => {
     }, 1500);
   };
 
-  // Currency CRUD
   const handleOpenModal = (record = null) => {
     if (record) {
       setFormData({ ...record });
@@ -128,15 +122,17 @@ const CurrencySettings = ({ t, isRtl }) => {
   const handleToggleActive = (id, newVal) => {
     setCurrencies(prev => prev.map(c => c.id === id ? { ...c, active: newVal } : c));
   };
+  
+  const handleToggleReciprocal = (id, newVal) => {
+    setCurrencies(prev => prev.map(c => c.id === id ? { ...c, reciprocal: newVal } : c));
+  };
 
-  // History CRUD
   const handleDeleteHistory = (id) => {
      if(confirm('آیا از حذف این رکورد تاریخچه اطمینان دارید؟')) {
         setHistoryLog(prev => prev.filter(x => x.id !== id));
      }
   };
 
-  // Conversion Management
   const handleOpenConvModal = (row) => {
     setSelectedForConv(row);
     setNewConvTarget('');
@@ -152,15 +148,12 @@ const CurrencySettings = ({ t, isRtl }) => {
     const sourceCode = selectedForConv.code;
     const targetCode = newConvTarget;
 
-    // 1. Add Source -> Target
     setConversions(prev => {
       const currentList = prev[sourceCode] || [];
-      // Remove existing if any
       const filtered = currentList.filter(c => c.target !== targetCode);
       return { ...prev, [sourceCode]: [...filtered, { target: targetCode, rate: rate }] };
     });
 
-    // 2. Reciprocal Logic (If enabled)
     if (selectedForConv.reciprocal) {
       const inverseRate = 1 / rate;
       setConversions(prev => {
@@ -171,7 +164,6 @@ const CurrencySettings = ({ t, isRtl }) => {
           [targetCode]: [...filtered, { target: sourceCode, rate: inverseRate }] 
         };
       });
-      alert(`نرخ تبدیل معکوس (${targetCode} به ${sourceCode}) نیز به صورت اتوماتیک ثبت شد.`);
     }
 
     setNewConvTarget('');
@@ -206,25 +198,36 @@ const CurrencySettings = ({ t, isRtl }) => {
        field: 'active', 
        header: 'فعال', 
        width: 'w-20', 
-       type: 'toggle' // This DataGrid supports type: 'toggle' but we need to handle the change via a custom renderer if the grid doesn't auto-bind
+       type: 'toggle' 
     },
     { 
       field: 'reciprocal', 
       header: 'تبدیل دو طرفه', 
       width: 'w-24', 
-      render: (row) => row.reciprocal ? <Check size={16} className="text-emerald-600 mx-auto"/> : <span className="text-slate-300 mx-auto block text-center">-</span>
+      type: 'toggle'
     }
   ];
 
-  // Custom Toggle Renderer for Active Column (Since standard DataGrid toggle might be read-only)
+  // Custom Toggle Renderer for Active and Reciprocal Columns
   const customColumns = columns.map(col => {
      if(col.field === 'active') {
         return {
            ...col,
-           type: undefined, // Override default type
+           type: undefined,
            render: (row) => (
               <div className="flex justify-center">
                  <Toggle checked={row.active} onChange={(val) => handleToggleActive(row.id, val)} />
+              </div>
+           )
+        };
+     }
+     if(col.field === 'reciprocal') {
+        return {
+           ...col,
+           type: undefined,
+           render: (row) => (
+              <div className="flex justify-center">
+                 <Toggle checked={row.reciprocal} onChange={(val) => handleToggleReciprocal(row.id, val)} />
               </div>
            )
         };
@@ -371,27 +374,29 @@ const CurrencySettings = ({ t, isRtl }) => {
                </SelectField>
             </div>
             
-            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-               <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-700">وضعیت در سیستم</span>
-                  <div className="flex items-center gap-2">
-                     <span className="text-xs text-slate-500">فعال</span>
-                     <Toggle checked={formData.active} onChange={val => setFormData({...formData, active: val})} />
+            {/* Unified Toggle Section */}
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between border-l pl-4 border-slate-200">
+                      <div>
+                        <span className="text-sm font-bold text-slate-700 block">وضعیت ارز</span>
+                        <span className="text-[10px] text-slate-500">قابل استفاده در سیستم</span>
+                      </div>
+                      <Toggle checked={formData.active} onChange={val => setFormData({...formData, active: val})} />
                   </div>
-               </div>
-               <div className="h-px bg-slate-200"></div>
-               <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-bold text-slate-700 block">تبدیل دو طرفه (Reciprocal)</span>
-                    <span className="text-[10px] text-slate-500">محاسبه خودکار نرخ معکوس هنگام درج نرخ تبدیل</span>
+                  <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-slate-700 block">تبدیل دو طرفه</span>
+                        <span className="text-[10px] text-slate-500">محاسبه نرخ معکوس</span>
+                      </div>
+                      <Toggle checked={formData.reciprocal} onChange={val => setFormData({...formData, reciprocal: val})} />
                   </div>
-                  <Toggle checked={formData.reciprocal} onChange={val => setFormData({...formData, reciprocal: val})} />
                </div>
             </div>
          </div>
       </Modal>
 
-      {/* 2. Manage Conversions Modal */}
+      {/* 2. Manage Conversions Modal (Redesigned) */}
       <Modal 
         isOpen={isConvModalOpen} onClose={() => setIsConvModalOpen(false)}
         title={selectedForConv ? `مدیریت نرخ‌های تبدیل: ${selectedForConv.title} (${selectedForConv.code})` : 'مدیریت تبدیل‌ها'}
@@ -415,40 +420,54 @@ const CurrencySettings = ({ t, isRtl }) => {
               <Button variant="primary" icon={Plus} onClick={handleAddConversion} className="mb-0.5">افزودن</Button>
            </div>
            
-           {/* List Section */}
+           {/* List Section (Improved Table Layout) */}
            <div>
-              <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase">نرخ‌های تعریف شده</h4>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                 {selectedForConv && conversions[selectedForConv.code]?.length > 0 ? (
-                    <div className="divide-y divide-slate-100">
-                       {conversions[selectedForConv.code].map((conv, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 hover:bg-slate-50">
-                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px] text-slate-600 border border-slate-200">
+              <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase flex items-center gap-2">
+                 <Coins size={12}/> نرخ‌های تعریف شده
+              </h4>
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                 <table className="w-full text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                       <tr>
+                          <th className="px-3 py-2 text-right">ارز مقصد</th>
+                          <th className="px-3 py-2 text-center">نرخ تبدیل (1 واحد)</th>
+                          <th className="px-3 py-2 text-center w-12">حذف</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                       {selectedForConv && conversions[selectedForConv.code]?.length > 0 ? (
+                          conversions[selectedForConv.code].map((conv, idx) => (
+                             <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="px-3 py-2.5 font-bold text-slate-700 flex items-center gap-2">
+                                   <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] text-slate-500">{conv.target}</div>
                                    {conv.target}
-                                </div>
-                                <div className="flex flex-col">
-                                   <span className="text-xs font-bold text-slate-800">1 {selectedForConv.code} = {conv.rate.toLocaleString()} {conv.target}</span>
-                                </div>
-                             </div>
-                             <button onClick={() => handleDeleteConversion(conv.target)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                <X size={16} />
-                             </button>
-                          </div>
-                       ))}
-                    </div>
-                 ) : (
-                    <div className="p-8 text-center text-slate-400 text-xs italic">
-                       هنوز نرخ تبدیلی برای این ارز تعریف نشده است.
-                    </div>
-                 )}
+                                </td>
+                                <td className="px-3 py-2.5 text-center font-mono font-bold text-slate-800 dir-ltr">
+                                   {conv.rate.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                                </td>
+                                <td className="px-3 py-2.5 text-center">
+                                   <button onClick={() => handleDeleteConversion(conv.target)} className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50">
+                                      <X size={14} />
+                                   </button>
+                                </td>
+                             </tr>
+                          ))
+                       ) : (
+                          <tr>
+                             <td colSpan={3} className="px-3 py-8 text-center text-slate-400 italic">
+                                هیچ نرخ تبدیلی تعریف نشده است.
+                             </td>
+                          </tr>
+                       )}
+                    </tbody>
+                 </table>
               </div>
            </div>
 
            {selectedForConv?.reciprocal && (
-              <div className="text-[10px] text-emerald-600 bg-emerald-50 p-2 rounded-lg flex items-center gap-2">
-                 <Check size={12}/>
-                 قابلیت تبدیل دو طرفه برای این ارز فعال است. نرخ‌های معکوس به طور خودکار اعمال می‌شوند.
+              <div className="text-[10px] text-emerald-600 bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 flex items-center gap-2">
+                 <div className="p-1 bg-white rounded-full shadow-sm"><Check size={10}/></div>
+                 قابلیت تبدیل دو طرفه فعال است. نرخ‌های معکوس به طور خودکار اعمال می‌شوند.
               </div>
            )}
         </div>
