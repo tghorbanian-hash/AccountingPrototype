@@ -209,9 +209,12 @@ export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }
 };
 
 // 3. TreeView
-export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder = "جستجو..." }) => {
+export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder }) => {
   const [expandedNodes, setExpandedNodes] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Default placeholder based on language
+  const defaultPlaceholder = searchPlaceholder || (isRtl ? "جستجو..." : "Search...");
 
   // Filtering Logic
   const filteredData = useMemo(() => {
@@ -305,14 +308,14 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
          <input 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={searchPlaceholder} 
+            placeholder={defaultPlaceholder} 
             className={`w-full bg-slate-100 border border-slate-200 rounded-md text-[11px] h-8 focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition-all ${isRtl ? 'pr-8 pl-2' : 'pl-8 pr-2'}`} 
          />
          <Search size={14} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2.5' : 'left-2.5'}`}/>
          {searchTerm && <button onClick={() => setSearchTerm('')} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 ${isRtl ? 'left-2' : 'right-2'}`}><X size={12}/></button>}
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-         {filteredData.length > 0 ? renderTree(filteredData) : <div className="text-center p-4 text-slate-400 text-xs">موردی یافت نشد.</div>}
+         {filteredData.length > 0 ? renderTree(filteredData) : <div className="text-center p-4 text-slate-400 text-xs">{isRtl ? 'موردی یافت نشد.' : 'No items found.'}</div>}
       </div>
     </div>
   );
@@ -322,8 +325,13 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
 // --- EXISTING COMPLEX COMPONENTS ---
 
 // 2. FILTER SECTION
-export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "فیلترهای پیشرفته" }) => {
+export const FilterSection = ({ children, onSearch, onClear, isRtl, title }) => {
   const [isOpen, setIsOpen] = useState(true);
+
+  // Defaults based on isRtl
+  const defaultTitle = title || (isRtl ? "فیلترهای پیشرفته" : "Advanced Filters");
+  const clearLabel = isRtl ? "پاک کردن" : "Clear";
+  const searchLabel = isRtl ? "اعمال فیلتر" : "Apply Filter";
 
   return (
     <div className={`bg-white border border-slate-300 rounded-lg shadow-sm mb-3 transition-all duration-300 ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
@@ -333,7 +341,7 @@ export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "ف�
       >
         <div className="flex items-center gap-2 text-indigo-700 font-bold text-[12px]">
           <Filter size={14} />
-          <span>{title}</span>
+          <span>{defaultTitle}</span>
         </div>
         <div className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
           <ChevronDown size={16} />
@@ -346,8 +354,8 @@ export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "ف�
             {children}
           </div>
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button variant="ghost" onClick={onClear} size="sm" icon={X}>پاک کردن</Button>
-            <Button variant="primary" onClick={onSearch} size="sm" icon={Search}>اعمال فیلتر</Button>
+            <Button variant="ghost" onClick={onClear} size="sm" icon={X}>{clearLabel}</Button>
+            <Button variant="primary" onClick={onSearch} size="sm" icon={Search}>{searchLabel}</Button>
           </div>
         </div>
       </div>
@@ -377,6 +385,20 @@ export const DataGrid = ({
   const [pageSize, setPageSize] = useState(10);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  // Translations
+  const txtSearch = isRtl ? "جستجو..." : "Search...";
+  const txtLoading = isRtl ? "در حال بارگذاری..." : "Loading...";
+  const txtNoData = isRtl ? "اطلاعاتی یافت نشد." : "No records found.";
+  const txtRows = isRtl ? "سطر" : "Rows";
+  const txtRecord = isRtl ? "رکورد" : "Records";
+  const txtPage = isRtl ? "صفحه" : "Page";
+  const txtOf = isRtl ? "از" : "of";
+  const txtNew = isRtl ? "جدید" : "New";
+  const txtDelete = isRtl ? "حذف" : "Delete";
+  const txtExcel = isRtl ? "خروجی اکسل" : "Export Excel";
+  const txtCols = isRtl ? "تنظیمات ستون‌ها" : "Column Settings";
+  const txtOps = isRtl ? "عملیات" : "Actions";
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -467,17 +489,17 @@ export const DataGrid = ({
              </span>
           ))}
           {onCreate && (
-             <Button variant="primary" size="sm" icon={Plus} onClick={onCreate}>جدید</Button>
+             <Button variant="primary" size="sm" icon={Plus} onClick={onCreate}>{txtNew}</Button>
           )}
           {selectedIds.length > 0 && onDelete && (
-             <Button variant="danger" size="sm" icon={Trash2} onClick={() => onDelete(selectedIds)}>حذف ({selectedIds.length})</Button>
+             <Button variant="danger" size="sm" icon={Trash2} onClick={() => onDelete(selectedIds)}>{txtDelete} ({selectedIds.length})</Button>
           )}
         </div>
 
         <div className="flex items-center gap-2">
            <div className="relative">
              <input 
-               placeholder="جستجو..." 
+               placeholder={txtSearch} 
                value={searchTerm}
                onChange={e => setSearchTerm(e.target.value)}
                className={`h-7 w-40 bg-white border border-slate-300 rounded text-[11px] outline-none focus:border-indigo-500 transition-all ${isRtl ? 'pr-7 pl-2' : 'pl-7 pr-2'}`}
@@ -485,8 +507,8 @@ export const DataGrid = ({
              <Search size={12} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? 'right-2' : 'left-2'}`} />
            </div>
            <div className="flex items-center gap-1 border-r border-slate-300 pr-2 mr-1">
-             <Button variant="ghost" size="iconSm" icon={Download} title="خروجی اکسل" />
-             <Button variant="ghost" size="iconSm" icon={Settings} title="تنظیمات ستون‌ها" />
+             <Button variant="ghost" size="iconSm" icon={Download} title={txtExcel} />
+             <Button variant="ghost" size="iconSm" icon={Settings} title={txtCols} />
            </div>
         </div>
       </div>
@@ -524,14 +546,14 @@ export const DataGrid = ({
                   </div>
                 </th>
               ))}
-              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5_rgba(0,0,0,0.05)] border-l border-slate-300">عملیات</th>
+              <th className="px-3 py-2 w-20 text-center sticky left-0 bg-slate-100 z-10 shadow-[-2px_0_5_rgba(0,0,0,0.05)] border-l border-slate-300">{txtOps}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-               <tr><td colSpan={100} className="p-10 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-2"/>در حال بارگذاری...</td></tr>
+               <tr><td colSpan={100} className="p-10 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-2"/>{txtLoading}</td></tr>
             ) : paginatedData.length === 0 ? (
-               <tr><td colSpan={100} className="p-10 text-center text-slate-400 italic">اطلاعاتی یافت نشد.</td></tr>
+               <tr><td colSpan={100} className="p-10 text-center text-slate-400 italic">{txtNoData}</td></tr>
             ) : (
               paginatedData.map((row, rowIndex) => {
                 if (row._type === 'GROUP_HEADER') {
@@ -604,13 +626,13 @@ export const DataGrid = ({
              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
              className="bg-white border border-slate-300 rounded text-[11px] font-bold text-slate-700 py-0.5 px-1 outline-none focus:border-indigo-500 cursor-pointer"
            >
-              <option value={10}>10 سطر</option>
-              <option value={25}>25 سطر</option>
-              <option value={50}>50 سطر</option>
+              <option value={10}>10 {txtRows}</option>
+              <option value={25}>25 {txtRows}</option>
+              <option value={50}>50 {txtRows}</option>
            </select>
            <div className="h-3 w-px bg-slate-300 mx-1"></div>
            <span className="text-[11px] text-slate-500">
-             <span className="font-bold text-slate-800">{totalItems}</span> رکورد
+             <span className="font-bold text-slate-800">{totalItems}</span> {txtRecord}
            </span>
         </div>
 
@@ -618,13 +640,13 @@ export const DataGrid = ({
            <Button variant="outline" size="iconSm" icon={ChevronsRight} disabled={currentPage === 1} onClick={() => setCurrentPage(1)} />
            <Button variant="outline" size="iconSm" icon={ChevronRight} disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)} />
            <div className="flex items-center gap-1 px-2">
-              <span className="text-[11px] text-slate-500">صفحه</span>
+              <span className="text-[11px] text-slate-500">{txtPage}</span>
               <input 
                 value={currentPage}
                 onChange={(e) => setCurrentPage(Number(e.target.value))}
                 className="w-8 h-6 text-center border border-slate-300 rounded text-[11px] font-bold outline-none focus:border-indigo-500"
               />
-              <span className="text-[11px] text-slate-500">از {totalPages}</span>
+              <span className="text-[11px] text-slate-500">{txtOf} {totalPages}</span>
            </div>
            <Button variant="outline" size="iconSm" icon={ChevronLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(c => c + 1)} />
            <Button variant="outline" size="iconSm" icon={ChevronsLeft} disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)} />
