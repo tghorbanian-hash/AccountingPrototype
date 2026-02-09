@@ -57,7 +57,9 @@ const App = () => {
       Parties,
       UserProfile,
       OrganizationInfo,
-      CurrencySettings
+      CurrencySettings,
+      CostCenters,
+      Projects
     } = window;
 
     // --- مسیردهی صفحات (Routing) ---
@@ -69,6 +71,8 @@ const App = () => {
     if (activeId === 'org_info') return OrganizationInfo ? <OrganizationInfo t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: OrganizationInfo Component Not Loaded</div>;
     if (activeId === 'currency_settings') return CurrencySettings ? <CurrencySettings t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: CurrencySettings Component Not Loaded</div>;
     if (activeId === 'parties') return Parties ? <Parties t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Parties Component Not Loaded</div>;
+    if (activeId === 'cost_centers') return CostCenters ? <CostCenters t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: CostCenters Component Not Loaded</div>;
+    if (activeId === 'projects') return Projects ? <Projects t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Projects Component Not Loaded</div>;
 
     // 3. امنیت و دسترسی (Security)
     if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
