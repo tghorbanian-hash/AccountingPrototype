@@ -49,7 +49,7 @@ const UserProfile = ({ t, isRtl, onLanguageChange }) => {
 
   // --- Render Sections ---
   
-  const renderSidebar = () => {
+  const renderTabs = () => {
     const tabs = [
       { id: 'personal', icon: User, label: t.personalInfo },
       { id: 'security', icon: Shield, label: t.security },
@@ -58,26 +58,21 @@ const UserProfile = ({ t, isRtl, onLanguageChange }) => {
     ];
 
     return (
-      <div className={`w-full md:w-64 bg-white rounded-2xl border border-slate-200 p-4 shrink-0 h-fit`}>
-        <div className="flex flex-col gap-2">
+      <div className="w-full bg-white rounded-2xl border border-slate-200 p-2 mb-6 shadow-sm overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 min-w-max">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all
+                flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all
                 ${activeTab === tab.id 
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' 
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}
               `}
             >
               <tab.icon size={18} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
               <span>{tab.label}</span>
-              {activeTab === tab.id && (
-                <div className={`ml-auto ${isRtl ? 'rotate-180' : ''}`}>
-                  <ChevronRight size={16} />
-                </div>
-              )}
             </button>
           ))}
         </div>
@@ -86,8 +81,8 @@ const UserProfile = ({ t, isRtl, onLanguageChange }) => {
   };
 
   const renderPersonalInfo = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center gap-4 mb-8 p-4 bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100/50">
         <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 border-4 border-white shadow-lg">
           <User size={40} />
         </div>
@@ -324,21 +319,19 @@ const UserProfile = ({ t, isRtl, onLanguageChange }) => {
   );
 
   return (
-    <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
+    <div className={`flex flex-col h-full bg-slate-50/50 p-4 md:p-6 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       <div className="mb-6 shrink-0">
          <h1 className="text-2xl font-black text-slate-900">{t.profileTitle}</h1>
          <p className="text-slate-500 mt-1 text-sm font-medium">{t.profileSubtitle}</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 overflow-hidden">
-        {renderSidebar()}
-        
-        <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-y-auto">
-          {activeTab === 'personal' && renderPersonalInfo()}
-          {activeTab === 'security' && renderSecurity()}
-          {activeTab === 'prefs' && renderPreferences()}
-          {activeTab === 'defaults' && renderDefaults()}
-        </div>
+      {renderTabs()}
+      
+      <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-y-auto">
+        {activeTab === 'personal' && renderPersonalInfo()}
+        {activeTab === 'security' && renderSecurity()}
+        {activeTab === 'prefs' && renderPreferences()}
+        {activeTab === 'defaults' && renderDefaults()}
       </div>
     </div>
   );
