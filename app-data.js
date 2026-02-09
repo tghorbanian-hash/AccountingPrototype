@@ -1,9 +1,7 @@
 /* Filename: app-data.js */
 
-// دریافت تمام آیکون‌ها از ماژول Lucide
 import * as LucideIcons from 'lucide-react';
 
-// استخراج آیکون‌های مورد نیاز برای منوها و صفحات
 const { 
   LayoutDashboard, Receipt, Wallet, BarChart3, Settings, Languages, Bell, Search, 
   ArrowUpRight, ArrowDownLeft, Plus, MoreVertical, ChevronRight, ChevronLeft, Users, 
@@ -15,7 +13,6 @@ const {
   Link2, AlertTriangle
 } = LucideIcons;
 
-// --- توابع کمکی (Helper Functions) ---
 window.flattenMenu = (items, parentModuleId = null) => {
   return items.reduce((acc, item) => {
     const currentModuleId = parentModuleId || item.id;
@@ -27,7 +24,6 @@ window.flattenMenu = (items, parentModuleId = null) => {
   }, []);
 };
 
-// --- ساختار منوی اصلی سیستم (MENU_DATA) ---
 window.MENU_DATA = [
   {
     id: 'showcase',
@@ -233,7 +229,6 @@ window.MENU_DATA = [
   }
 ];
 
-// --- Mock Data (داده‌های تستی) ---
 window.MOCK_TRANSACTIONS = [
   { id: 1, title: { en: 'Monthly Server Hosting', fa: 'هزینه میزبانی سرور ماهانه' }, amount: 1200, type: 'expense', date: '2024-03-01', category: 'IT' },
   { id: 2, title: { en: 'Consultancy Fee', fa: 'هزینه مشاوره' }, amount: 4500, type: 'income', date: '2024-03-02', category: 'Service' },
@@ -248,7 +243,6 @@ window.MOCK_STATS = [
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
-// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض) ---
 window.DEFAULT_VALUES_SCHEMA = [
   {
     moduleId: 'accounting',
@@ -259,46 +253,16 @@ window.DEFAULT_VALUES_SCHEMA = [
         groupId: 'gl',
         label: { en: 'General Ledger', fa: 'دفتر کل' },
         fields: [
-          { 
-            key: 'defaultDocType', 
-            label: { en: 'Default Document Type', fa: 'نوع سند پیش‌فرض' },
-            type: 'select',
-            options: [
-              { value: 'general', label: { en: 'General', fa: 'عمومی' } },
-              { value: 'opening', label: { en: 'Opening', fa: 'افتتاحیه' } },
-              { value: 'closing', label: { en: 'Closing', fa: 'اختتامیه' } }
-            ]
-          },
-          { 
-            key: 'autoPost', 
-            label: { en: 'Auto Post Documents', fa: 'قطعی شدن خودکار اسناد' },
-            type: 'toggle'
-          }
+          { key: 'defaultDocType', label: { en: 'Default Document Type', fa: 'نوع سند پیش‌فرض' }, type: 'select', options: [{ value: 'general', label: { en: 'General', fa: 'عمومی' } }, { value: 'opening', label: { en: 'Opening', fa: 'افتتاحیه' } }, { value: 'closing', label: { en: 'Closing', fa: 'اختتامیه' } }] },
+          { key: 'autoPost', label: { en: 'Auto Post Documents', fa: 'قطعی شدن خودکار اسناد' }, type: 'toggle' }
         ]
       },
       {
         groupId: 'treasury',
         label: { en: 'Treasury', fa: 'خزانه‌داری' },
         fields: [
-          {
-            key: 'paymentType',
-            label: { en: 'Default Payment Type', fa: 'نوع پرداخت پیش‌فرض' },
-            type: 'select',
-            options: [
-              { value: 'expense', label: { en: 'Expense', fa: 'هزینه' } },
-              { value: 'prepayment', label: { en: 'Prepayment', fa: 'پیش‌پرداخت' } },
-              { value: 'transfer', label: { en: 'Transfer', fa: 'انتقال' } }
-            ]
-          },
-          {
-             key: 'defaultBank',
-             label: { en: 'Default Bank Account', fa: 'حساب بانکی پیش‌فرض' },
-             type: 'select',
-             options: [
-                { value: 'mellat', label: { en: 'Mellat Bank - Main', fa: 'بانک ملت - اصلی' } },
-                { value: 'pasargad', label: { en: 'Pasargad Bank', fa: 'بانک پاسارگاد' } }
-             ]
-          }
+          { key: 'paymentType', label: { en: 'Default Payment Type', fa: 'نوع پرداخت پیش‌فرض' }, type: 'select', options: [{ value: 'expense', label: { en: 'Expense', fa: 'هزینه' } }, { value: 'prepayment', label: { en: 'Prepayment', fa: 'پیش‌پرداخت' } }, { value: 'transfer', label: { en: 'Transfer', fa: 'انتقال' } }] },
+          { key: 'defaultBank', label: { en: 'Default Bank Account', fa: 'حساب بانکی پیش‌فرض' }, type: 'select', options: [{ value: 'mellat', label: { en: 'Mellat Bank - Main', fa: 'بانک ملت - اصلی' } }, { value: 'pasargad', label: { en: 'Pasargad Bank', fa: 'بانک پاسارگاد' } }] }
         ]
       }
     ]
@@ -312,24 +276,89 @@ window.DEFAULT_VALUES_SCHEMA = [
         groupId: 'recruitment',
         label: { en: 'Recruitment', fa: 'استخدام' },
         fields: [
-          {
-             key: 'probationPeriod',
-             label: { en: 'Default Probation (Months)', fa: 'مدت آزمایشی پیش‌فرض (ماه)' },
-             type: 'select',
-             options: [
-                { value: '1', label: { en: '1 Month', fa: '۱ ماه' } },
-                { value: '3', label: { en: '3 Months', fa: '۳ ماه' } }
-             ]
-          }
+          { key: 'probationPeriod', label: { en: 'Default Probation (Months)', fa: 'مدت آزمایشی پیش‌فرض (ماه)' }, type: 'select', options: [{ value: '1', label: { en: '1 Month', fa: '۱ ماه' } }, { value: '3', label: { en: '3 Months', fa: '۳ ماه' } }] }
         ]
       }
     ]
   }
 ];
 
-// --- دیکشنری ترجمه (Translations) ---
 window.translations = {
   en: {
+    // --- PARTIES & COMPANIES ---
+    parties_title: "Parties & Companies",
+    parties_subtitle: "Manage people and legal entities and their roles",
+    // Roles
+    role_employee: "Employee",
+    role_customer: "Customer",
+    role_supplier: "Supplier",
+    role_contractor: "Contractor",
+    role_shareholder: "Shareholder",
+    role_logistics: "Logistics",
+    role_cashier: "Cashier",
+    role_petty: "Petty Cashier",
+    role_bank: "Bank",
+    role_trustee: "Trustee",
+    role_other: "Other",
+    // Fields
+    pt_type: "Type",
+    pt_fullname: "Full Name",
+    pt_nat_id: "National ID / Code",
+    pt_roles: "Roles",
+    pt_person: "Real Person",
+    pt_company: "Legal Entity",
+    pt_fname: "First Name",
+    pt_lname: "Last Name",
+    pt_alias: "Alias",
+    pt_gender: "Gender",
+    pt_father: "Father Name",
+    pt_birthdate: "Birth Date",
+    pt_birth_no: "Birth Cert. No",
+    pt_birth_place: "Birth Place",
+    pt_province: "Province",
+    pt_comp_name: "Company Name",
+    pt_website: "Website",
+    pt_nationality: "Nationality",
+    pt_phone: "Phone",
+    pt_mobile: "Mobile",
+    pt_email: "Email",
+    pt_addr: "Addresses",
+    pt_status: "Status",
+    pt_reg_no: "Reg No",
+    // Options
+    opt_male: "Male",
+    opt_female: "Female",
+    opt_iranian: "Iranian",
+    opt_foreign: "Foreign",
+    opt_active: "Active",
+    opt_inactive: "Inactive",
+    opt_all_status: "All Statuses",
+    opt_all_types: "All Types",
+    // Placeholders & Alerts
+    ph_role_filter: "Filter roles...",
+    ph_addr: "Address",
+    alert_req_fields: "Please fill in all required fields.",
+    pt_new: "New Party/Company",
+    pt_edit: "Edit Info",
+
+    // Common
+    btn_save: "Save",
+    btn_cancel: "Cancel",
+    btn_search: "Apply Filter",
+    btn_clear: "Clear",
+    btn_add: "Add",
+    btn_close: "Close",
+    confirm_delete: "Are you sure you want to delete {0} records?",
+    confirm_delete_single: "Are you sure you want to delete this record?",
+    filter: "Advanced Filter",
+    detail_code: "Detail Code",
+    detail_assigned: "Assigned",
+    detail_not_assigned: "Not Assigned",
+    detail_assign_btn: "Assign",
+    detail_assign_msg: "Detail code assigned.",
+    active_status: "Active Status",
+    
+    // ... (Existing translations for other modules)
     loginTitle: 'Secure Sign In',
     loginSubtitle: 'Enter your credentials to access the financial portal',
     usernameLabel: 'Username',
@@ -370,39 +399,6 @@ window.translations = {
     all: 'All',
     emptyPage: 'This module is currently empty or under development.',
     uiKitTitle: 'Design System Showcase',
-
-    // Cost Centers & Projects Translations (NEW)
-    cc_title: "Cost Centers",
-    cc_subtitle: "Manage cost centers and their detail codes",
-    cc_code: "Center Code",
-    cc_title_field: "Title",
-    cc_type: "Type",
-    cc_address: "Address",
-    cc_type_prod: "Production",
-    cc_type_serv: "Service",
-    cc_type_admin: "Administrative",
-    cc_new: "New Cost Center",
-    cc_edit: "Edit Cost Center",
-    
-    proj_title: "Projects",
-    proj_subtitle: "Manage projects, budgets and timelines",
-    proj_code: "Project Code",
-    proj_name: "Project Name",
-    proj_start: "Start Date",
-    proj_end: "End Date",
-    proj_manager: "Project Manager",
-    proj_budget: "Initial Budget",
-    proj_new: "New Project",
-    proj_edit: "Edit Project",
-    
-    detail_code: "Detail Code",
-    detail_assigned: "Assigned",
-    detail_not_assigned: "Not Assigned",
-    detail_assign_btn: "Assign Code",
-    detail_assign_msg: "Detail code assigned successfully.",
-    active_status: "Active Status",
-
-    // Previous Translations...
     profileTitle: 'User Profile',
     profileSubtitle: 'Manage your account settings and preferences',
     personalInfo: 'Personal Information',
@@ -419,7 +415,6 @@ window.translations = {
     langSettings: 'Language',
     saveDefaults: 'Save Default Values',
     defaultsSaved: 'Default values saved successfully.',
-    
     org_title: "Organization Info",
     org_subtitle: "Manage company base information and branches",
     org_code: "Org Code",
@@ -435,7 +430,6 @@ window.translations = {
     org_newTitle: "New Organization",
     org_noAddr: "No addresses registered.",
     org_selectLogo: "Select Logo Image",
-    
     curr_title: "Currency Settings",
     curr_subtitle: "Manage system currencies and exchange rates",
     curr_global: "Global System Settings",
@@ -471,16 +465,27 @@ window.translations = {
     curr_new: "New Currency",
     curr_save_global_success: "Global settings saved successfully.",
     curr_update_success: "Exchange rates updated successfully.",
-    
-    btn_save: "Save",
-    btn_cancel: "Cancel",
-    btn_search: "Apply Filter",
-    btn_clear: "Clear",
-    btn_add: "Add",
-    btn_close: "Close",
-    confirm_delete: "Are you sure you want to delete {0} records?",
-    confirm_delete_single: "Are you sure you want to delete this record?",
-    
+    cc_title: "Cost Centers",
+    cc_subtitle: "Manage cost centers and their detail codes",
+    cc_code: "Center Code",
+    cc_title_field: "Title",
+    cc_type: "Type",
+    cc_address: "Address",
+    cc_type_prod: "Production",
+    cc_type_serv: "Service",
+    cc_type_admin: "Administrative",
+    cc_new: "New Cost Center",
+    cc_edit: "Edit Cost Center",
+    proj_title: "Projects",
+    proj_subtitle: "Manage projects, budgets and timelines",
+    proj_code: "Project Code",
+    proj_name: "Project Name",
+    proj_start: "Start Date",
+    proj_end: "End Date",
+    proj_manager: "Project Manager",
+    proj_budget: "Initial Budget",
+    proj_new: "New Project",
+    proj_edit: "Edit Project",
     acc_mgmt_title: "Accounting Document Management",
     acc_mgmt_subtitle: "List of all financial documents with search and batch operation capabilities",
     grid_title: "Document List",
@@ -513,12 +518,10 @@ window.translations = {
     field_selectParty: "Select Person...",
     field_amount: "Document Amount",
     field_isActive: "Active Document",
-    
     usersListTitle: 'User Management',
     usersListSubtitle: 'Manage system access and user profiles',
     createNewUser: 'New User',
     searchUserPlaceholder: 'Search by username...',
-    filter: 'Filter',
     colId: 'ID',
     colUsername: 'Username',
     colLinkedPerson: 'Linked Person',
@@ -599,6 +602,80 @@ window.translations = {
     ph_phone: "Phone Number"
   },
   fa: {
+    // --- PARTIES & COMPANIES ---
+    parties_title: "مدیریت اشخاص و شرکت‌ها",
+    parties_subtitle: "مدیریت اشخاص و شرکت‌ها و تعریف نقش آنها",
+    // Roles
+    role_employee: "کارمند",
+    role_customer: "مشتری",
+    role_supplier: "تامین کننده",
+    role_contractor: "پیمانکار",
+    role_shareholder: "سهامدار",
+    role_logistics: "شرکت حمل و نقل",
+    role_cashier: "صندوقدار",
+    role_petty: "تنخواه دار",
+    role_bank: "بانک",
+    role_trustee: "طرف حساب امانی",
+    role_other: "سایر",
+    // Fields
+    pt_type: "نوع",
+    pt_fullname: "نام کامل",
+    pt_nat_id: "کد ملی / شناسه ملی",
+    pt_roles: "نقش‌ها",
+    pt_person: "شخص حقیقی",
+    pt_company: "شخص حقوقی",
+    pt_fname: "نام",
+    pt_lname: "نام خانوادگی",
+    pt_alias: "نام مستعار",
+    pt_gender: "جنسیت",
+    pt_father: "نام پدر",
+    pt_birthdate: "تاریخ تولد",
+    pt_birth_no: "شماره شناسنامه",
+    pt_birth_place: "محل تولد",
+    pt_province: "استان محل زندگی",
+    pt_comp_name: "نام شرکت",
+    pt_website: "وب‌سایت",
+    pt_nationality: "تابعیت",
+    pt_phone: "تلفن",
+    pt_mobile: "تلفن همراه",
+    pt_email: "پست الکترونیک",
+    pt_addr: "آدرس‌ها",
+    pt_status: "وضعیت",
+    pt_reg_no: "شماره ثبت",
+    // Options
+    opt_male: "مرد",
+    opt_female: "زن",
+    opt_iranian: "ایرانی",
+    opt_foreign: "غیر ایرانی",
+    opt_active: "فعال",
+    opt_inactive: "غیرفعال",
+    opt_all_status: "همه وضعیت‌ها",
+    opt_all_types: "همه انواع",
+    // Placeholders & Alerts
+    ph_role_filter: "فیلتر نقش‌ها...",
+    ph_addr: "آدرس",
+    alert_req_fields: "پر کردن فیلدهای اجباری الزامی است.",
+    pt_new: "تعریف شخص/شرکت جدید",
+    pt_edit: "ویرایش اطلاعات",
+
+    // Common
+    btn_save: "ذخیره",
+    btn_cancel: "انصراف",
+    btn_search: "اعمال فیلتر",
+    btn_clear: "پاک کردن",
+    btn_add: "افزودن",
+    btn_close: "بستن",
+    confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
+    confirm_delete_single: "آیا از حذف این رکورد اطمینان دارید؟",
+    filter: "جستجوی پیشرفته",
+    detail_code: "کد تفصیلی",
+    detail_assigned: "تخصیص یافته",
+    detail_not_assigned: "فاقد کد",
+    detail_assign_btn: "تخصیص کد",
+    detail_assign_msg: "کد تفصیلی با موفقیت تخصیص یافت.",
+    active_status: "وضعیت فعال",
+
+    // ... (Existing translations for other modules)
     loginTitle: 'ورود ایمن به سیستم',
     loginSubtitle: 'برای دسترسی به پرتال مالی، اطلاعات خود را وارد کنید',
     usernameLabel: 'نام کاربری',
@@ -639,39 +716,6 @@ window.translations = {
     all: 'همه',
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
     uiKitTitle: 'نمایش دیزاین سیستم',
-
-    // Cost Centers & Projects Translations (NEW)
-    cc_title: "مراکز هزینه",
-    cc_subtitle: "مدیریت مراکز هزینه و کدهای تفصیلی مرتبط",
-    cc_code: "کد مرکز",
-    cc_title_field: "عنوان مرکز",
-    cc_type: "نوع مرکز",
-    cc_address: "آدرس",
-    cc_type_prod: "تولیدی",
-    cc_type_serv: "خدماتی",
-    cc_type_admin: "اداری",
-    cc_new: "مرکز هزینه جدید",
-    cc_edit: "ویرایش مرکز هزینه",
-    
-    proj_title: "پروژه‌ها",
-    proj_subtitle: "مدیریت پروژه‌ها، بودجه و زمان‌بندی",
-    proj_code: "کد پروژه",
-    proj_name: "نام پروژه",
-    proj_start: "تاریخ شروع",
-    proj_end: "تاریخ اتمام",
-    proj_manager: "مسئول پروژه",
-    proj_budget: "بودجه اولیه",
-    proj_new: "پروژه جدید",
-    proj_edit: "ویرایش پروژه",
-    
-    detail_code: "کد تفصیلی",
-    detail_assigned: "تخصیص یافته",
-    detail_not_assigned: "فاقد کد",
-    detail_assign_btn: "تخصیص کد",
-    detail_assign_msg: "کد تفصیلی با موفقیت تخصیص یافت.",
-    active_status: "وضعیت فعال",
-
-    // Previous Translations...
     profileTitle: 'پروفایل کاربری',
     profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
     personalInfo: 'اطلاعات فردی',
@@ -688,7 +732,6 @@ window.translations = {
     langSettings: 'زبان',
     saveDefaults: 'ذخیره مقادیر پیش‌فرض',
     defaultsSaved: 'مقادیر پیش‌فرض با موفقیت ذخیره شد.',
-    
     org_title: "معرفی سازمان",
     org_subtitle: "مدیریت اطلاعات پایه شرکت و شعبه‌ها",
     org_code: "کد شرکت",
@@ -704,7 +747,6 @@ window.translations = {
     org_newTitle: "تعریف سازمان جدید",
     org_noAddr: "آدرسی ثبت نشده است",
     org_selectLogo: "انتخاب لوگو",
-    
     curr_title: "تنظیمات ارزها",
     curr_subtitle: "مدیریت ارزهای سیستم و نرخ‌های تبدیل",
     curr_global: "تنظیمات کلان سیستم",
@@ -740,16 +782,27 @@ window.translations = {
     curr_new: "تعریف ارز جدید",
     curr_save_global_success: "تنظیمات کلان سیستم با موفقیت ذخیره شد.",
     curr_update_success: "نرخ‌های جدید بروزرسانی شد.",
-
-    btn_save: "ذخیره",
-    btn_cancel: "انصراف",
-    btn_search: "اعمال فیلتر",
-    btn_clear: "پاک کردن",
-    btn_add: "افزودن",
-    btn_close: "بستن",
-    confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
-    confirm_delete_single: "آیا از حذف این رکورد اطمینان دارید؟",
-    
+    cc_title: "مراکز هزینه",
+    cc_subtitle: "مدیریت مراکز هزینه و کدهای تفصیلی مرتبط",
+    cc_code: "کد مرکز",
+    cc_title_field: "عنوان مرکز",
+    cc_type: "نوع مرکز",
+    cc_address: "آدرس",
+    cc_type_prod: "تولیدی",
+    cc_type_serv: "خدماتی",
+    cc_type_admin: "اداری",
+    cc_new: "مرکز هزینه جدید",
+    cc_edit: "ویرایش مرکز هزینه",
+    proj_title: "پروژه‌ها",
+    proj_subtitle: "مدیریت پروژه‌ها، بودجه و زمان‌بندی",
+    proj_code: "کد پروژه",
+    proj_name: "نام پروژه",
+    proj_start: "تاریخ شروع",
+    proj_end: "تاریخ اتمام",
+    proj_manager: "مسئول پروژه",
+    proj_budget: "بودجه اولیه",
+    proj_new: "پروژه جدید",
+    proj_edit: "ویرایش پروژه",
     acc_mgmt_title: "مدیریت اسناد حسابداری",
     acc_mgmt_subtitle: "لیست کلیه اسناد مالی با قابلیت جستجو و عملیات گروهی",
     grid_title: "لیست اسناد",
@@ -782,7 +835,6 @@ window.translations = {
     field_selectParty: "انتخاب شخص...",
     field_amount: "مبلغ سند",
     field_isActive: "سند فعال باشد",
-    
     usersListTitle: 'مدیریت کاربران',
     usersListSubtitle: 'مدیریت دسترسی‌ها و پروفایل‌های کاربری سیستم',
     createNewUser: 'کاربر جدید',
