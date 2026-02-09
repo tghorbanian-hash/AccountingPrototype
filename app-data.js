@@ -11,7 +11,7 @@ const {
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
   XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
-  Shield
+  Shield, Database, Network, Banknote, MapPin, ListTodo
 } = LucideIcons;
 
 // --- توابع کمکی (Helper Functions) ---
@@ -206,7 +206,13 @@ window.MENU_DATA = [
             id: 'base_info_root',
             label: { en: 'Base Information', fa: 'اطلاعات پایه' },
             children: [
-              { id: 'parties', label: { en: 'Parties & Companies', fa: 'اشخاص و شرکت‌ها' } }
+              { id: 'org_info', label: { en: 'Organization Info', fa: 'اطلاعات سازمان' }, icon: Building2 },
+              { id: 'org_chart', label: { en: 'Organization Chart', fa: 'چارت سازمانی' }, icon: Network },
+              { id: 'currency_settings', label: { en: 'Currency Settings', fa: 'تنظیمات ارزها' }, icon: Banknote },
+              { id: 'branches', label: { en: 'Branches', fa: 'شعبه ها' }, icon: MapPin },
+              { id: 'cost_centers', label: { en: 'Cost Centers', fa: 'مراکز هزینه' }, icon: Layers },
+              { id: 'projects', label: { en: 'Projects', fa: 'پروژه ها' }, icon: ListTodo },
+              { id: 'parties', label: { en: 'Parties & Companies', fa: 'اشخاص و شرکت‌ها' }, icon: Users }
             ]
           }
         ]
@@ -241,7 +247,7 @@ window.MOCK_STATS = [
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
-// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض) ---
+// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض - برای پروفایل) ---
 window.DEFAULT_VALUES_SCHEMA = [
   {
     moduleId: 'accounting',
@@ -363,8 +369,8 @@ window.translations = {
     all: 'All',
     emptyPage: 'This module is currently empty or under development.',
     uiKitTitle: 'Design System Showcase',
-    
-    // User Profile Translations
+
+    // User Profile Translations (Added back)
     profileTitle: 'User Profile',
     profileSubtitle: 'Manage your account settings and preferences',
     personalInfo: 'Personal Information',
@@ -550,7 +556,7 @@ window.translations = {
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
     uiKitTitle: 'نمایش دیزاین سیستم',
 
-    // User Profile Translations
+    // User Profile Translations (Added back)
     profileTitle: 'پروفایل کاربری',
     profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
     personalInfo: 'اطلاعات فردی',
