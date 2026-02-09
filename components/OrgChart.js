@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Network, Search, Plus, Edit, Trash2, Save, 
   ArrowLeft, ArrowRight, Users, FolderTree, CheckCircle2, X, Settings, 
-  ChevronDown, ChevronLeft, ChevronRight, Maximize2, Minimize2, CornerDownRight 
+  ChevronDown, Maximize2, Minimize2 
 } from 'lucide-react';
 
 const OrgChart = ({ t, isRtl }) => {
@@ -51,7 +51,6 @@ const OrgChart = ({ t, isRtl }) => {
         </div>
         {hasChildren && isExpanded && (
           <div className="overflow-hidden relative">
-            {/* Connecting Line (Visual Guide) */}
             <div className={`absolute top-0 bottom-2 w-px bg-slate-200 ${isRtl ? `right-[${level * 20 + 17}px]` : `left-[${level * 20 + 17}px]`}`}></div>
             {node.children.map(child => (
               <CustomTreeNode 
@@ -67,29 +66,23 @@ const OrgChart = ({ t, isRtl }) => {
   };
 
   // --- STATES ---
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'designer'
-  
-  // Charts List Data
+  const [viewMode, setViewMode] = useState('list');
   const [charts, setCharts] = useState([
     { id: 1, code: 'ORG-MAIN', title: 'چارت اصلی ۱۴۰۳', type: 'standard', active: true, startDate: '1403/01/01', endDate: '' },
   ]);
 
-  // Tree Data
   const [treeData, setTreeData] = useState([]);
   const [expandedKeys, setExpandedKeys] = useState(new Set(['root']));
 
-  // Chart Metadata Logic
   const [filters, setFilters] = useState({ code: '', title: '' });
   const [activeChart, setActiveChart] = useState(null); 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [chartFormData, setChartFormData] = useState({});
 
-  // Designer Logic
   const [selectedNode, setSelectedNode] = useState(null);
   const [nodeForm, setNodeForm] = useState({ id: null, code: '', title: '', parentId: '', active: true });
-  const [isNodeEditMode, setIsNodeEditMode] = useState(false); // true: Editing existing, false: Creating new
+  const [isNodeEditMode, setIsNodeEditMode] = useState(false); 
   
-  // Personnel Assignment Logic
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignData, setAssignData] = useState({ id: null, personId: '', fromDate: '', toDate: '' });
 
@@ -100,7 +93,6 @@ const OrgChart = ({ t, isRtl }) => {
   ];
 
   // --- HELPERS ---
-  // Flatten tree to get list of potential parents
   const flattenNodes = (nodes, result = []) => {
     nodes.forEach(node => {
       result.push({ id: node.id, title: node.title });
@@ -109,7 +101,7 @@ const OrgChart = ({ t, isRtl }) => {
     return result;
   };
 
-  // --- HANDLERS (LIST VIEW) ---
+  // --- LIST HANDLERS ---
   const filteredCharts = useMemo(() => {
     return charts.filter(c => {
        const mCode = filters.code ? c.code.includes(filters.code) : true;
@@ -166,7 +158,7 @@ const OrgChart = ({ t, isRtl }) => {
     setViewMode('designer');
   };
 
-  // --- HANDLERS (DESIGNER VIEW) ---
+  // --- DESIGNER HANDLERS ---
   const toggleExpand = (id) => {
     const newSet = new Set(expandedKeys);
     if (newSet.has(id)) newSet.delete(id);
@@ -190,12 +182,8 @@ const OrgChart = ({ t, isRtl }) => {
 
   const collapseAll = () => setExpandedKeys(new Set());
 
-  // Node Selection Logic
   const handleSelectNode = (node) => {
     setSelectedNode(node);
-    // Find parent logic (Mock: simplistic)
-    // In a real app, parentId should be stored in the node itself.
-    // Here we traverse to find parent.
     let parentId = '';
     const findParent = (nodes, targetId, currentParentId) => {
        for(let n of nodes) {
@@ -224,27 +212,25 @@ const OrgChart = ({ t, isRtl }) => {
         id: null, 
         code: '', 
         title: '', 
-        parentId: selectedNode ? selectedNode.id : '', // Default to current selection as parent
+        parentId: selectedNode ? selectedNode.id : '', 
         active: true 
      });
-     setIsNodeEditMode(false); // Switching to Create Mode
-     // Don't clear selectedNode yet, so user can see context, but maybe highlight form?
+     setIsNodeEditMode(false); // Create Mode
+     // Note: We keep selectedNode visually selected to indicate context, but form is cleared
   };
 
   const handleSaveNode = () => {
      if (!nodeForm.title) return alert('عنوان گره الزامی است');
 
      if (isNodeEditMode && selectedNode) {
-        // --- EDIT MODE ---
-        // Need to handle Move (Parent Change) and Update
+        // --- EDIT / MOVE ---
         const currentParentId = findParentId(treeData, selectedNode.id);
         
         if (currentParentId !== nodeForm.parentId) {
-           // Move Logic: Remove from old parent, add to new parent
+           // Move Logic
            if (nodeForm.parentId === selectedNode.id) return alert('یک گره نمی‌تواند زیرمجموعه خودش باشد.');
            
            let nodeToMove = null;
-           // 1. Remove
            const removeRecursive = (nodes) => {
               return nodes.filter(n => {
                  if (n.id === selectedNode.id) {
@@ -257,7 +243,6 @@ const OrgChart = ({ t, isRtl }) => {
            };
            let newTree = removeRecursive(treeData);
 
-           // 2. Add to New Parent
            const addRecursive = (nodes) => {
               return nodes.map(n => {
                  if (n.id === nodeForm.parentId) {
@@ -268,12 +253,12 @@ const OrgChart = ({ t, isRtl }) => {
               });
            };
            
-           if (!nodeForm.parentId) newTree = [...newTree, nodeToMove]; // Moved to root
+           if (!nodeForm.parentId) newTree = [...newTree, nodeToMove]; 
            else newTree = addRecursive(newTree);
 
            setTreeData(newTree);
         } else {
-           // Simple Update (In Place)
+           // Update Only
            const updateRecursive = (nodes) => {
               return nodes.map(n => {
                  if (n.id === selectedNode.id) {
@@ -286,7 +271,7 @@ const OrgChart = ({ t, isRtl }) => {
            setTreeData(prev => updateRecursive(prev));
         }
      } else {
-        // --- CREATE MODE ---
+        // --- CREATE ---
         const newNode = { 
            id: Date.now().toString(), 
            title: nodeForm.title, 
@@ -311,8 +296,6 @@ const OrgChart = ({ t, isRtl }) => {
            setTreeData(prev => addRecursive(prev));
            setExpandedKeys(prev => new Set(prev).add(nodeForm.parentId));
         }
-        
-        // After create, select the new node
         handleSelectNode(newNode); 
      }
      
@@ -346,7 +329,7 @@ const OrgChart = ({ t, isRtl }) => {
       return undefined;
   };
 
-  // Personnel CRUD
+  // Personnel Handlers
   const handleOpenAssignModal = (assignment = null) => {
     if (assignment) {
        setAssignData({ 
@@ -385,7 +368,6 @@ const OrgChart = ({ t, isRtl }) => {
     const newTree = updatePersonRecursive(treeData);
     setTreeData(newTree);
     
-    // Refresh selection
     const findNode = (nodes, id) => {
        for (let n of nodes) {
           if (n.id === id) return n;
@@ -414,7 +396,6 @@ const OrgChart = ({ t, isRtl }) => {
      const newTree = removeRecursive(treeData);
      setTreeData(newTree);
      
-     // Refresh selection
      const findNode = (nodes, id) => {
         for (let n of nodes) {
            if (n.id === id) return n;
@@ -487,7 +468,7 @@ const OrgChart = ({ t, isRtl }) => {
 
   const renderDesigner = () => {
     const BackIcon = isRtl ? ArrowRight : ArrowLeft;
-    const parentOptions = flattenNodes(treeData).filter(n => n.id !== nodeForm.id); // Prevent self-parenting loop in basic way
+    const parentOptions = flattenNodes(treeData).filter(n => n.id !== nodeForm.id); 
 
     return (
       <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300">
@@ -621,50 +602,50 @@ const OrgChart = ({ t, isRtl }) => {
                </div>
             </div>
          </div>
-
-         {/* Chart Meta Modal (Create/Edit Info) */}
-         <Modal 
-            isOpen={isChartModalOpen} onClose={() => setIsChartModalOpen(false)} 
-            title={chartFormData.id ? t.oc_edit : t.oc_new}
-            footer={<><Button variant="ghost" onClick={() => setIsChartModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" icon={Save} onClick={handleSaveChartMeta}>{t.btn_save}</Button></>}
-         >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-               <InputField label={`${t.oc_code} *`} value={chartFormData.code} onChange={e => setChartFormData({...chartFormData, code: e.target.value})} isRtl={isRtl} className="dir-ltr" />
-               <InputField label={`${t.oc_title_field} *`} value={chartFormData.title} onChange={e => setChartFormData({...chartFormData, title: e.target.value})} isRtl={isRtl} />
-               <SelectField label={t.oc_type} value={chartFormData.type} onChange={e => setChartFormData({...chartFormData, type: e.target.value})} isRtl={isRtl}>
-                  <option value="standard">{t.oc_type_std}</option>
-                  <option value="sales">{t.oc_type_sales}</option>
-                  <option value="finance">{t.oc_type_finance}</option>
-                  <option value="hr">{t.oc_type_hr}</option>
-                  <option value="custom">{t.oc_type_custom}</option>
-               </SelectField>
-               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between h-[50px] mt-auto">
-                  <span className="text-sm font-bold text-slate-700">{t.active_status}</span>
-                  <Toggle checked={chartFormData.active} onChange={v => setChartFormData({...chartFormData, active: v})} />
-               </div>
-               <InputField label={t.oc_start_date} value={chartFormData.startDate} onChange={e => setChartFormData({...chartFormData, startDate: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="1403/01/01"/>
-               <InputField label={t.oc_end_date} value={chartFormData.endDate} onChange={e => setChartFormData({...chartFormData, endDate: e.target.value})} isRtl={isRtl} className="dir-ltr" />
-            </div>
-         </Modal>
-
-         {/* Assign Modal */}
-         <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title={t.oc_assign_person} size="sm"
-            footer={<><Button variant="ghost" onClick={() => setIsAssignModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" onClick={handleSaveAssignment}>{t.oc_assign}</Button></>}>
-            <div className="space-y-4">
-               <SelectField label={t.oc_select_person} isRtl={isRtl} value={assignData.personId} onChange={e => setAssignData({...assignData, personId: e.target.value})}>
-                  <option value="">-</option>
-                  {mockPersonnel.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-               </SelectField>
-               <InputField label={t.oc_from_date} value={assignData.fromDate} onChange={e => setAssignData({...assignData, fromDate: e.target.value})} className="dir-ltr" placeholder="1403/01/01"/>
-               <InputField label={t.oc_to_date} value={assignData.toDate} onChange={e => setAssignData({...assignData, toDate: e.target.value})} className="dir-ltr" />
-            </div>
-         </Modal>
       </div>
     );
   };
 
   return (
     <div className="flex flex-col h-full p-4 md:p-6 bg-slate-50/50">
+      {/* ALWAYS RENDER MODALS SO THEY ARE ACCESSIBLE */}
+      <Modal 
+         isOpen={isChartModalOpen} onClose={() => setIsChartModalOpen(false)} 
+         title={chartFormData.id ? t.oc_edit : t.oc_new}
+         footer={<><Button variant="ghost" onClick={() => setIsChartModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" icon={Save} onClick={handleSaveChartMeta}>{t.btn_save}</Button></>}
+      >
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <InputField label={`${t.oc_code} *`} value={chartFormData.code} onChange={e => setChartFormData({...chartFormData, code: e.target.value})} isRtl={isRtl} className="dir-ltr" />
+            <InputField label={`${t.oc_title_field} *`} value={chartFormData.title} onChange={e => setChartFormData({...chartFormData, title: e.target.value})} isRtl={isRtl} />
+            <SelectField label={t.oc_type} value={chartFormData.type} onChange={e => setChartFormData({...chartFormData, type: e.target.value})} isRtl={isRtl}>
+               <option value="standard">{t.oc_type_std}</option>
+               <option value="sales">{t.oc_type_sales}</option>
+               <option value="finance">{t.oc_type_finance}</option>
+               <option value="hr">{t.oc_type_hr}</option>
+               <option value="custom">{t.oc_type_custom}</option>
+            </SelectField>
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between h-[50px] mt-auto">
+               <span className="text-sm font-bold text-slate-700">{t.active_status}</span>
+               <Toggle checked={chartFormData.active} onChange={v => setChartFormData({...chartFormData, active: v})} />
+            </div>
+            <InputField label={t.oc_start_date} value={chartFormData.startDate} onChange={e => setChartFormData({...chartFormData, startDate: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="1403/01/01"/>
+            <InputField label={t.oc_end_date} value={chartFormData.endDate} onChange={e => setChartFormData({...chartFormData, endDate: e.target.value})} isRtl={isRtl} className="dir-ltr" />
+         </div>
+      </Modal>
+
+      {/* Assign Modal */}
+      <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title={t.oc_assign_person} size="sm"
+         footer={<><Button variant="ghost" onClick={() => setIsAssignModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" onClick={handleSaveAssignment}>{t.oc_assign}</Button></>}>
+         <div className="space-y-4">
+            <SelectField label={t.oc_select_person} isRtl={isRtl} value={assignData.personId} onChange={e => setAssignData({...assignData, personId: e.target.value})}>
+               <option value="">-</option>
+               {mockPersonnel.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </SelectField>
+            <InputField label={t.oc_from_date} value={assignData.fromDate} onChange={e => setAssignData({...assignData, fromDate: e.target.value})} className="dir-ltr" placeholder="1403/01/01"/>
+            <InputField label={t.oc_to_date} value={assignData.toDate} onChange={e => setAssignData({...assignData, toDate: e.target.value})} className="dir-ltr" />
+         </div>
+      </Modal>
+
       {viewMode === 'list' ? renderList() : renderDesigner()}
     </div>
   );
