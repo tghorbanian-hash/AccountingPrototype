@@ -28,13 +28,13 @@ const OrganizationInfo = ({ t, isRtl }) => {
 
   // --- Columns Definition ---
   const columns = [
-    { field: 'code', header: t.colId || 'کد', width: 'w-24', sortable: true },
-    { field: 'name', header: t.ph_name || 'نام سازمان', width: 'w-64', sortable: true },
-    { field: 'regNo', header: 'شماره ثبت', width: 'w-32' },
-    { field: 'phone', header: t.ph_phone || 'تلفن', width: 'w-32' },
+    { field: 'code', header: t.org_code || 'Code', width: 'w-24', sortable: true },
+    { field: 'name', header: t.org_name || 'Name', width: 'w-64', sortable: true },
+    { field: 'regNo', header: t.org_regNo || 'Reg No', width: 'w-32' },
+    { field: 'phone', header: t.org_phone || 'Phone', width: 'w-32' },
     { 
       field: 'addressCount', 
-      header: 'تعداد آدرس', 
+      header: t.org_addrCount || 'Addr Count', 
       width: 'w-24', 
       render: (row) => <Badge variant="info">{row.addresses?.length || 0}</Badge> 
     }
@@ -111,8 +111,8 @@ const OrganizationInfo = ({ t, isRtl }) => {
             <Building2 size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800">معرفی سازمان</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">مدیریت اطلاعات پایه شرکت و شعبه‌ها</p>
+            <h1 className="text-xl font-black text-slate-800">{t.org_title || 'Organization Info'}</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">{t.org_subtitle || 'Manage company info'}</p>
           </div>
         </div>
       </div>
@@ -123,14 +123,14 @@ const OrganizationInfo = ({ t, isRtl }) => {
         onClear={() => setFilters({ code: '', name: '' })}
       >
         <InputField 
-          label={t.colId || 'کد'} 
+          label={t.org_code || 'Code'} 
           placeholder="..." 
           isRtl={isRtl} 
           value={filters.code}
           onChange={(e) => setFilters(prev => ({ ...prev, code: e.target.value }))}
         />
         <InputField 
-          label={t.ph_name || 'نام'} 
+          label={t.org_name || 'Name'} 
           placeholder="..." 
           isRtl={isRtl} 
           value={filters.name}
@@ -160,7 +160,7 @@ const OrganizationInfo = ({ t, isRtl }) => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={currentRecord ? 'ویرایش اطلاعات سازمان' : 'تعریف سازمان جدید'}
+        title={currentRecord ? (t.org_editTitle || 'Edit Info') : (t.org_newTitle || 'New Org')}
         size="lg"
         footer={
           <>
@@ -186,7 +186,7 @@ const OrganizationInfo = ({ t, isRtl }) => {
                <div className="text-center">
                  <Upload size={32} className="mx-auto text-slate-400 mb-2"/>
                  <label className="cursor-pointer text-indigo-600 font-bold text-sm hover:underline">
-                   <span>انتخاب تصویر لوگو</span>
+                   <span>{t.org_selectLogo || 'Select Logo'}</span>
                    <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                  </label>
                  <p className="text-[10px] text-slate-400 mt-1">PNG, JPG up to 2MB</p>
@@ -195,20 +195,20 @@ const OrganizationInfo = ({ t, isRtl }) => {
           </div>
 
           <InputField 
-            label="کد شرکت *" 
+            label={`${t.org_code} *`} 
             value={formData.code} 
             onChange={e => setFormData({...formData, code: e.target.value})} 
             isRtl={isRtl} 
             className="dir-ltr"
           />
           <InputField 
-            label="نام شرکت *" 
+            label={`${t.org_name} *`} 
             value={formData.name} 
             onChange={e => setFormData({...formData, name: e.target.value})} 
             isRtl={isRtl} 
           />
           <InputField 
-            label="شماره ثبت" 
+            label={t.org_regNo} 
             value={formData.regNo} 
             onChange={e => setFormData({...formData, regNo: e.target.value})} 
             isRtl={isRtl} 
@@ -216,14 +216,14 @@ const OrganizationInfo = ({ t, isRtl }) => {
           />
           <div className="grid grid-cols-2 gap-4">
              <InputField 
-               label="تلفن" 
+               label={t.org_phone} 
                value={formData.phone} 
                onChange={e => setFormData({...formData, phone: e.target.value})} 
                isRtl={isRtl} 
                className="dir-ltr"
              />
              <InputField 
-               label="فکس" 
+               label={t.org_fax} 
                value={formData.fax} 
                onChange={e => setFormData({...formData, fax: e.target.value})} 
                isRtl={isRtl} 
@@ -234,12 +234,12 @@ const OrganizationInfo = ({ t, isRtl }) => {
           {/* Addresses Section */}
           <div className="md:col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
              <label className="block text-[11px] font-bold text-slate-600 mb-2 flex items-center gap-2">
-               <MapPin size={14}/> آدرس‌ها
+               <MapPin size={14}/> {t.org_address}
              </label>
              
              <div className="flex gap-2 mb-3">
                <InputField 
-                 placeholder="آدرس جدید را وارد کنید..." 
+                 placeholder={t.org_newAddr || "Address..."} 
                  value={newAddress} 
                  onChange={e => setNewAddress(e.target.value)} 
                  isRtl={isRtl}
@@ -258,7 +258,7 @@ const OrganizationInfo = ({ t, isRtl }) => {
                  </div>
                ))}
                {(!formData.addresses || formData.addresses.length === 0) && (
-                 <p className="text-center text-[10px] text-slate-400 italic py-2">آدرسی ثبت نشده است</p>
+                 <p className="text-center text-[10px] text-slate-400 italic py-2">{t.org_noAddr || 'No addresses.'}</p>
                )}
              </div>
           </div>
