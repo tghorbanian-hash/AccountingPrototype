@@ -11,7 +11,8 @@ const {
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
   XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
-  Shield, Database, Network, Banknote, MapPin, ListTodo, ArrowLeftRight, Coins, Check
+  Shield, Database, Network, Banknote, MapPin, ListTodo, ArrowLeftRight, Coins, Check,
+  Link2, AlertTriangle
 } = LucideIcons;
 
 // --- توابع کمکی (Helper Functions) ---
@@ -370,7 +371,38 @@ window.translations = {
     emptyPage: 'This module is currently empty or under development.',
     uiKitTitle: 'Design System Showcase',
 
-    // User Profile Translations
+    // Cost Centers & Projects Translations (NEW)
+    cc_title: "Cost Centers",
+    cc_subtitle: "Manage cost centers and their detail codes",
+    cc_code: "Center Code",
+    cc_title_field: "Title",
+    cc_type: "Type",
+    cc_address: "Address",
+    cc_type_prod: "Production",
+    cc_type_serv: "Service",
+    cc_type_admin: "Administrative",
+    cc_new: "New Cost Center",
+    cc_edit: "Edit Cost Center",
+    
+    proj_title: "Projects",
+    proj_subtitle: "Manage projects, budgets and timelines",
+    proj_code: "Project Code",
+    proj_name: "Project Name",
+    proj_start: "Start Date",
+    proj_end: "End Date",
+    proj_manager: "Project Manager",
+    proj_budget: "Initial Budget",
+    proj_new: "New Project",
+    proj_edit: "Edit Project",
+    
+    detail_code: "Detail Code",
+    detail_assigned: "Assigned",
+    detail_not_assigned: "Not Assigned",
+    detail_assign_btn: "Assign Code",
+    detail_assign_msg: "Detail code assigned successfully.",
+    active_status: "Active Status",
+
+    // Previous Translations...
     profileTitle: 'User Profile',
     profileSubtitle: 'Manage your account settings and preferences',
     personalInfo: 'Personal Information',
@@ -388,7 +420,6 @@ window.translations = {
     saveDefaults: 'Save Default Values',
     defaultsSaved: 'Default values saved successfully.',
     
-    // Organization Info Translations (NEW)
     org_title: "Organization Info",
     org_subtitle: "Manage company base information and branches",
     org_code: "Org Code",
@@ -405,7 +436,6 @@ window.translations = {
     org_noAddr: "No addresses registered.",
     org_selectLogo: "Select Logo Image",
     
-    // Currency Settings Translations (NEW)
     curr_title: "Currency Settings",
     curr_subtitle: "Manage system currencies and exchange rates",
     curr_global: "Global System Settings",
@@ -442,7 +472,6 @@ window.translations = {
     curr_save_global_success: "Global settings saved successfully.",
     curr_update_success: "Exchange rates updated successfully.",
     
-    // Common
     btn_save: "Save",
     btn_cancel: "Cancel",
     btn_search: "Apply Filter",
@@ -452,7 +481,6 @@ window.translations = {
     confirm_delete: "Are you sure you want to delete {0} records?",
     confirm_delete_single: "Are you sure you want to delete this record?",
     
-    // ... (Other translations remain the same)
     acc_mgmt_title: "Accounting Document Management",
     acc_mgmt_subtitle: "List of all financial documents with search and batch operation capabilities",
     grid_title: "Document List",
@@ -612,7 +640,38 @@ window.translations = {
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
     uiKitTitle: 'نمایش دیزاین سیستم',
 
-    // User Profile Translations
+    // Cost Centers & Projects Translations (NEW)
+    cc_title: "مراکز هزینه",
+    cc_subtitle: "مدیریت مراکز هزینه و کدهای تفصیلی مرتبط",
+    cc_code: "کد مرکز",
+    cc_title_field: "عنوان مرکز",
+    cc_type: "نوع مرکز",
+    cc_address: "آدرس",
+    cc_type_prod: "تولیدی",
+    cc_type_serv: "خدماتی",
+    cc_type_admin: "اداری",
+    cc_new: "مرکز هزینه جدید",
+    cc_edit: "ویرایش مرکز هزینه",
+    
+    proj_title: "پروژه‌ها",
+    proj_subtitle: "مدیریت پروژه‌ها، بودجه و زمان‌بندی",
+    proj_code: "کد پروژه",
+    proj_name: "نام پروژه",
+    proj_start: "تاریخ شروع",
+    proj_end: "تاریخ اتمام",
+    proj_manager: "مسئول پروژه",
+    proj_budget: "بودجه اولیه",
+    proj_new: "پروژه جدید",
+    proj_edit: "ویرایش پروژه",
+    
+    detail_code: "کد تفصیلی",
+    detail_assigned: "تخصیص یافته",
+    detail_not_assigned: "فاقد کد",
+    detail_assign_btn: "تخصیص کد",
+    detail_assign_msg: "کد تفصیلی با موفقیت تخصیص یافت.",
+    active_status: "وضعیت فعال",
+
+    // Previous Translations...
     profileTitle: 'پروفایل کاربری',
     profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
     personalInfo: 'اطلاعات فردی',
@@ -630,7 +689,6 @@ window.translations = {
     saveDefaults: 'ذخیره مقادیر پیش‌فرض',
     defaultsSaved: 'مقادیر پیش‌فرض با موفقیت ذخیره شد.',
     
-    // Organization Info Translations (NEW)
     org_title: "معرفی سازمان",
     org_subtitle: "مدیریت اطلاعات پایه شرکت و شعبه‌ها",
     org_code: "کد شرکت",
@@ -647,7 +705,6 @@ window.translations = {
     org_noAddr: "آدرسی ثبت نشده است",
     org_selectLogo: "انتخاب لوگو",
     
-    // Currency Settings Translations (NEW)
     curr_title: "تنظیمات ارزها",
     curr_subtitle: "مدیریت ارزهای سیستم و نرخ‌های تبدیل",
     curr_global: "تنظیمات کلان سیستم",
@@ -684,7 +741,6 @@ window.translations = {
     curr_save_global_success: "تنظیمات کلان سیستم با موفقیت ذخیره شد.",
     curr_update_success: "نرخ‌های جدید بروزرسانی شد.",
 
-    // Common
     btn_save: "ذخیره",
     btn_cancel: "انصراف",
     btn_search: "اعمال فیلتر",
@@ -694,7 +750,6 @@ window.translations = {
     confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
     confirm_delete_single: "آیا از حذف این رکورد اطمینان دارید؟",
     
-    // ... (Other translations remain the same)
     acc_mgmt_title: "مدیریت اسناد حسابداری",
     acc_mgmt_subtitle: "لیست کلیه اسناد مالی با قابلیت جستجو و عملیات گروهی",
     grid_title: "لیست اسناد",
