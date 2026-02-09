@@ -11,7 +11,7 @@ const {
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
   XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
-  Shield, Database, Network, Banknote, MapPin, ListTodo
+  Shield, Database, Network, Banknote, MapPin, ListTodo, ArrowLeftRight, Coins, Check
 } = LucideIcons;
 
 // --- توابع کمکی (Helper Functions) ---
@@ -247,7 +247,7 @@ window.MOCK_STATS = [
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
-// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض - برای پروفایل) ---
+// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض) ---
 window.DEFAULT_VALUES_SCHEMA = [
   {
     moduleId: 'accounting',
@@ -370,7 +370,7 @@ window.translations = {
     emptyPage: 'This module is currently empty or under development.',
     uiKitTitle: 'Design System Showcase',
 
-    // User Profile Translations (Added back)
+    // User Profile Translations
     profileTitle: 'User Profile',
     profileSubtitle: 'Manage your account settings and preferences',
     personalInfo: 'Personal Information',
@@ -388,7 +388,71 @@ window.translations = {
     saveDefaults: 'Save Default Values',
     defaultsSaved: 'Default values saved successfully.',
     
-    // Showcase & Accounting Translations
+    // Organization Info Translations (NEW)
+    org_title: "Organization Info",
+    org_subtitle: "Manage company base information and branches",
+    org_code: "Org Code",
+    org_name: "Org Name",
+    org_regNo: "Registration No",
+    org_phone: "Phone",
+    org_fax: "Fax",
+    org_logo: "Upload Logo",
+    org_address: "Addresses",
+    org_newAddr: "Enter new address...",
+    org_addrCount: "Addr. Count",
+    org_editTitle: "Edit Organization Info",
+    org_newTitle: "New Organization",
+    org_noAddr: "No addresses registered.",
+    org_selectLogo: "Select Logo Image",
+    
+    // Currency Settings Translations (NEW)
+    curr_title: "Currency Settings",
+    curr_subtitle: "Manage system currencies and exchange rates",
+    curr_global: "Global System Settings",
+    curr_base: "Base Currency",
+    curr_op: "Operational Currency",
+    curr_rep1: "Reporting Currency 1",
+    curr_rep2: "Reporting Currency 2",
+    curr_history: "Rates History",
+    curr_update: "Update Rates",
+    curr_code: "Code",
+    curr_desc: "Description",
+    curr_symbol: "Symbol",
+    curr_method: "Rate Method",
+    curr_method_auto: "Automatic",
+    curr_method_manual: "Manual",
+    curr_decimals: "Decimals",
+    curr_active: "Active",
+    curr_reciprocal: "Reciprocal",
+    curr_reciprocal_desc: "Auto-calculate inverse rate",
+    curr_status: "Status",
+    curr_manage_rates: "Manage Rates",
+    curr_defined_rates: "Defined Rates",
+    curr_target: "Target Currency",
+    curr_rate: "Exchange Rate (1 Unit)",
+    curr_no_rates: "No exchange rates defined.",
+    curr_history_title: "Exchange Rates Update History",
+    curr_source: "Source",
+    curr_target_curr: "Target",
+    curr_date: "Date",
+    curr_time: "Time",
+    curr_rate_val: "Rate",
+    curr_edit: "Edit Currency",
+    curr_new: "New Currency",
+    curr_save_global_success: "Global settings saved successfully.",
+    curr_update_success: "Exchange rates updated successfully.",
+    
+    // Common
+    btn_save: "Save",
+    btn_cancel: "Cancel",
+    btn_search: "Apply Filter",
+    btn_clear: "Clear",
+    btn_add: "Add",
+    btn_close: "Close",
+    confirm_delete: "Are you sure you want to delete {0} records?",
+    confirm_delete_single: "Are you sure you want to delete this record?",
+    
+    // ... (Other translations remain the same)
     acc_mgmt_title: "Accounting Document Management",
     acc_mgmt_subtitle: "List of all financial documents with search and batch operation capabilities",
     grid_title: "Document List",
@@ -396,7 +460,7 @@ window.translations = {
     col_date: "Date",
     col_dept: "Department",
     col_desc: "Description",
-    col_debtor: "Debtor (RIAL)",
+    col_debtor: "Debtor",
     col_status: "Status",
     col_active: "Active",
     col_actions: "Actions",
@@ -421,13 +485,7 @@ window.translations = {
     field_selectParty: "Select Person...",
     field_amount: "Document Amount",
     field_isActive: "Active Document",
-    btn_save: "Save",
-    btn_cancel: "Cancel",
-    btn_search: "Apply Filter",
-    btn_clear: "Clear",
-    confirm_delete: "Are you sure you want to delete {0} records?",
-
-    // User Management Translations
+    
     usersListTitle: 'User Management',
     usersListSubtitle: 'Manage system access and user profiles',
     createNewUser: 'New User',
@@ -465,7 +523,6 @@ window.translations = {
     edit: 'Edit',
     delete: 'Delete',
     viewPermissions: 'View Permissions',
-    // Permission Modal
     permModalTitle: 'User Access & Permissions',
     permColSource: 'Access Source',
     permColForms: 'Accessible Forms',
@@ -474,7 +531,6 @@ window.translations = {
     permTypeUser: 'User',
     permSelectSource: 'Select a Source',
     permSelectForm: 'Select a Form',
-    // General Workspace Translations
     ws_title: "User Workspace",
     ws_subtitle: "Exchange & Accounting Management System",
     kpi_cash: "Cash & Bank Balance",
@@ -556,7 +612,7 @@ window.translations = {
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
     uiKitTitle: 'نمایش دیزاین سیستم',
 
-    // User Profile Translations (Added back)
+    // User Profile Translations
     profileTitle: 'پروفایل کاربری',
     profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
     personalInfo: 'اطلاعات فردی',
@@ -574,7 +630,71 @@ window.translations = {
     saveDefaults: 'ذخیره مقادیر پیش‌فرض',
     defaultsSaved: 'مقادیر پیش‌فرض با موفقیت ذخیره شد.',
     
-    // Showcase & Accounting Translations
+    // Organization Info Translations (NEW)
+    org_title: "معرفی سازمان",
+    org_subtitle: "مدیریت اطلاعات پایه شرکت و شعبه‌ها",
+    org_code: "کد شرکت",
+    org_name: "نام شرکت",
+    org_regNo: "شماره ثبت",
+    org_phone: "تلفن",
+    org_fax: "فکس",
+    org_logo: "انتخاب تصویر لوگو",
+    org_address: "آدرس‌ها",
+    org_newAddr: "آدرس جدید را وارد کنید...",
+    org_addrCount: "تعداد آدرس",
+    org_editTitle: "ویرایش اطلاعات سازمان",
+    org_newTitle: "تعریف سازمان جدید",
+    org_noAddr: "آدرسی ثبت نشده است",
+    org_selectLogo: "انتخاب لوگو",
+    
+    // Currency Settings Translations (NEW)
+    curr_title: "تنظیمات ارزها",
+    curr_subtitle: "مدیریت ارزهای سیستم و نرخ‌های تبدیل",
+    curr_global: "تنظیمات کلان سیستم",
+    curr_base: "ارز اصلی سیستم (Base)",
+    curr_op: "ارز عملیاتی (Operational)",
+    curr_rep1: "ارز گزارشگری ۱",
+    curr_rep2: "ارز گزارشگری ۲",
+    curr_history: "تاریخچه نرخ‌ها",
+    curr_update: "بروزرسانی نرخ‌ها",
+    curr_code: "کد ارز",
+    curr_desc: "عنوان ارز",
+    curr_symbol: "علامت",
+    curr_method: "نحوه دریافت نرخ",
+    curr_method_auto: "اتوماتیک",
+    curr_method_manual: "دستی",
+    curr_decimals: "تعداد اعشار",
+    curr_active: "فعال",
+    curr_reciprocal: "تبدیل دو طرفه",
+    curr_reciprocal_desc: "محاسبه نرخ معکوس",
+    curr_status: "وضعیت",
+    curr_manage_rates: "مدیریت تبدیل‌ها",
+    curr_defined_rates: "نرخ‌های تعریف شده",
+    curr_target: "ارز مقصد",
+    curr_rate: "نرخ تبدیل (۱ واحد)",
+    curr_no_rates: "هیچ نرخ تبدیلی تعریف نشده است.",
+    curr_history_title: "تاریخچه بروزرسانی نرخ‌ها",
+    curr_source: "ارز مبدا",
+    curr_target_curr: "ارز مقصد",
+    curr_date: "تاریخ",
+    curr_time: "ساعت",
+    curr_rate_val: "نرخ تبدیل",
+    curr_edit: "ویرایش ارز",
+    curr_new: "تعریف ارز جدید",
+    curr_save_global_success: "تنظیمات کلان سیستم با موفقیت ذخیره شد.",
+    curr_update_success: "نرخ‌های جدید بروزرسانی شد.",
+
+    // Common
+    btn_save: "ذخیره",
+    btn_cancel: "انصراف",
+    btn_search: "اعمال فیلتر",
+    btn_clear: "پاک کردن",
+    btn_add: "افزودن",
+    btn_close: "بستن",
+    confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
+    confirm_delete_single: "آیا از حذف این رکورد اطمینان دارید؟",
+    
+    // ... (Other translations remain the same)
     acc_mgmt_title: "مدیریت اسناد حسابداری",
     acc_mgmt_subtitle: "لیست کلیه اسناد مالی با قابلیت جستجو و عملیات گروهی",
     grid_title: "لیست اسناد",
@@ -607,13 +727,7 @@ window.translations = {
     field_selectParty: "انتخاب شخص...",
     field_amount: "مبلغ سند",
     field_isActive: "سند فعال باشد",
-    btn_save: "ذخیره",
-    btn_cancel: "انصراف",
-    btn_search: "اعمال فیلتر",
-    btn_clear: "پاک کردن",
-    confirm_delete: "آیا از حذف {0} رکورد اطمینان دارید؟",
-
-    // User Management Translations
+    
     usersListTitle: 'مدیریت کاربران',
     usersListSubtitle: 'مدیریت دسترسی‌ها و پروفایل‌های کاربری سیستم',
     createNewUser: 'کاربر جدید',
@@ -651,7 +765,6 @@ window.translations = {
     edit: 'ویرایش',
     delete: 'حذف',
     viewPermissions: 'مشاهده دسترسی‌ها',
-    // Permission Modal
     permModalTitle: 'مدیریت دسترسی‌ها و مجوزها',
     permColSource: 'منبع دسترسی',
     permColForms: 'فرم‌های در دسترس',
@@ -660,7 +773,6 @@ window.translations = {
     permTypeUser: 'کاربر',
     permSelectSource: 'یک منبع دسترسی انتخاب کنید',
     permSelectForm: 'یک فرم را انتخاب کنید',
-    // General Workspace Translations
     ws_title: "میز کار کاربر",
     ws_subtitle: "سیستم مدیریت حسابداری و صرافی",
     kpi_cash: "موجودی نقد و بانک",
