@@ -6,7 +6,7 @@ import {
   ChevronsLeft, ChevronsRight, List, MoreVertical,
   Plus, Trash2, Download, Printer, Edit, Eye, 
   Maximize2, Minimize2, FolderOpen, Folder, FileText,
-  AlertCircle, ArrowRight, ArrowUp, ArrowDown
+  AlertCircle, ArrowRight, ArrowUp, ArrowDown, Info
 } from 'lucide-react';
 
 // --- ENTERPRISE THEME TOKENS ---
@@ -155,15 +155,12 @@ export const Badge = ({ children, variant = 'neutral', className='' }) => {
 
 // --- NEW COMPONENTS FOR ROLES & ACCESS ---
 
-// 1. ToggleChip: آیتم‌های انتخابی ساده (بدون آیکون)
+// 1. ToggleChip
 export const ToggleChip = ({ label, checked, onClick, colorClass = "green" }) => {
   const styles = {
-    // Green Theme (Default)
     green: checked 
       ? 'bg-emerald-50 border-emerald-400 text-emerald-700 font-bold ring-1 ring-emerald-100 shadow-sm' 
       : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
-    
-    // Indigo Theme
     indigo: checked 
       ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-bold ring-1 ring-indigo-100 shadow-sm' 
       : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50',
@@ -184,7 +181,7 @@ export const ToggleChip = ({ label, checked, onClick, colorClass = "green" }) =>
   );
 };
 
-// 2. SelectionGrid: گرید انتخاب آیتم‌ها
+// 2. SelectionGrid
 export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }) => {
   const gridCols = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 6: 'grid-cols-6' };
   
@@ -211,7 +208,7 @@ export const SelectionGrid = ({ items, selectedIds = [], onToggle, columns = 4 }
   );
 };
 
-// 3. TreeView: درخت عمومی
+// 3. TreeView
 export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent, isRtl, searchPlaceholder = "جستجو..." }) => {
   const [expandedNodes, setExpandedNodes] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -324,7 +321,7 @@ export const TreeView = ({ data, onSelectNode, selectedNodeId, renderNodeContent
 
 // --- EXISTING COMPLEX COMPONENTS ---
 
-// 2. FILTER SECTION (FIXED: Overflow visible)
+// 2. FILTER SECTION
 export const FilterSection = ({ children, onSearch, onClear, isRtl, title = "فیلترهای پیشرفته" }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -682,4 +679,111 @@ export const LOV = ({ label, placeholder, isRtl }) => (
   </div>
 );
 
-window.UI = { Button, InputField, SelectField, Toggle, Badge, DataGrid, FilterSection, TreeMenu, TreeView, SelectionGrid, ToggleChip, Modal, DatePicker, LOV, THEME };
+// 5. NEW GENERIC COMPONENTS (For DRY Compliance)
+
+export const SideMenu = ({ items, activeId, onChange, title, isRtl, className = '' }) => {
+  return (
+    <div className={`w-full ${className}`}>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        {title && (
+          <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
+              {title}
+            </h3>
+          </div>
+        )}
+        <div className="p-2 space-y-1">
+          {items.map(item => {
+            const isActive = activeId === item.id;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onChange(item.id)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-bold transition-all duration-200
+                  ${isActive 
+                    ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200/50' 
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}
+                `}
+              >
+                {Icon && <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />}
+                <span>{item.label}</span>
+                {isActive && (
+                  <div className={`ml-auto ${isRtl ? 'rotate-180' : ''}`}>
+                    <ChevronRight size={14} className="text-indigo-400" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const Accordion = ({ title, icon: Icon, isOpen, onToggle, children, actions, isRtl, className = '' }) => {
+  return (
+    <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${className}`}>
+      <button 
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`p-1.5 rounded-lg transition-colors ${isOpen ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+            {Icon && <Icon size={18} />}
+          </div>
+          <span className="font-bold text-slate-800 text-sm">{title}</span>
+        </div>
+        <div className="flex items-center gap-3">
+            {actions && <div onClick={e => e.stopPropagation()}>{actions}</div>}
+            <div className={`text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+               <ChevronDown size={18} />
+            </div>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="p-4 pt-2 border-t border-slate-100 animate-in slide-in-from-top-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const Callout = ({ title, children, icon: Icon, action, variant = 'info', className = '' }) => {
+  const variants = {
+     info: 'bg-blue-50 border-blue-100 text-blue-900',
+     warning: 'bg-amber-50 border-amber-100 text-amber-900',
+     success: 'bg-emerald-50 border-emerald-100 text-emerald-900',
+     danger: 'bg-red-50 border-red-100 text-red-900',
+  };
+  
+  const iconColors = {
+     info: 'text-blue-600',
+     warning: 'text-amber-600',
+     success: 'text-emerald-600',
+     danger: 'text-red-600',
+  };
+
+  return (
+    <div className={`${variants[variant]} border p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${className}`}>
+       <div className="flex items-start gap-3">
+          {Icon && (
+             <div className={`p-1.5 bg-white rounded-lg shadow-sm ${iconColors[variant]}`}>
+                <Icon size={18}/>
+             </div>
+          )}
+          <div>
+             {title && <h4 className="font-bold text-xs mb-0.5">{title}</h4>}
+             <div className="text-[11px] opacity-80 leading-relaxed">{children}</div>
+          </div>
+       </div>
+       {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+};
+
+window.UI = { Button, InputField, SelectField, Toggle, Badge, DataGrid, FilterSection, TreeMenu, TreeView, SelectionGrid, ToggleChip, Modal, DatePicker, LOV, SideMenu, Accordion, Callout, THEME };
