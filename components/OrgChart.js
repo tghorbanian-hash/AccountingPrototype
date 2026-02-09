@@ -20,7 +20,7 @@ const OrgChart = ({ t, isRtl }) => {
       <div className="select-none">
         <div 
           className={`
-            flex items-center gap-2 py-2 px-2 my-0.5 cursor-pointer rounded-lg transition-all border border-transparent
+            flex items-center gap-2 py-1 px-2 my-0.5 cursor-pointer rounded-lg transition-all border border-transparent
             ${isSelected 
               ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-200 shadow-sm' 
               : 'hover:bg-slate-50 text-slate-700 hover:border-slate-200'}
