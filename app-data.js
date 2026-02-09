@@ -10,7 +10,7 @@ const {
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
   XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
   Shield, Database, Network, Banknote, MapPin, ListTodo, ArrowLeftRight, Coins, Check,
-  Link2, AlertTriangle, Workflow, GitMerge
+  Link2, AlertTriangle, Workflow, GitMerge, ChevronsDown, ChevronsUp, FolderTree
 } = LucideIcons;
 
 window.flattenMenu = (items, parentModuleId = null) => {
@@ -307,18 +307,21 @@ window.translations = {
     oc_start_date: "Effective Start",
     oc_end_date: "Effective End",
     oc_new: "New Chart",
-    oc_edit: "Edit Chart",
+    oc_edit: "Edit Chart Info",
     oc_design: "Design Structure",
     oc_type_std: "Standard",
     oc_type_sales: "Sales",
     oc_type_finance: "Finance",
     oc_type_hr: "Human Resources",
     oc_type_custom: "Custom",
+    oc_expand_all: "Expand All",
+    oc_collapse_all: "Collapse All",
+    oc_delete_confirm_cascade: "Deleting this node will remove all its children as well. Are you sure?",
     
     // Org Chart Designer
     oc_designer_title: "Designing",
     oc_tree_title: "Structure Tree",
-    oc_node_info: "Node Information",
+    oc_node_info: "Chart Info",
     oc_node_code: "Node Code",
     oc_node_title: "Node Title",
     oc_parent: "Parent Node",
@@ -337,6 +340,7 @@ window.translations = {
     oc_remove_person: "Remove",
     oc_valid: "Valid",
     oc_back_list: "Back to List",
+    oc_design_btn: "Design Structure",
 
     // ... (Previous translations remain same)
     loginTitle: 'Secure Sign In',
@@ -676,11 +680,14 @@ window.translations = {
     oc_type_finance: "مالی",
     oc_type_hr: "سرمایه انسانی",
     oc_type_custom: "اختصاصی",
+    oc_expand_all: "باز کردن همه",
+    oc_collapse_all: "بستن همه",
+    oc_delete_confirm_cascade: "با حذف این گره، تمام زیرمجموعه‌های آن نیز حذف خواهند شد. آیا اطمینان دارید؟",
     
     // Org Chart Designer
     oc_designer_title: "در حال طراحی",
     oc_tree_title: "درختواره ساختار",
-    oc_node_info: "اطلاعات گره (Node)",
+    oc_node_info: "اطلاعات چارت",
     oc_node_code: "کد گره",
     oc_node_title: "عنوان گره",
     oc_parent: "گره مادر",
@@ -699,6 +706,7 @@ window.translations = {
     oc_remove_person: "حذف",
     oc_valid: "معتبر",
     oc_back_list: "بازگشت به فهرست",
+    oc_design_btn: "طراحی ساختار",
 
     // ... (Previous translations remain same)
     loginTitle: 'ورود ایمن به سیستم',
