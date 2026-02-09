@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Network, Search, Plus, Edit, Trash2, Save, 
-  ArrowLeft, Users, FolderTree, CheckCircle2, X 
+  ArrowLeft, Users, FolderTree, CheckCircle2, X, Settings 
 } from 'lucide-react';
 
 const OrgChart = ({ t, isRtl }) => {
@@ -17,7 +17,7 @@ const OrgChart = ({ t, isRtl }) => {
     { id: 1, code: 'ORG-MAIN', title: 'چارت اصلی ۱۴۰۳', type: 'standard', active: true, startDate: '1403/01/01', endDate: '' },
   ]);
 
-  // Tree Data (Mock for currently selected chart)
+  // Tree Data
   const [treeData, setTreeData] = useState([
     { 
       id: 'root', label: { fa: 'مدیر عامل', en: 'CEO' }, active: true, 
@@ -30,11 +30,10 @@ const OrgChart = ({ t, isRtl }) => {
   ]);
 
   const [filters, setFilters] = useState({ code: '', title: '' });
-  const [activeChart, setActiveChart] = useState(null); // Chart being designed
+  const [activeChart, setActiveChart] = useState(null); 
   
   // Designer States
   const [selectedNode, setSelectedNode] = useState(null);
-  const [newNodeName, setNewNodeName] = useState('');
   
   // Personnel Assignment State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -47,7 +46,7 @@ const OrgChart = ({ t, isRtl }) => {
     { id: 103, name: 'مهندس اکبری' },
   ];
 
-  // --- List View Handlers ---
+  // --- Handlers ---
   const filteredCharts = useMemo(() => {
     return charts.filter(c => {
        const mCode = filters.code ? c.code.includes(filters.code) : true;
@@ -58,14 +57,16 @@ const OrgChart = ({ t, isRtl }) => {
 
   const handleCreateChart = () => {
     const newChart = { id: Date.now(), code: '', title: '', type: 'standard', active: true, startDate: '', endDate: '' };
-    setActiveChart(newChart); // Ideally open a modal first to set basic info, but for now jumping to designer or simple edit
-    // For simplicity, let's assume we create and go to designer
-    setCharts(prev => [...prev, newChart]);
+    setActiveChart(newChart);
+    setTreeData([]); // New chart empty tree
+    setSelectedNode(null);
     setViewMode('designer');
   };
 
   const handleEditChart = (chart) => {
     setActiveChart(chart);
+    setSelectedNode(null);
+    // In real app, load tree data for this chart here
     setViewMode('designer');
   };
 
@@ -100,7 +101,7 @@ const OrgChart = ({ t, isRtl }) => {
     };
 
     if (parentId === null) {
-       setTreeData(prev => [...prev, newNode]); // Add root
+       setTreeData(prev => [...prev, newNode]); 
     } else {
        setTreeData(prev => addNodeRecursive(prev));
     }
@@ -123,7 +124,6 @@ const OrgChart = ({ t, isRtl }) => {
     const personName = mockPersonnel.find(p => p.id == assignData.personId)?.name;
     const newAssignment = { ...assignData, id: Date.now(), name: personName };
     
-    // Update tree data with new personnel for selected node
     const updatePersonRecursive = (nodes) => {
       return nodes.map(node => {
         if (node.id === selectedNode.id) {
@@ -137,7 +137,6 @@ const OrgChart = ({ t, isRtl }) => {
     };
     
     setTreeData(prev => updatePersonRecursive(prev));
-    // Update selected node ref as well to show immediate change
     setSelectedNode(prev => ({ ...prev, personnel: [...(prev.personnel || []), newAssignment] }));
     
     setIsAssignModalOpen(false);
@@ -146,7 +145,6 @@ const OrgChart = ({ t, isRtl }) => {
 
   const handleRemovePerson = (pId) => {
      if(!confirm(t.confirm_delete_single)) return;
-     
      const removeRecursive = (nodes) => {
         return nodes.map(node => {
            if (node.id === selectedNode.id) {
@@ -156,7 +154,6 @@ const OrgChart = ({ t, isRtl }) => {
            return node;
         });
      };
-     
      setTreeData(prev => removeRecursive(prev));
      setSelectedNode(prev => ({ ...prev, personnel: prev.personnel.filter(p => p.id !== pId) }));
   };
@@ -184,6 +181,18 @@ const OrgChart = ({ t, isRtl }) => {
 
     return (
       <div className="flex flex-col h-full">
+         <div className="mb-6 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+               <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200">
+                  <Network size={24} />
+               </div>
+               <div>
+                  <h1 className="text-xl font-black text-slate-800">{t.oc_title}</h1>
+                  <p className="text-xs text-slate-500 font-medium mt-1">{t.oc_subtitle}</p>
+               </div>
+            </div>
+         </div>
+
          <FilterSection isRtl={isRtl} onSearch={() => {}} onClear={() => setFilters({ code: '', title: '' })}>
             <InputField label={t.oc_code} value={filters.code} onChange={e => setFilters({...filters, code: e.target.value})} isRtl={isRtl} />
             <InputField label={t.oc_title_field} value={filters.title} onChange={e => setFilters({...filters, title: e.target.value})} isRtl={isRtl} />
@@ -208,112 +217,137 @@ const OrgChart = ({ t, isRtl }) => {
   const renderDesigner = () => {
     return (
       <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-         {/* Designer Header */}
-         <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-               <Button variant="ghost" size="iconSm" icon={ArrowLeft} onClick={() => setViewMode('list')} className={isRtl ? 'rotate-180' : ''} />
-               <div className="h-6 w-px bg-slate-300 mx-1"></div>
-               <h2 className="font-bold text-slate-800">{t.oc_designer_title}: {activeChart.title || '...'}</h2>
+         {/* 1. Header Actions */}
+         <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+               <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => setViewMode('list')} className={isRtl ? 'rotate-180' : ''}>
+                  {t.oc_back_list}
+               </Button>
+               <div className="h-5 w-px bg-slate-300 mx-1"></div>
+               <h2 className="font-bold text-slate-800 text-sm">{t.oc_designer_title}</h2>
             </div>
-            <div className="flex gap-2">
-               <Button variant="primary" icon={Save} onClick={handleSaveChartInfo}>{t.btn_save}</Button>
+            <Button variant="primary" icon={Save} onClick={handleSaveChartInfo}>{t.btn_save}</Button>
+         </div>
+
+         {/* 2. Chart Info Strip (Horizontal) */}
+         <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+               <div className="lg:col-span-1">
+                  <InputField label={t.oc_code} value={activeChart.code} onChange={e => setActiveChart({...activeChart, code: e.target.value})} isRtl={isRtl} className="bg-white h-9" />
+               </div>
+               <div className="lg:col-span-2">
+                  <InputField label={t.oc_title_field} value={activeChart.title} onChange={e => setActiveChart({...activeChart, title: e.target.value})} isRtl={isRtl} className="bg-white h-9" />
+               </div>
+               <div className="lg:col-span-1">
+                  <SelectField label={t.oc_type} value={activeChart.type} onChange={e => setActiveChart({...activeChart, type: e.target.value})} isRtl={isRtl} className="h-9">
+                     <option value="standard">{t.oc_type_std}</option>
+                     <option value="sales">{t.oc_type_sales}</option>
+                     <option value="finance">{t.oc_type_finance}</option>
+                     <option value="hr">{t.oc_type_hr}</option>
+                     <option value="custom">{t.oc_type_custom}</option>
+                  </SelectField>
+               </div>
+               <div className="lg:col-span-1">
+                  <InputField label={t.oc_start_date} value={activeChart.startDate} onChange={e => setActiveChart({...activeChart, startDate: e.target.value})} isRtl={isRtl} className="bg-white dir-ltr h-9" placeholder="1403/01/01"/>
+               </div>
+               <div className="lg:col-span-1 flex items-center gap-3 pb-2">
+                  <Toggle checked={activeChart.active} onChange={v => setActiveChart({...activeChart, active: v})} label={t.active_status} />
+               </div>
             </div>
          </div>
 
+         {/* 3. Main Content (Split View) */}
          <div className="flex-1 flex overflow-hidden">
-            {/* Left: Chart Info & Tree */}
-            <div className="w-1/3 border-r border-slate-200 flex flex-col bg-slate-50/30">
-               <div className="p-4 border-b border-slate-200 space-y-3">
-                  <h3 className="text-xs font-black text-slate-500 uppercase">{t.oc_node_info}</h3>
-                  <InputField label={t.oc_code} value={activeChart.code} onChange={e => setActiveChart({...activeChart, code: e.target.value})} isRtl={isRtl} className="bg-white" />
-                  <InputField label={t.oc_title_field} value={activeChart.title} onChange={e => setActiveChart({...activeChart, title: e.target.value})} isRtl={isRtl} className="bg-white" />
-                  <div className="flex gap-2">
-                     <InputField label={t.oc_start_date} value={activeChart.startDate} onChange={e => setActiveChart({...activeChart, startDate: e.target.value})} isRtl={isRtl} className="bg-white dir-ltr" />
-                     <InputField label={t.oc_end_date} value={activeChart.endDate} onChange={e => setActiveChart({...activeChart, endDate: e.target.value})} isRtl={isRtl} className="bg-white dir-ltr" />
-                  </div>
+            
+            {/* LEFT: Tree Structure */}
+            <div className="w-1/3 min-w-[300px] border-r border-slate-200 flex flex-col bg-slate-50/50">
+               <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-100/50">
+                  <h3 className="text-xs font-black text-slate-600 uppercase flex items-center gap-2">
+                     <FolderTree size={16}/> {t.oc_tree_title}
+                  </h3>
+                  <Button variant="ghost" size="iconSm" icon={Plus} onClick={() => handleAddNode(selectedNode ? selectedNode.id : null)} title={selectedNode ? t.oc_add_child : t.oc_add_root} />
                </div>
-               
-               <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                     <h3 className="text-xs font-black text-slate-500 uppercase">{t.oc_tree_title}</h3>
-                     <Button variant="ghost" size="sm" icon={Plus} onClick={() => handleAddNode(selectedNode ? selectedNode.id : null)}>
-                        {selectedNode ? t.oc_add_child : t.oc_add_root}
-                     </Button>
-                  </div>
-                  <div className="flex-1 bg-white border border-slate-200 rounded-lg overflow-y-auto p-2">
-                     <TreeView 
-                        data={treeData} 
-                        isRtl={isRtl} 
-                        selectedNodeId={selectedNode?.id}
-                        onSelectNode={setSelectedNode}
-                        searchPlaceholder={t.searchMenu}
-                     />
-                  </div>
+               <div className="flex-1 overflow-y-auto p-2">
+                  <TreeView 
+                     data={treeData} 
+                     isRtl={isRtl} 
+                     selectedNodeId={selectedNode?.id}
+                     onSelectNode={setSelectedNode}
+                     searchPlaceholder={t.searchMenu}
+                  />
                </div>
             </div>
 
-            {/* Right: Selected Node Details & Personnel */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            {/* RIGHT: Node Details & Personnel */}
+            <div className="flex-1 flex flex-col bg-white">
                {selectedNode ? (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                           <FolderTree className="text-indigo-600"/>
-                           {selectedNode.label[isRtl ? 'fa' : 'en']}
-                        </h2>
-                        <Button variant="danger" size="sm" icon={Trash2} onClick={() => handleDeleteNode(selectedNode.id)}>{t.oc_delete_node}</Button>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-4">
-                        <InputField label={t.oc_node_title} value={selectedNode.label[isRtl ? 'fa' : 'en']} onChange={() => {}} disabled className="bg-slate-50" />
-                        <div className="flex items-end pb-2">
-                           <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-slate-700">{t.active_status}</span>
-                              <Toggle checked={selectedNode.active} onChange={() => {}} disabled />
+                  <>
+                     {/* Top Right: Node Info */}
+                     <div className="p-6 border-b border-slate-200">
+                        <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                              <Settings size={18} className="text-slate-400"/> {t.oc_node_info}
+                           </h3>
+                           <Button variant="danger" size="sm" icon={Trash2} onClick={() => handleDeleteNode(selectedNode.id)}>{t.oc_delete_node}</Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                           <InputField label={t.oc_node_title} value={selectedNode.label[isRtl ? 'fa' : 'en']} onChange={() => {}} disabled className="bg-slate-50" />
+                           <div className="flex items-end pb-2">
+                              <Toggle checked={selectedNode.active} onChange={() => {}} label={t.active_status} disabled />
                            </div>
                         </div>
                      </div>
 
-                     <div className="border-t border-slate-200 pt-6">
+                     {/* Bottom Right: Personnel */}
+                     <div className="flex-1 flex flex-col p-6 bg-slate-50/30">
                         <div className="flex items-center justify-between mb-4">
-                           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                           <h3 className="text-sm font-black text-slate-600 uppercase flex items-center gap-2">
                               <Users size={16}/> {t.oc_personnel}
                            </h3>
                            <Button variant="secondary" size="sm" icon={Plus} onClick={() => setIsAssignModalOpen(true)}>{t.oc_assign_person}</Button>
                         </div>
 
-                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex-1">
                            {selectedNode.personnel && selectedNode.personnel.length > 0 ? (
-                              <table className="w-full text-xs">
-                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
-                                    <tr>
-                                       <th className="px-3 py-2 text-right">{t.oc_person}</th>
-                                       <th className="px-3 py-2 text-center">{t.oc_from_date}</th>
-                                       <th className="px-3 py-2 text-center w-12">{t.colActions}</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody className="divide-y divide-slate-100">
-                                    {selectedNode.personnel.map(p => (
-                                       <tr key={p.id}>
-                                          <td className="px-3 py-2 font-bold">{p.name}</td>
-                                          <td className="px-3 py-2 text-center dir-ltr">{p.fromDate}</td>
-                                          <td className="px-3 py-2 text-center">
-                                             <button onClick={() => handleRemovePerson(p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14}/></button>
-                                          </td>
+                              <div className="overflow-auto h-full">
+                                 <table className="w-full text-xs">
+                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 sticky top-0">
+                                       <tr>
+                                          <th className="px-4 py-3 text-right">{t.oc_person}</th>
+                                          <th className="px-4 py-3 text-center">{t.oc_from_date}</th>
+                                          <th className="px-4 py-3 text-center">{t.oc_to_date}</th>
+                                          <th className="px-4 py-3 text-center w-16">{t.colActions}</th>
                                        </tr>
-                                    ))}
-                                 </tbody>
-                              </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                       {selectedNode.personnel.map(p => (
+                                          <tr key={p.id} className="hover:bg-slate-50">
+                                             <td className="px-4 py-3 font-bold text-slate-700">{p.name}</td>
+                                             <td className="px-4 py-3 text-center dir-ltr text-slate-500">{p.fromDate}</td>
+                                             <td className="px-4 py-3 text-center dir-ltr text-slate-500">{p.toDate || '-'}</td>
+                                             <td className="px-4 py-3 text-center">
+                                                <button onClick={() => handleRemovePerson(p.id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                                   <X size={16}/>
+                                                </button>
+                                             </td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              </div>
                            ) : (
-                              <div className="p-6 text-center text-slate-400 text-xs italic">{t.oc_no_person}</div>
+                              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                 <Users size={40} strokeWidth={1} className="mb-2 opacity-50"/>
+                                 <p className="text-sm">{t.oc_no_person}</p>
+                              </div>
                            )}
                         </div>
                      </div>
-                  </div>
+                  </>
                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-300">
-                     <Network size={64} strokeWidth={1} />
-                     <p className="mt-4 text-sm font-medium">{t.oc_tree_title}...</p>
+                  <div className="h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50/20">
+                     <Network size={80} strokeWidth={0.5} />
+                     <p className="mt-4 text-sm font-medium">یک گره را از درخت انتخاب کنید...</p>
                   </div>
                )}
             </div>
@@ -337,20 +371,6 @@ const OrgChart = ({ t, isRtl }) => {
 
   return (
     <div className="flex flex-col h-full p-4 md:p-6 bg-slate-50/50">
-      {viewMode === 'list' && (
-         <div className="mb-6 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-               <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200">
-                  <Network size={24} />
-               </div>
-               <div>
-                  <h1 className="text-xl font-black text-slate-800">{t.oc_title}</h1>
-                  <p className="text-xs text-slate-500 font-medium mt-1">{t.oc_subtitle}</p>
-               </div>
-            </div>
-         </div>
-      )}
-      
       {viewMode === 'list' ? renderList() : renderDesigner()}
     </div>
   );
