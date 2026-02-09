@@ -17,6 +17,7 @@ const UserManagement = ({ t, isRtl }) => {
   if (!Button) return <div className="p-4">Loading UI...</div>;
 
   // --- INTERNAL COMPONENT: MULTI-SELECT WITH SEARCH ---
+  // Added z-index to dropdown to prevent clipping
   const MultiSelect = ({ options, value = [], onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -58,7 +59,7 @@ const UserManagement = ({ t, isRtl }) => {
           {value.map(id => {
             const opt = options.find(o => o.id === id);
             return (
-              <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1 font-bold">
+              <span key={id} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-1.5 py-0.5 text-[10px] flex items-center gap-1">
                 {opt?.label}
                 <span onClick={(e) => removeTag(e, id)} className="hover:text-red-500 rounded-full"><X size={10}/></span>
               </span>
@@ -75,7 +76,7 @@ const UserManagement = ({ t, isRtl }) => {
               <input 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                placeholder={t.search}
+                placeholder="جستجو..."
                 className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 outline-none focus:border-indigo-400"
                 autoFocus
                 onClick={(e) => e.stopPropagation()}
@@ -91,7 +92,7 @@ const UserManagement = ({ t, isRtl }) => {
                 {value.includes(opt.id) && <Check size={12}/>}
               </div>
             )) : (
-              <div className="p-2 text-center text-slate-400 text-[10px]">{t.noResults || "موردی یافت نشد"}</div>
+              <div className="p-2 text-center text-slate-400 text-[10px]">موردی یافت نشد</div>
             )}
           </div>
         )}
@@ -105,6 +106,7 @@ const UserManagement = ({ t, isRtl }) => {
     const traverse = (nodes, pathPrefix = '') => {
       nodes.forEach(node => {
         const currentPath = pathPrefix ? `${pathPrefix} / ${node.label[isRtl ? 'fa' : 'en']}` : node.label[isRtl ? 'fa' : 'en'];
+        // Assuming leaf nodes are forms
         if (!node.children || node.children.length === 0) {
           forms.push({ ...node, fullPath: currentPath });
         } else {
@@ -118,45 +120,45 @@ const UserManagement = ({ t, isRtl }) => {
   const ALL_SYSTEM_FORMS = useMemo(() => getAllForms(), [MENU_DATA, isRtl]);
 
   // --- MOCK DATA ---
-  const MOCK_PARTIES = window.APP_DATA?.mockParties || [
+  const MOCK_PARTIES = [
     { id: 101, name: 'علی محمدی', type: 'person', code: 'P-1001' },
     { id: 102, name: 'شرکت فولاد مبارکه', type: 'company', code: 'C-5002' },
     { id: 103, name: 'سارا احمدی', type: 'person', code: 'P-1003' },
   ];
 
-  const MOCK_ROLES_LIST = window.APP_DATA?.mockRoles?.map(r => ({ id: r.id, title: r.name, code: r.code })) || [
+  const MOCK_ROLES_LIST = [
     { id: 1, title: 'مدیر ارشد مالی', code: 'CFO' },
     { id: 2, title: 'حسابدار فروش', code: 'ACC_SALES' },
     { id: 3, title: 'حسابرس داخلی', code: 'AUDITOR' },
     { id: 4, title: 'مدیر سیستم', code: 'ADMIN' },
   ];
 
+  // --- CORRECTED DATA: Using ACTUAL form IDs from app-data.js ---
   const MOCK_ROLE_PERMISSIONS = {
-    1: [ 
-       { formId: 'doc_list', actions: ['view', 'approve'], dataScopes: {} },
+    1: [ // CFO (Financial)
+       { formId: 'doc_list', actions: ['view', 'approve'], dataScopes: {} }, // From app-data
        { formId: 'doc_review', actions: ['view'], dataScopes: {} }, 
        { formId: 'payment_req', actions: ['approve'], dataScopes: {} } 
     ],
-    2: [ 
+    2: [ // SALES
        { formId: 'payment_req', actions: ['create', 'view'], dataScopes: {} },
-       { formId: 'doc_list', actions: ['view'], dataScopes: {} }
+       { formId: 'doc_list', actions: ['view'], dataScopes: {} } // Overlap
     ],
-    4: [ 
+    4: [ // ADMIN
        { formId: 'users_list', actions: ['create', 'edit', 'delete', 'view'], dataScopes: {} },
        { formId: 'roles', actions: ['create', 'edit', 'delete', 'view'], dataScopes: {} },
        { formId: 'access_mgmt', actions: ['view'], dataScopes: {} }
     ]
   };
 
-  const [users, setUsers] = useState(window.APP_DATA?.mockUsers?.map(u => ({
-      id: u.id, username: u.username, partyId: 101, userType: u.userType === 'SystemAdmin' ? 'مدیر سیستم' : 'کارشناس', roleIds: u.userType === 'SystemAdmin' ? [4] : [1], isActive: u.status, lastLogin: '1402/11/15'
-  })) || [
+  const [users, setUsers] = useState([
     { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', roleIds: [4], isActive: true, lastLogin: '1402/11/15' },
     { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', roleIds: [1], isActive: true, lastLogin: '1402/11/10' },
   ]);
 
   // --- STATES ---
   const [selectedRows, setSelectedRows] = useState([]);
+  
   const [filterValues, setFilterValues] = useState({ username: '', roleIds: [], isActive: 'all' });
   const [appliedFilters, setAppliedFilters] = useState({ username: '', roleIds: [], isActive: 'all' });
 
@@ -176,28 +178,31 @@ const UserManagement = ({ t, isRtl }) => {
   const [roleSearchTerm, setRoleSearchTerm] = useState('');
   const [isRoleSearchOpen, setIsRoleSearchOpen] = useState(false);
 
+  // --- HELPER: getPartyName ---
   const getPartyName = (id) => {
     const p = MOCK_PARTIES.find(p => p.id === Number(id));
-    return p ? (p.fullName || p.name) + ` (${p.partyCode || p.code})` : t.selectPersonPlaceholder;
+    return p ? `${p.name} (${p.code})` : 'نامشخص';
   };
 
   // --- LOGIC: MERGE PERMISSIONS ---
   const effectivePermissions = useMemo(() => {
     const map = new Map();
 
+    // 1. Process Roles
     assignedRoles.forEach(roleId => {
       const rolePerms = MOCK_ROLE_PERMISSIONS[roleId] || [];
       const roleInfo = MOCK_ROLES_LIST.find(r => r.id === roleId);
       
       rolePerms.forEach(p => {
         const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
+        // If form doesn't exist in menu, skip it (prevents errors)
         if (!formInfo) return; 
 
         if (!map.has(p.formId)) {
           map.set(p.formId, {
             id: p.formId,
             path: formInfo.fullPath,
-            sources: [{ type: 'role', label: roleInfo?.title || roleInfo?.name }],
+            sources: [{ type: 'role', label: roleInfo?.title }],
             roleActions: p.actions, 
             roleScopes: p.dataScopes,
             directActions: [],
@@ -205,11 +210,12 @@ const UserManagement = ({ t, isRtl }) => {
           });
         } else {
           const item = map.get(p.formId);
-          item.sources.push({ type: 'role', label: roleInfo?.title || roleInfo?.name });
+          item.sources.push({ type: 'role', label: roleInfo?.title });
         }
       });
     });
 
+    // 2. Process Direct
     directPermissions.forEach(p => {
       const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
       if (!formInfo) return;
@@ -218,7 +224,7 @@ const UserManagement = ({ t, isRtl }) => {
         map.set(p.formId, {
           id: p.formId,
           path: formInfo.fullPath,
-          sources: [{ type: 'direct', label: t.permTypeUser }],
+          sources: [{ type: 'direct', label: 'مستقیم' }],
           roleActions: [],
           roleScopes: {},
           directActions: p.actions || [],
@@ -226,26 +232,29 @@ const UserManagement = ({ t, isRtl }) => {
         });
       } else {
         const item = map.get(p.formId);
-        item.sources.push({ type: 'direct', label: t.permTypeUser });
+        item.sources.push({ type: 'direct', label: 'مستقیم' });
         item.directActions = p.actions || [];
         item.directScopes = p.dataScopes || {};
       }
     });
 
     return Array.from(map.values());
-  }, [assignedRoles, directPermissions, ALL_SYSTEM_FORMS, t, isRtl]);
+  }, [assignedRoles, directPermissions, ALL_SYSTEM_FORMS]);
 
+  // Sync Sidebar State
   useEffect(() => {
     if (selectedPermDetail) {
       const updated = effectivePermissions.find(p => p.id === selectedPermDetail.id);
-      if (updated) setSelectedPermDetail(updated);
+      if (updated) {
+        setSelectedPermDetail(updated);
+      }
     }
   }, [effectivePermissions]);
 
   // --- HANDLERS ---
   const handleCreate = () => {
     setEditingUser(null);
-    setUserFormData({ username: '', partyId: '', userType: t.roleUser, isActive: true, password: '' });
+    setUserFormData({ username: '', partyId: '', userType: 'کارشناس', isActive: true, password: '' });
     setIsEditModalOpen(true);
   };
 
@@ -258,11 +267,11 @@ const UserManagement = ({ t, isRtl }) => {
   };
 
   const handleSaveUser = () => {
-    if (!userFormData.username || !userFormData.partyId) return alert(t.invalidOtp);
-    if (!editingUser && !userFormData.password) return alert(t.fieldPassword);
+    if (!userFormData.username || !userFormData.partyId) return alert('لطفا نام کاربری و طرف حساب را مشخص کنید.');
+    if (!editingUser && !userFormData.password) return alert('لطفا رمز عبور را وارد کنید.');
 
     if (editingUser) {
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...userFormData } : u));
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...userFormData, id: u.id } : u));
     } else {
       setUsers(prev => [...prev, { id: Date.now(), ...userFormData, lastLogin: '-', roleIds: [] }]);
     }
@@ -270,8 +279,8 @@ const UserManagement = ({ t, isRtl }) => {
   };
 
   const handleResetPassword = (user) => {
-    if (confirm(t.confirmDelete)) {
-      alert(t.passwordResetMsg);
+    if (confirm(`آیا مطمئن هستید که می‌خواهید رمز عبور "${user.username}" را بازنشانی کنید؟`)) {
+      alert('رمز عبور به 123456 تغییر یافت.');
     }
   };
 
@@ -298,7 +307,11 @@ const UserManagement = ({ t, isRtl }) => {
   };
 
   const handleAddDirectForm = (form) => {
-    if (directPermissions.find(p => p.formId === form.id)) return;
+    const exists = directPermissions.find(p => p.formId === form.id);
+    if (exists) {
+        alert('این فرم قبلاً به لیست دسترسی‌های مستقیم اضافه شده است.');
+        return;
+    }
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
@@ -307,7 +320,13 @@ const UserManagement = ({ t, isRtl }) => {
   const handleUpdateDirectPermission = (formId, type, key, value) => {
     setDirectPermissions(prev => {
         const existingDirect = prev.find(p => p.formId === formId);
-        let targetEntry = existingDirect ? { ...existingDirect } : { formId, actions: [], dataScopes: {} };
+        
+        let targetEntry;
+        if (!existingDirect) {
+            targetEntry = { formId: formId, actions: [], dataScopes: {} };
+        } else {
+            targetEntry = { ...existingDirect };
+        }
 
         if (type === 'action') {
             const has = targetEntry.actions.includes(key);
@@ -315,207 +334,311 @@ const UserManagement = ({ t, isRtl }) => {
         } else if (type === 'scope') {
             const currentScopes = targetEntry.dataScopes[key] || [];
             const has = currentScopes.includes(value);
-            targetEntry.dataScopes = { ...targetEntry.dataScopes, [key]: has ? currentScopes.filter(v => v !== value) : [...currentScopes, value] };
+            const newValues = has ? currentScopes.filter(v => v !== value) : [...currentScopes, value];
+            targetEntry.dataScopes = { ...targetEntry.dataScopes, [key]: newValues };
         }
-        return existingDirect ? prev.map(p => p.formId === formId ? targetEntry : p) : [...prev, targetEntry];
+
+        if (!existingDirect) {
+            return [...prev, targetEntry];
+        } else {
+            return prev.map(p => p.formId === formId ? targetEntry : p);
+        }
     });
   };
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchName = !appliedFilters.username || user.username.toLowerCase().includes(appliedFilters.username.toLowerCase());
-      const matchRole = appliedFilters.roleIds.length === 0 || appliedFilters.roleIds.some(rId => user.roleIds?.includes(rId));
+      let matchRole = true;
+      if (appliedFilters.roleIds && appliedFilters.roleIds.length > 0) {
+        if (!user.roleIds || user.roleIds.length === 0) {
+            matchRole = false;
+        } else {
+            matchRole = appliedFilters.roleIds.some(rId => user.roleIds.includes(rId));
+        }
+      }
       return matchName && matchRole;
     });
   }, [users, appliedFilters]);
 
   const formSearchResults = useMemo(() => {
      if (!formSearchTerm) return [];
-     return ALL_SYSTEM_FORMS.filter(f => f.fullPath.toLowerCase().includes(formSearchTerm.toLowerCase()));
+     return ALL_SYSTEM_FORMS.filter(f => f.fullPath.includes(formSearchTerm));
   }, [formSearchTerm, ALL_SYSTEM_FORMS]);
 
   const roleSearchResults = useMemo(() => {
      return MOCK_ROLES_LIST.filter(r => 
         !assignedRoles.includes(r.id) && 
-        (r.title || r.name).toLowerCase().includes(roleSearchTerm.toLowerCase())
+        r.title.toLowerCase().includes(roleSearchTerm.toLowerCase())
      );
   }, [roleSearchTerm, assignedRoles]);
 
   // --- COLUMNS ---
   const columns = [
-    { header: t.colId, field: 'id', width: 'w-16', sortable: true },
-    { header: t.colUsername, field: 'username', width: 'w-32', sortable: true },
-    { header: t.colLinkedPerson, field: 'partyId', width: 'w-48', render: (row) => <span className="font-bold text-slate-700">{getPartyName(row.partyId)}</span> },
-    { header: t.colUserType, field: 'userType', width: 'w-32', sortable: true },
-    { header: t.permissions, field: 'roleIds', width: 'w-48', render: (r) => (
+    { header: 'شناسه', field: 'id', width: 'w-16', sortable: true },
+    { header: 'نام کاربری', field: 'username', width: 'w-32', sortable: true },
+    { header: 'نام شخص / شرکت', field: 'partyId', width: 'w-48', render: (row) => <span className="font-bold text-slate-700">{getPartyName(row.partyId)}</span> },
+    { header: 'نوع کاربری', field: 'userType', width: 'w-32', sortable: true },
+    { header: 'نقش‌ها', field: 'roleIds', width: 'w-48', render: (r) => (
         <div className="flex flex-wrap gap-1">
-            {r.roleIds?.map(rid => {
+            {r.roleIds && r.roleIds.map(rid => {
                 const role = MOCK_ROLES_LIST.find(x => x.id === rid);
-                return role ? <Badge key={rid} variant="neutral" className="px-1 py-0 text-[9px]">{role.title || role.name}</Badge> : null;
+                return role ? <Badge key={rid} variant="neutral" className="px-1 py-0 text-[9px]">{role.title}</Badge> : null;
             })}
         </div>
     )},
-    { header: t.colStatus, field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? t.active : t.inactive}</Badge> },
+    { header: 'آخرین ورود', field: 'lastLogin', width: 'w-32', render: (r) => <span className="dir-ltr font-mono text-xs text-slate-500">{r.lastLogin}</span> },
+    { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
 
+  // Widened columns for modal grid
   const permColumns = [
-    { header: t.permColForms, field: 'path', width: 'w-full', render: (r) => <div className="text-[11px] font-medium flex items-center gap-2"><FileText size={12} className="text-indigo-400"/>{r.path}</div> },
-    { header: t.permColSource, field: 'source', width: 'w-48', render: (r) => (
+    { header: 'مسیر فرم', field: 'path', width: 'w-full', render: (r) => <div className="text-[11px] font-medium flex items-center gap-2"><FileText size={12} className="text-indigo-400"/>{r.path}</div> },
+    { header: 'منبع دسترسی', field: 'source', width: 'w-48', render: (r) => (
        <div className="flex flex-wrap gap-1">
           {r.sources.map((s, idx) => (
-             <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>{s.label}</Badge>
+             <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>
+                {s.type === 'role' ? `نقش: ${s.label}` : 'مستقیم'}
+             </Badge>
           ))}
        </div>
     )},
   ];
 
   const AVAILABLE_ACTIONS = [
-      { id: 'create', label: t.create }, { id: 'edit', label: t.edit }, { id: 'view', label: t.view }, { id: 'delete', label: t.delete },
-      { id: 'print', label: t.print }, { id: 'approve', label: t.approve || "تایید" }, { id: 'export', label: t.export }, { id: 'share', label: t.share || "اشتراک" },
+      { id: 'create', label: 'ایجاد' }, { id: 'edit', label: 'ویرایش' }, { id: 'view', label: 'مشاهده' }, { id: 'delete', label: 'حذف' },
+      { id: 'print', label: 'چاپ' }, { id: 'approve', label: 'تایید' }, { id: 'export', label: 'خروجی' }, { id: 'share', label: 'اشتراک' },
   ];
 
   const DATA_SCOPES = { 
-     'docType': { label: t.field_docType, options: [{value:'عمومی', label:t.field_general}, {value:'افتتاحیه', label:t.field_opening}] },
-     'status': { label: t.col_status, options: [{value:'موقت', label:t.status_draft}, {value:'قطعی', label:t.status_final}] }
+     'docType': { label: 'نوع سند', options: [{value:'عمومی', label:'عمومی'}, {value:'افتتاحیه', label:'افتتاحیه'}] },
+     'status': { label: 'وضعیت', options: [{value:'موقت', label:'موقت'}, {value:'قطعی', label:'قطعی'}] }
   };
 
   return (
     <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
+      
       <div className="flex items-center justify-between mb-4 shrink-0">
-         <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <Users className="text-indigo-600" size={24}/> {t.usersListTitle}
-         </h1>
+         <div>
+            <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
+               <Users className="text-indigo-600" size={24}/> مدیریت کاربران
+            </h1>
+         </div>
       </div>
 
-      <FilterSection title={t.filters} onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: '', roleIds: []}); setAppliedFilters({username: '', roleIds: []})}} isRtl={isRtl}>
-         <InputField label={t.colUsername} value={filterValues.username} onChange={(e) => setFilterValues({...filterValues, username: e.target.value})} placeholder={t.search} isRtl={isRtl} />
+      <FilterSection title="جستجوی پیشرفته" onSearch={() => setAppliedFilters(filterValues)} onClear={() => {setFilterValues({username: '', roleIds: []}); setAppliedFilters({username: '', roleIds: []})}} isRtl={isRtl}>
+         <InputField label="نام کاربری" value={filterValues.username} onChange={(e) => setFilterValues({...filterValues, username: e.target.value})} placeholder="جستجو..." isRtl={isRtl} />
          <div>
-           <label className="block text-[11px] font-bold text-slate-600 mb-1">{t.permissions}</label>
+           <label className="block text-[11px] font-bold text-slate-600 mb-1">نقش‌های کاربری</label>
            <MultiSelect 
-             options={MOCK_ROLES_LIST.map(r => ({id: r.id, label: r.title || r.name}))}
+             options={MOCK_ROLES_LIST.map(r => ({id: r.id, label: r.title}))}
              value={filterValues.roleIds}
              onChange={(vals) => setFilterValues({...filterValues, roleIds: vals})}
-             placeholder={t.selectPersonPlaceholder}
+             placeholder="انتخاب نقش‌ها..."
            />
          </div>
       </FilterSection>
 
       <div className="flex-1 min-h-0">
          <DataGrid 
-            title={t.grid_title} columns={columns} data={filteredUsers} isRtl={isRtl}
+            title="لیست کاربران" columns={columns} data={filteredUsers} isRtl={isRtl}
             selectedIds={selectedRows} onSelectAll={(c) => setSelectedRows(c ? filteredUsers.map(r => r.id) : [])}
             onSelectRow={(id, c) => setSelectedRows(p => c ? [...p, id] : p.filter(r => r !== id))}
             onCreate={handleCreate} onDelete={(ids) => setUsers(prev => prev.filter(u => !ids.includes(u.id)))}
             actions={(row) => (
                <>
-                 <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleEdit(row)} title={t.edit} />
-                 <Button variant="ghost" size="iconSm" icon={Shield} className="text-purple-600" onClick={() => handleOpenPermissions(row)} title={t.viewPermissions} />
-                 <Button variant="ghost" size="iconSm" icon={RefreshCw} className="text-amber-600" onClick={() => handleResetPassword(row)} title={t.resetDefault} />
+                 <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleEdit(row)} title="ویرایش" />
+                 <Button variant="ghost" size="iconSm" icon={Shield} className="text-purple-600" onClick={() => handleOpenPermissions(row)} title="دسترسی‌ها" />
+                 <Button variant="ghost" size="iconSm" icon={RefreshCw} className="text-amber-600" onClick={() => handleResetPassword(row)} title="ریست رمز" />
                </>
             )}
          />
       </div>
 
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={editingUser ? t.editUserTitle : t.newUserTitle} size="md"
-         footer={<><Button variant="secondary" onClick={() => setIsEditModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" icon={Check} onClick={handleSaveUser}>{t.btn_save}</Button></>}>
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={editingUser ? "ویرایش کاربر" : "تعریف کاربر جدید"} size="md"
+         footer={<><Button variant="secondary" onClick={() => setIsEditModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Check} onClick={handleSaveUser}>ذخیره</Button></>}>
          <div className="grid grid-cols-2 gap-4">
-            <InputField label={t.colUsername} value={userFormData.username} onChange={(e) => setUserFormData({...userFormData, username: e.target.value})} isRtl={isRtl} className="dir-ltr" />
-            <SelectField label={t.colUserType} value={userFormData.userType} onChange={(e) => setUserFormData({...userFormData, userType: e.target.value})} isRtl={isRtl}>
-               <option value="مدیر سیستم">{t.roleAdmin}</option><option value="کارشناس">{t.roleUser}</option>
+            <InputField label="نام کاربری" value={userFormData.username} onChange={(e) => setUserFormData({...userFormData, username: e.target.value})} isRtl={isRtl} className="dir-ltr" />
+            <SelectField label="نوع کاربری" value={userFormData.userType} onChange={(e) => setUserFormData({...userFormData, userType: e.target.value})} isRtl={isRtl}>
+               <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
             </SelectField>
+            
             <div className="col-span-2 grid grid-cols-2 gap-4">
-                <InputField label={t.fieldPassword} type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} disabled={!!editingUser} placeholder="********" />
-                <SelectField label={t.fieldLinkedPerson} value={userFormData.partyId} onChange={(e) => setUserFormData({...userFormData, partyId: Number(e.target.value)})} isRtl={isRtl}>
-                    <option value="">{t.selectPersonPlaceholder}</option>
-                    {MOCK_PARTIES.map(p => <option key={p.id} value={p.id}>{p.fullName || p.name} ({p.partyCode || p.code})</option>)}
+                {!editingUser ? (
+                    <InputField label="رمز عبور" type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} isRtl={isRtl} className="dir-ltr" placeholder="********" />
+                ) : (
+                    <div className="opacity-50">
+                        <InputField label="رمز عبور" disabled value="********" isRtl={isRtl} />
+                    </div>
+                )}
+                
+                <SelectField label="اتصال به شخص / طرف حساب" value={userFormData.partyId} onChange={(e) => setUserFormData({...userFormData, partyId: Number(e.target.value)})} isRtl={isRtl}>
+                    <option value="">-- انتخاب کنید --</option>
+                    {MOCK_PARTIES.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
                 </SelectField>
             </div>
+            
             <div className="col-span-2 flex items-center justify-between pt-2">
-               <span className="text-xs font-bold text-slate-700">{t.colStatus}:</span>
-               <Toggle checked={userFormData.isActive} onChange={(val) => setUserFormData({...userFormData, isActive: val})} label={userFormData.isActive ? t.active : t.inactive} />
+               <span className="text-xs font-bold text-slate-700">وضعیت حساب:</span>
+               <Toggle checked={userFormData.isActive} onChange={(val) => setUserFormData({...userFormData, isActive: val})} label={userFormData.isActive ? "فعال" : "غیرفعال"} />
             </div>
          </div>
       </Modal>
 
-      <Modal isOpen={isPermModalOpen} onClose={() => setIsPermModalOpen(false)} title={`${t.permModalTitle}: ${viewingUser?.username}`} size="xl"
-         footer={<Button variant="primary" onClick={() => setIsPermModalOpen(false)}>{t.btn_save}</Button>}>
+      <Modal isOpen={isPermModalOpen} onClose={() => setIsPermModalOpen(false)} title={`مدیریت دسترسی‌های: ${viewingUser?.username}`} size="xl"
+         footer={<Button variant="primary" onClick={() => setIsPermModalOpen(false)}>تایید و بستن</Button>}>
          <div className="flex flex-col h-[600px]">
+            
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 flex items-center justify-between">
                <div className="flex items-center gap-2 overflow-x-auto">
                   <Shield size={16} className="text-purple-600 shrink-0"/>
-                  <span className="text-xs font-bold text-slate-700 shrink-0">{t.permissions}:</span>
+                  <span className="text-xs font-bold text-slate-700 shrink-0">نقش‌های تخصیص یافته:</span>
                   <div className="flex gap-1 mr-2">
                      {assignedRoles.map(rId => {
                         const role = MOCK_ROLES_LIST.find(r => r.id === rId);
                         return (
                            <div key={rId} className="flex items-center gap-1 bg-white border border-purple-200 text-purple-700 px-2 py-1 rounded-md text-[11px] font-bold shadow-sm whitespace-nowrap">
-                              {role?.title || role?.name}
-                              <button onClick={() => handleRemoveRole(rId)} className="hover:text-red-500 p-0.5"><X size={10}/></button>
+                              {role?.title}
+                              <button onClick={() => handleRemoveRole(rId)} className="hover:text-red-500 rounded-full p-0.5"><X size={10}/></button>
                            </div>
                         );
                      })}
+                     {assignedRoles.length === 0 && <span className="text-[10px] text-slate-400 italic mt-1">بدون نقش</span>}
                   </div>
                </div>
-               <div className="relative w-64">
-                   <div className="flex items-center border border-slate-300 rounded bg-white px-2 h-8 cursor-text" onClick={() => setIsRoleSearchOpen(!isRoleSearchOpen)}>
-                       <input className="w-full text-[11px] outline-none" placeholder={t.search} value={roleSearchTerm} onChange={(e) => { setRoleSearchTerm(e.target.value); setIsRoleSearchOpen(true); }} />
+               
+               <div className="relative shrink-0 w-64">
+                   <div 
+                     className="flex items-center border border-slate-300 rounded bg-white px-2 h-8 cursor-text"
+                     onClick={() => setIsRoleSearchOpen(!isRoleSearchOpen)}
+                   >
+                       <input 
+                         className="w-full text-[11px] outline-none"
+                         placeholder="افزودن نقش (جستجو)..."
+                         value={roleSearchTerm}
+                         onChange={(e) => { setRoleSearchTerm(e.target.value); setIsRoleSearchOpen(true); }}
+                       />
                        <ChevronDown size={14} className="text-slate-400"/>
                    </div>
                    {isRoleSearchOpen && (
                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-[60] max-h-40 overflow-y-auto">
-                           {roleSearchResults.map(r => (
-                               <div key={r.id} onClick={() => handleAddRole(r.id)} className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-[11px] text-slate-700 border-b border-slate-50">{r.title || r.name}</div>
-                           ))}
+                           {roleSearchResults.length > 0 ? roleSearchResults.map(r => (
+                               <div key={r.id} onClick={() => handleAddRole(r.id)} className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-[11px] text-slate-700 border-b border-slate-50">
+                                   {r.title}
+                               </div>
+                           )) : (
+                               <div className="p-2 text-center text-slate-400 text-[10px]">نقشی یافت نشد</div>
+                           )}
                        </div>
                    )}
+                   {isRoleSearchOpen && <div className="fixed inset-0 z-[-1]" onClick={() => setIsRoleSearchOpen(false)}></div>}
                </div>
             </div>
 
             <div className="flex flex-1 border border-slate-200 rounded-lg overflow-hidden">
-               <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col bg-white relative`}>
+               <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col transition-all duration-300 bg-white relative`}>
+                  
+                  {/* SEARCH FORM WRAPPER - High Z-Index */}
                   <div className="p-2 border-b border-slate-100 bg-white relative z-[50]">
                      <div className="relative">
-                        <input value={formSearchTerm} onChange={(e) => { setFormSearchTerm(e.target.value); setShowFormResults(true); }} placeholder={t.permSelectForm} className="w-full h-9 bg-slate-50 border border-slate-200 rounded text-xs pr-8 pl-2 outline-none focus:border-indigo-400 transition-all" />
+                        <input 
+                           value={formSearchTerm}
+                           onChange={(e) => { setFormSearchTerm(e.target.value); setShowFormResults(true); }}
+                           placeholder="افزودن دسترسی مستقیم (نام فرم را جستجو کنید)..."
+                           className="w-full h-9 bg-slate-50 border border-slate-200 rounded text-xs pr-8 pl-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all"
+                        />
                         <Search size={14} className="absolute top-2.5 right-2.5 text-slate-400"/>
                         {showFormResults && formSearchTerm && (
                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto z-[100]">
-                              {formSearchResults.map(f => (
-                                 <div key={f.id} onClick={() => handleAddDirectForm(f)} className="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50">
+                              {formSearchResults.length > 0 ? formSearchResults.map(f => (
+                                 <div key={f.id} onClick={() => handleAddDirectForm(f)} className="p-2 hover:bg-indigo-50 cursor-pointer text-xs border-b border-slate-50 last:border-0">
                                     <div className="font-bold text-slate-700">{f.label[isRtl ? 'fa' : 'en']}</div>
                                     <div className="text-[10px] text-slate-400">{f.fullPath}</div>
                                  </div>
-                              ))}
+                              )) : (
+                                 <div className="p-2 text-xs text-slate-400 text-center">موردی یافت نشد</div>
+                              )}
                            </div>
                         )}
+                        {showFormResults && formSearchTerm && <div className="fixed inset-0 z-[-1]" onClick={() => setShowFormResults(false)}></div>}
                      </div>
                   </div>
-                  <DataGrid columns={permColumns} data={effectivePermissions} isRtl={isRtl} actions={(row) => <Button variant="ghost" size="iconSm" icon={ChevronLeft} onClick={() => setSelectedPermDetail(row)} className={selectedPermDetail?.id === row.id ? 'bg-indigo-50' : ''} />} />
+
+                  {/* GRID CONTAINER - Lower Z-Index */}
+                  <div className="flex-1 overflow-hidden z-0">
+                     <DataGrid 
+                        columns={permColumns} data={effectivePermissions} isRtl={isRtl}
+                        onSelectRow={(id) => {
+                           const item = effectivePermissions.find(p => p.id === id);
+                           if(item) setSelectedPermDetail(item);
+                        }}
+                        actions={(row) => (
+                           <div className="flex gap-1">
+                              <Button variant="ghost" size="iconSm" icon={ChevronLeft} onClick={() => setSelectedPermDetail(row)} 
+                                className={selectedPermDetail?.id === row.id ? 'bg-indigo-50 text-indigo-700' : ''} />
+                           </div>
+                        )}
+                     />
+                  </div>
                </div>
 
                {selectedPermDetail && (
-                  <div className="w-1/2 border-r border-slate-200 bg-slate-50 flex flex-col relative shadow-xl z-10">
-                     <div className="absolute top-2 left-2"><button onClick={() => setSelectedPermDetail(null)} className="p-1 hover:bg-slate-200 rounded text-slate-500"><X size={14}/></button></div>
+                  <div className="w-1/2 border-r border-slate-200 bg-slate-50 flex flex-col animate-in slide-in-from-right-5 duration-200 relative shadow-xl z-10">
+                     <div className="absolute top-2 left-2">
+                        <button onClick={() => setSelectedPermDetail(null)} className="p-1 hover:bg-slate-200 rounded text-slate-500"><X size={14}/></button>
+                     </div>
+                     
                      <div className="p-4 border-b border-slate-200 bg-white">
                         <h3 className="font-black text-slate-800 text-sm mb-1">{selectedPermDetail.path.split('/').pop().trim()}</h3>
-                        <div className="flex flex-wrap gap-1 mt-2">{selectedPermDetail.sources.map((s, i) => <Badge key={i} variant={s.type === 'role' ? 'purple' : 'info'}>{s.label}</Badge>)}</div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                           {selectedPermDetail.sources.map((s, idx) => (
+                              <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>{s.type === 'role' ? `نقش: ${s.label}` : 'مستقیم'}</Badge>
+                           ))}
+                        </div>
                      </div>
+
                      <div className="p-5 flex-1 overflow-y-auto space-y-6">
                         {(() => {
                            const hasDirect = selectedPermDetail.sources.some(s => s.type === 'direct');
                            return (
                               <>
-                                 {!hasDirect && <div className="bg-amber-50 border border-amber-200 p-2 rounded text-[10px] text-amber-700 flex items-center gap-1 mb-2"><Lock size={10}/> {t.permTypeRole}</div>}
+                                 {!hasDirect && (
+                                    <div className="bg-amber-50 border border-amber-200 p-2 rounded text-[10px] text-amber-700 flex items-center gap-1 mb-2">
+                                       <Lock size={10}/> دسترسی فعلی از طریق نقش است. برای تغییر، روی گزینه‌ها کلیک کنید تا دسترسی مستقیم اضافه شود.
+                                    </div>
+                                 )}
+
                                  <div>
-                                    <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">{t.permColOps}</div>
-                                    <SelectionGrid items={AVAILABLE_ACTIONS} selectedIds={hasDirect ? selectedPermDetail.directActions : selectedPermDetail.roleActions} onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)} columns={4} />
+                                    <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">عملیات مجاز</div>
+                                    <SelectionGrid 
+                                        items={AVAILABLE_ACTIONS}
+                                        selectedIds={hasDirect ? selectedPermDetail.directActions || [] : selectedPermDetail.roleActions || []}
+                                        onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)}
+                                        columns={4}
+                                    />
                                  </div>
+
                                  <div className="pt-4 border-t border-slate-200">
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">دسترسی داده</div>
-                                    {Object.entries(DATA_SCOPES).map(([k, d]) => (
-                                        <div key={k} className="bg-white p-3 rounded-lg border border-slate-200 mb-3">
-                                            <span className="text-[11px] font-bold block mb-2 text-slate-700">{d.label}:</span>
+                                    {Object.entries(DATA_SCOPES).map(([key, def]) => (
+                                        <div key={key} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-3">
+                                            <span className="text-[11px] font-bold block mb-2 text-slate-700">{def.label}:</span>
                                             <div className="flex flex-wrap gap-2">
-                                                {d.options.map(o => <ToggleChip key={o.value} label={o.label} checked={hasDirect ? selectedPermDetail.directScopes?.[k]?.includes(o.value) : selectedPermDetail.roleScopes?.[k]?.includes(o.value)} onClick={() => handleUpdateDirectPermission(selectedPermDetail.id, 'scope', k, o.value)} colorClass={hasDirect ? 'green' : 'indigo'} />)}
+                                                {def.options.map(opt => {
+                                                    const roleHas = selectedPermDetail.roleScopes?.[key]?.includes(opt.value);
+                                                    const directHas = selectedPermDetail.directScopes?.[key]?.includes(opt.value);
+                                                    const isChecked = hasDirect ? directHas : roleHas;
+                                                    
+                                                    return (
+                                                        <ToggleChip 
+                                                            key={opt.value} 
+                                                            label={opt.label} 
+                                                            checked={isChecked}
+                                                            onClick={() => handleUpdateDirectPermission(selectedPermDetail.id, 'scope', key, opt.value)}
+                                                            colorClass={hasDirect ? 'green' : 'indigo'} 
+                                                        />
+                                                    )
+                                                })}
                                             </div>
                                         </div>
                                     ))}
@@ -529,6 +652,7 @@ const UserManagement = ({ t, isRtl }) => {
             </div>
          </div>
       </Modal>
+
     </div>
   );
 };
