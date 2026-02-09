@@ -10,7 +10,8 @@ const {
   CreditCard, Lock, Mail, User, LogOut, ShieldCheck, Building2, Phone, CheckCircle2, 
   RefreshCw, ChevronDown, Briefcase, UserCheck, GitBranch, Key, Globe, Filter, X, 
   Calendar, Layers, ChevronRightSquare, LayoutGrid, Edit, Trash2, Save, MoreHorizontal,
-  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info
+  XCircle, FileText, CheckSquare, Eye, MousePointerClick, Component, Info, Moon, Sun,
+  Shield
 } = LucideIcons;
 
 // --- توابع کمکی (Helper Functions) ---
@@ -240,6 +241,85 @@ window.MOCK_STATS = [
   { id: 4, label: { en: 'Active Accounts', fa: 'حساب‌های فعال' }, value: '18', change: '0', icon: UserCheck, color: 'text-purple-600' },
 ];
 
+// --- Schema for Default Values (ساختار تنظیمات پیش‌فرض) ---
+window.DEFAULT_VALUES_SCHEMA = [
+  {
+    moduleId: 'accounting',
+    label: { en: 'Accounting & Finance', fa: 'حسابداری و مالی' },
+    icon: BarChart3,
+    groups: [
+      {
+        groupId: 'gl',
+        label: { en: 'General Ledger', fa: 'دفتر کل' },
+        fields: [
+          { 
+            key: 'defaultDocType', 
+            label: { en: 'Default Document Type', fa: 'نوع سند پیش‌فرض' },
+            type: 'select',
+            options: [
+              { value: 'general', label: { en: 'General', fa: 'عمومی' } },
+              { value: 'opening', label: { en: 'Opening', fa: 'افتتاحیه' } },
+              { value: 'closing', label: { en: 'Closing', fa: 'اختتامیه' } }
+            ]
+          },
+          { 
+            key: 'autoPost', 
+            label: { en: 'Auto Post Documents', fa: 'قطعی شدن خودکار اسناد' },
+            type: 'toggle'
+          }
+        ]
+      },
+      {
+        groupId: 'treasury',
+        label: { en: 'Treasury', fa: 'خزانه‌داری' },
+        fields: [
+          {
+            key: 'paymentType',
+            label: { en: 'Default Payment Type', fa: 'نوع پرداخت پیش‌فرض' },
+            type: 'select',
+            options: [
+              { value: 'expense', label: { en: 'Expense', fa: 'هزینه' } },
+              { value: 'prepayment', label: { en: 'Prepayment', fa: 'پیش‌پرداخت' } },
+              { value: 'transfer', label: { en: 'Transfer', fa: 'انتقال' } }
+            ]
+          },
+          {
+             key: 'defaultBank',
+             label: { en: 'Default Bank Account', fa: 'حساب بانکی پیش‌فرض' },
+             type: 'select',
+             options: [
+                { value: 'mellat', label: { en: 'Mellat Bank - Main', fa: 'بانک ملت - اصلی' } },
+                { value: 'pasargad', label: { en: 'Pasargad Bank', fa: 'بانک پاسارگاد' } }
+             ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    moduleId: 'hr',
+    label: { en: 'Human Resources', fa: 'منابع انسانی' },
+    icon: Users,
+    groups: [
+      {
+        groupId: 'recruitment',
+        label: { en: 'Recruitment', fa: 'استخدام' },
+        fields: [
+          {
+             key: 'probationPeriod',
+             label: { en: 'Default Probation (Months)', fa: 'مدت آزمایشی پیش‌فرض (ماه)' },
+             type: 'select',
+             options: [
+                { value: '1', label: { en: '1 Month', fa: '۱ ماه' } },
+                { value: '3', label: { en: '3 Months', fa: '۳ ماه' } }
+             ]
+          }
+        ]
+      }
+    ]
+  }
+];
+
 // --- دیکشنری ترجمه (Translations) ---
 window.translations = {
   en: {
@@ -283,6 +363,24 @@ window.translations = {
     all: 'All',
     emptyPage: 'This module is currently empty or under development.',
     uiKitTitle: 'Design System Showcase',
+    
+    // User Profile Translations
+    profileTitle: 'User Profile',
+    profileSubtitle: 'Manage your account settings and preferences',
+    personalInfo: 'Personal Information',
+    security: 'Security',
+    preferences: 'System Preferences',
+    defaultValues: 'Default Values',
+    defaultValuesDesc: 'Set default values for faster data entry across the system.',
+    changePass: 'Change Password',
+    changePassDesc: 'Update your password securely.',
+    currentPass: 'Current Password',
+    theme: 'Theme',
+    themeLight: 'Light Mode',
+    themeDark: 'Dark Mode',
+    langSettings: 'Language',
+    saveDefaults: 'Save Default Values',
+    defaultsSaved: 'Default values saved successfully.',
     
     // Showcase & Accounting Translations
     acc_mgmt_title: "Accounting Document Management",
@@ -451,6 +549,24 @@ window.translations = {
     all: 'همه',
     emptyPage: 'این بخش در حال حاضر خالی است یا در دست توسعه می‌باشد.',
     uiKitTitle: 'نمایش دیزاین سیستم',
+
+    // User Profile Translations
+    profileTitle: 'پروفایل کاربری',
+    profileSubtitle: 'مدیریت تنظیمات حساب و اولویت‌های شخصی',
+    personalInfo: 'اطلاعات فردی',
+    security: 'امنیت',
+    preferences: 'تنظیمات سیستم',
+    defaultValues: 'مقادیر پیش‌فرض',
+    defaultValuesDesc: 'تعیین مقادیر پیش‌فرض برای افزایش سرعت ورود اطلاعات در سیستم.',
+    changePass: 'تغییر رمز عبور',
+    changePassDesc: 'به‌روزرسانی امن کلمه عبور',
+    currentPass: 'رمز عبور فعلی',
+    theme: 'تم سیستم',
+    themeLight: 'حالت روشن',
+    themeDark: 'حالت تاریک',
+    langSettings: 'زبان',
+    saveDefaults: 'ذخیره مقادیر پیش‌فرض',
+    defaultsSaved: 'مقادیر پیش‌فرض با موفقیت ذخیره شد.',
     
     // Showcase & Accounting Translations
     acc_mgmt_title: "مدیریت اسناد حسابداری",
