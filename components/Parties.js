@@ -11,8 +11,7 @@ const Parties = ({ t, isRtl }) => {
 
   const { 
     Users, Building2, User, Plus, Edit, Trash2, Check, X, 
-    MapPin, Phone, Mail, Globe, Hash, ShieldAlert,
-    CreditCard, Info, Search, ChevronDown
+    Link2, ShieldAlert, ChevronDown
   } = LucideIcons;
 
   // --- INTERNAL COMPONENT: MULTI-SELECT ---
@@ -49,7 +48,7 @@ const Parties = ({ t, isRtl }) => {
         </div>
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-[100] max-h-48 overflow-y-auto p-2">
-            <input className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 mb-2 outline-none" placeholder="جستجو..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClick={e => e.stopPropagation()}/>
+            <input className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 mb-2 outline-none" placeholder={t.searchMenu || "Search..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClick={e => e.stopPropagation()}/>
             {filteredOptions.map(opt => (
               <div key={opt.id} className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-slate-50 flex items-center justify-between ${value.includes(opt.id) ? 'bg-indigo-50 text-indigo-700 font-bold' : ''}`} onClick={() => toggleOption(opt.id)}>
                 {opt.label} {value.includes(opt.id) && <Check size={12}/>}
@@ -78,10 +77,14 @@ const Parties = ({ t, isRtl }) => {
   const [filterValues, setFilterValues] = useState({ roles: [], detailCode: '', status: 'all', type: 'all' });
   const [appliedFilters, setAppliedFilters] = useState({ roles: [], detailCode: '', status: 'all', type: 'all' });
 
+  // CRUD States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingParty, setEditingParty] = useState(null);
-  const [showDetailSidebar, setShowDetailSidebar] = useState(false);
-  const [currentPartyForDetail, setCurrentPartyForDetail] = useState(null);
+  
+  // Detail Code Modal States
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [targetForDetail, setTargetForDetail] = useState(null);
+  const [detailCodeInput, setDetailCodeInput] = useState('');
 
   const initialForm = {
     type: 'person', firstName: '', lastName: '', name: '', fullName: '',
@@ -134,17 +137,67 @@ const Parties = ({ t, isRtl }) => {
     else setParties(prev => [...prev, newParty]);
 
     setIsModalOpen(false);
-    setCurrentPartyForDetail(newParty);
-    setShowDetailSidebar(true);
   };
 
+  const handleDelete = (ids) => {
+    if (confirm(t.confirm_delete.replace('{0}', ids.length))) {
+      setParties(prev => prev.filter(item => !ids.includes(item.id)));
+    }
+  };
+
+  const handleToggleActive = (id, newVal) => {
+    setParties(prev => prev.map(item => item.id === id ? { ...item, isActive: newVal } : item));
+  };
+
+  // Detail Code Handlers
+  const handleOpenDetailModal = (row) => {
+    setTargetForDetail(row);
+    setDetailCodeInput(row.detailCode || '');
+    setIsDetailModalOpen(true);
+  };
+
+  const handleSaveDetailCode = () => {
+    if (targetForDetail) {
+      setParties(prev => prev.map(item => item.id === targetForDetail.id ? { ...item, detailCode: detailCodeInput || null } : item));
+      setIsDetailModalOpen(false);
+    }
+  };
+
+  // --- COLUMNS ---
   const columns = [
     { header: 'نوع', field: 'type', width: 'w-20', render: (r) => r.type === 'person' ? <User size={14} className="text-blue-500"/> : <Building2 size={14} className="text-indigo-500"/> },
     { header: 'نام کامل', field: 'fullName', width: 'w-48', render: (r) => <span className="font-bold text-slate-700">{r.fullName}</span> },
     { header: 'شناسه/کد ملی', field: 'nationalId', width: 'w-32', className: 'font-mono' },
-    { header: 'کد تفصیلی', field: 'detailCode', width: 'w-32', render: (r) => r.detailCode ? <Badge variant="info">{r.detailCode}</Badge> : <div className="flex items-center gap-1 text-red-500 font-bold text-[10px] animate-pulse"><ShieldAlert size={12}/> کد تفصیلی ندارد</div> },
+    { 
+      header: t.detail_code || 'کد تفصیلی', 
+      field: 'detailCode', 
+      width: 'w-40', 
+      render: (row) => row.detailCode ? (
+        <button onClick={() => handleOpenDetailModal(row)} className="flex items-center gap-2 group">
+           <Badge variant="success" className="font-mono group-hover:bg-emerald-100 transition-colors">{row.detailCode}</Badge>
+           <Edit size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"/>
+        </button>
+      ) : (
+        <button onClick={() => handleOpenDetailModal(row)} className="flex items-center gap-2">
+           <Badge variant="danger">{t.detail_not_assigned || 'فاقد کد'}</Badge>
+           <span className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              <Link2 size={12}/> {t.detail_assign_btn || 'تخصیص'}
+           </span>
+        </button>
+      )
+    },
     { header: 'نقش‌ها', field: 'roles', width: 'w-40', render: (r) => <div className="flex flex-wrap gap-1">{(r.roles || []).map(role => <Badge key={role} variant="neutral">{PARTY_ROLES.find(pr => pr.id === role)?.label}</Badge>)}</div> },
-    { header: 'وضعیت', field: 'isActive', width: 'w-20', render: (r) => <Toggle checked={r.isActive} onChange={() => {}} disabled /> }
+    { 
+      header: t.active_status || 'وضعیت', 
+      field: 'isActive', 
+      width: 'w-20', 
+      type: 'toggle',
+      render: (row) => (
+         <div className="flex justify-center">
+            <Toggle checked={row.isActive} onChange={(val) => handleToggleActive(row.id, val)} />
+         </div>
+      )
+    }
   ];
 
   return (
@@ -152,12 +205,12 @@ const Parties = ({ t, isRtl }) => {
       
       <div className="flex items-center justify-between shrink-0">
         <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-          <Users className="text-indigo-600" size={24}/> مدیریت اشخاص و شرکت‌ها
+          <Users className="text-indigo-600" size={24}/> {t.parties_title || 'مدیریت اشخاص و شرکت‌ها'}
         </h1>
       </div>
 
       <FilterSection 
-        title="جستجوی پیشرفته" 
+        title={t.filter || "جستجوی پیشرفته"}
         onSearch={() => setAppliedFilters(filterValues)} 
         onClear={() => { setFilterValues({ roles: [], detailCode: '', status: 'all', type: 'all' }); setAppliedFilters({ roles: [], detailCode: '', status: 'all', type: 'all' }); }}
         isRtl={isRtl}
@@ -166,7 +219,7 @@ const Parties = ({ t, isRtl }) => {
           <label className="block text-[11px] font-bold text-slate-600">نقش</label>
           <MultiSelect options={PARTY_ROLES} value={filterValues.roles} onChange={v => setFilterValues({...filterValues, roles: v})} placeholder="فیلتر نقش‌ها..." />
         </div>
-        <InputField label="کد تفصیلی" value={filterValues.detailCode} onChange={e => setFilterValues({...filterValues, detailCode: e.target.value})} placeholder="جستجوی کد..." className="dir-ltr" />
+        <InputField label={t.detail_code || "کد تفصیلی"} value={filterValues.detailCode} onChange={e => setFilterValues({...filterValues, detailCode: e.target.value})} placeholder="..." className="dir-ltr" />
         <SelectField label="وضعیت" value={filterValues.status} onChange={e => setFilterValues({...filterValues, status: e.target.value})}>
           <option value="all">همه وضعیت‌ها</option>
           <option value="active">فعال</option>
@@ -179,46 +232,25 @@ const Parties = ({ t, isRtl }) => {
         </SelectField>
       </FilterSection>
 
-      <div className="flex-1 min-h-0 flex gap-4">
-        <div className="flex-1 min-w-0">
-          <DataGrid 
-            columns={columns} data={filteredParties} isRtl={isRtl}
-            onCreate={handleCreate}
-            actions={(row) => (
-              <>
-                <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleEdit(row)} />
-                <Button variant="ghost" size="iconSm" icon={CreditCard} className="text-purple-600" onClick={() => { setCurrentPartyForDetail(row); setShowDetailSidebar(true); }} />
-              </>
-            )}
-          />
-        </div>
-
-        {showDetailSidebar && (
-          <div className="w-80 bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col shrink-0 animate-in slide-in-from-left-4">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50 rounded-t-lg">
-              <span className="font-bold text-indigo-900 text-sm">تخصیص کد تفصیلی</span>
-              <X size={18} className="cursor-pointer text-indigo-400" onClick={() => setShowDetailSidebar(false)}/>
-            </div>
-            <div className="p-4 flex-1 space-y-4">
-              <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                 <div className="text-[10px] text-slate-400 mb-1">نام طرف حساب:</div>
-                 <div className="font-black text-slate-800 text-xs">{currentPartyForDetail?.fullName}</div>
-              </div>
-              <InputField label="کد تفصیلی" value={currentPartyForDetail?.detailCode || ''} onChange={(e) => {
-                  const val = e.target.value;
-                  setCurrentPartyForDetail({...currentPartyForDetail, detailCode: val});
-                  setParties(prev => prev.map(p => p.id === currentPartyForDetail.id ? {...p, detailCode: val} : p));
-                }} className="dir-ltr" />
-            </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 rounded-b-lg">
-              <Button variant="primary" className="w-full" onClick={() => setShowDetailSidebar(false)}>تایید و بستن</Button>
-            </div>
-          </div>
-        )}
+      <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <DataGrid 
+          columns={columns} 
+          data={filteredParties} 
+          isRtl={isRtl}
+          onCreate={handleCreate}
+          onDelete={handleDelete}
+          actions={(row) => (
+            <>
+              <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleEdit(row)} />
+              <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDelete([row.id])} />
+            </>
+          )}
+        />
       </div>
 
+      {/* Main Edit/Create Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingParty ? "ویرایش اطلاعات" : "تعریف شخص/شرکت جدید"} size="xl"
-        footer={<><Button variant="secondary" onClick={() => setIsModalOpen(false)}>انصراف</Button><Button variant="primary" icon={Check} onClick={handleSave}>ذخیره</Button></>}>
+        footer={<><Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" icon={Check} onClick={handleSave}>{t.btn_save}</Button></>}>
         <div className="space-y-6">
           <div className="flex gap-4 p-2 bg-slate-50 rounded-lg justify-center">
              <ToggleChip label="شخص حقیقی" checked={formData.type === 'person'} onClick={() => setFormData({...formData, type: 'person'})} colorClass="indigo" />
@@ -258,13 +290,14 @@ const Parties = ({ t, isRtl }) => {
             <InputField label="پست الکترونیک" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             
             {/* فیلد وضعیت به عنوان آخرین آیتم فیلدهای اصلی */}
-            <div className="col-span-1 flex items-center h-8 bg-slate-50 px-2 rounded border border-slate-200 shadow-sm">
-              <Toggle checked={formData.isActive} onChange={v => setFormData({...formData, isActive: v})} label="وضعیت" />
+            <div className="col-span-1 flex items-center h-8 bg-slate-50 px-2 rounded border border-slate-200 shadow-sm justify-between">
+              <span className="text-[11px] font-bold text-slate-600">وضعیت</span>
+              <Toggle checked={formData.isActive} onChange={v => setFormData({...formData, isActive: v})} />
             </div>
           </div>
 
           <div className="space-y-2 border-t pt-4">
-            <div className="flex justify-between items-center"><label className="text-[11px] font-bold text-slate-600">آدرس‌ها</label><Button size="sm" variant="ghost" icon={Plus} onClick={() => setFormData({...formData, addresses: [...(formData.addresses || []), '']})}>افزودن آدرس</Button></div>
+            <div className="flex justify-between items-center"><label className="text-[11px] font-bold text-slate-600">آدرس‌ها</label><Button size="sm" variant="ghost" icon={Plus} onClick={() => setFormData({...formData, addresses: [...(formData.addresses || []), '']})}>{t.btn_add || 'افزودن'}</Button></div>
             {(formData.addresses || ['']).map((addr, idx) => (
               <div key={idx} className="flex gap-2"><InputField placeholder={`آدرس ${idx + 1}`} value={addr} onChange={e => { const n = [...formData.addresses]; n[idx] = e.target.value; setFormData({...formData, addresses: n}); }} />{idx > 0 && <Button variant="ghost" size="iconSm" icon={X} className="text-red-500" onClick={() => setFormData({...formData, addresses: formData.addresses.filter((_, i) => i !== idx)})} />}</div>
             ))}
@@ -275,6 +308,36 @@ const Parties = ({ t, isRtl }) => {
             <SelectionGrid items={PARTY_ROLES} selectedIds={formData.roles || []} onToggle={id => { const r = formData.roles || []; const n = r.includes(id) ? r.filter(x => x !== id) : [...r, id]; setFormData({...formData, roles: n}); }} />
           </div>
         </div>
+      </Modal>
+
+      {/* Detail Code Assignment Modal */}
+      <Modal 
+        isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)}
+        title={t.detail_assign_btn || "تخصیص کد تفصیلی"}
+        size="sm"
+        footer={
+           <>
+             <Button variant="ghost" onClick={() => setIsDetailModalOpen(false)}>{t.btn_cancel}</Button>
+             <Button variant="primary" onClick={handleSaveDetailCode}>{t.btn_save}</Button>
+           </>
+        }
+      >
+         <div className="p-2 space-y-3">
+            <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg leading-relaxed">
+               {isRtl 
+                 ? `در حال تخصیص کد تفصیلی به: ${targetForDetail?.fullName}` 
+                 : `Assigning detail code for: ${targetForDetail?.fullName}`}
+            </div>
+            <InputField 
+               label={t.detail_code || "کد تفصیلی"}
+               value={detailCodeInput} 
+               onChange={(e) => setDetailCodeInput(e.target.value)} 
+               isRtl={isRtl}
+               className="dir-ltr text-center font-bold"
+               placeholder="Example: 101001"
+               autoFocus
+            />
+         </div>
       </Modal>
     </div>
   );
