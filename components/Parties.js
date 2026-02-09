@@ -61,11 +61,11 @@ const Parties = ({ t, isRtl }) => {
   };
 
   const PARTY_ROLES = [
-    { id: 'employee', label: 'کارمند' }, { id: 'customer', label: 'مشتری' },
-    { id: 'supplier', label: 'تامین کننده' }, { id: 'contractor', label: 'پیمانکار' },
-    { id: 'shareholder', label: 'سهامدار' }, { id: 'logistics', label: 'شرکت حمل و نقل' },
-    { id: 'cashier', label: 'صندوقدار' }, { id: 'petty_cashier', label: 'تنخواه دار' },
-    { id: 'bank', label: 'بانک' }, { id: 'trustee', label: 'طرف حساب امانی' }, { id: 'other', label: 'سایر' }
+    { id: 'employee', label: t.role_employee || 'Employee' }, { id: 'customer', label: t.role_customer || 'Customer' },
+    { id: 'supplier', label: t.role_supplier || 'Supplier' }, { id: 'contractor', label: t.role_contractor || 'Contractor' },
+    { id: 'shareholder', label: t.role_shareholder || 'Shareholder' }, { id: 'logistics', label: t.role_logistics || 'Logistics' },
+    { id: 'cashier', label: t.role_cashier || 'Cashier' }, { id: 'petty_cashier', label: t.role_petty || 'Petty Cashier' },
+    { id: 'bank', label: t.role_bank || 'Bank' }, { id: 'trustee', label: t.role_trustee || 'Trustee' }, { id: 'other', label: t.role_other || 'Other' }
   ];
 
   // --- STATES ---
@@ -125,9 +125,9 @@ const Parties = ({ t, isRtl }) => {
 
   const handleSave = () => {
     if (formData.type === 'person') {
-      if (!formData.firstName || !formData.lastName || !formData.nationalId) return alert('پر کردن فیلدهای اجباری الزامی است');
+      if (!formData.firstName || !formData.lastName || !formData.nationalId) return alert(t.alert_req_fields);
     } else {
-      if (!formData.name || !formData.nationalId) return alert('پر کردن فیلدهای اجباری الزامی است');
+      if (!formData.name || !formData.nationalId) return alert(t.alert_req_fields);
     }
 
     const finalFullName = formData.type === 'person' ? `${formData.firstName} ${formData.lastName}`.trim() : formData.name;
@@ -165,11 +165,11 @@ const Parties = ({ t, isRtl }) => {
 
   // --- COLUMNS ---
   const columns = [
-    { header: 'نوع', field: 'type', width: 'w-20', render: (r) => r.type === 'person' ? <User size={14} className="text-blue-500"/> : <Building2 size={14} className="text-indigo-500"/> },
-    { header: 'نام کامل', field: 'fullName', width: 'w-48', render: (r) => <span className="font-bold text-slate-700">{r.fullName}</span> },
-    { header: 'شناسه/کد ملی', field: 'nationalId', width: 'w-32', className: 'font-mono' },
+    { header: t.pt_type, field: 'type', width: 'w-20', render: (r) => r.type === 'person' ? <User size={14} className="text-blue-500"/> : <Building2 size={14} className="text-indigo-500"/> },
+    { header: t.pt_fullname, field: 'fullName', width: 'w-48', render: (r) => <span className="font-bold text-slate-700">{r.fullName}</span> },
+    { header: t.pt_nat_id, field: 'nationalId', width: 'w-32', className: 'font-mono' },
     { 
-      header: t.detail_code || 'کد تفصیلی', 
+      header: t.detail_code, 
       field: 'detailCode', 
       width: 'w-40', 
       render: (row) => row.detailCode ? (
@@ -179,16 +179,16 @@ const Parties = ({ t, isRtl }) => {
         </button>
       ) : (
         <button onClick={() => handleOpenDetailModal(row)} className="flex items-center gap-2">
-           <Badge variant="danger">{t.detail_not_assigned || 'فاقد کد'}</Badge>
+           <Badge variant="danger">{t.detail_not_assigned}</Badge>
            <span className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <Link2 size={12}/> {t.detail_assign_btn || 'تخصیص'}
+              <Link2 size={12}/> {t.detail_assign_btn}
            </span>
         </button>
       )
     },
-    { header: 'نقش‌ها', field: 'roles', width: 'w-40', render: (r) => <div className="flex flex-wrap gap-1">{(r.roles || []).map(role => <Badge key={role} variant="neutral">{PARTY_ROLES.find(pr => pr.id === role)?.label}</Badge>)}</div> },
+    { header: t.pt_roles, field: 'roles', width: 'w-40', render: (r) => <div className="flex flex-wrap gap-1">{(r.roles || []).map(role => <Badge key={role} variant="neutral">{PARTY_ROLES.find(pr => pr.id === role)?.label}</Badge>)}</div> },
     { 
-      header: t.active_status || 'وضعیت', 
+      header: t.active_status, 
       field: 'isActive', 
       width: 'w-20', 
       type: 'toggle',
@@ -201,41 +201,40 @@ const Parties = ({ t, isRtl }) => {
   ];
 
   return (
-    <div className={`flex flex-col h-full bg-slate-50/50 p-4 md:p-6 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
+    <div className={`flex flex-col h-full bg-slate-50/50 p-4 overflow-hidden ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between shrink-0">
+      <div className="mb-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200">
             <Users size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800">{t.parties_title || 'مدیریت اشخاص و شرکت‌ها'}</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">{t.parties_subtitle || 'مدیریت اشخاص و شرکت ها و تعریف نقش آنها'}</p>
+            <h1 className="text-xl font-black text-slate-800">{t.parties_title}</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">{t.parties_subtitle}</p>
           </div>
         </div>
       </div>
 
       <FilterSection 
-        title={t.filter || "جستجوی پیشرفته"}
+        title={t.filter}
         onSearch={() => setAppliedFilters(filterValues)} 
         onClear={() => { setFilterValues({ roles: [], detailCode: '', status: 'all', type: 'all' }); setAppliedFilters({ roles: [], detailCode: '', status: 'all', type: 'all' }); }}
         isRtl={isRtl}
       >
         <div className="space-y-1">
-          <label className="block text-[11px] font-bold text-slate-600">نقش</label>
-          <MultiSelect options={PARTY_ROLES} value={filterValues.roles} onChange={v => setFilterValues({...filterValues, roles: v})} placeholder="فیلتر نقش‌ها..." />
+          <label className="block text-[11px] font-bold text-slate-600">{t.pt_roles}</label>
+          <MultiSelect options={PARTY_ROLES} value={filterValues.roles} onChange={v => setFilterValues({...filterValues, roles: v})} placeholder={t.ph_role_filter} />
         </div>
-        <InputField label={t.detail_code || "کد تفصیلی"} value={filterValues.detailCode} onChange={e => setFilterValues({...filterValues, detailCode: e.target.value})} placeholder="..." className="dir-ltr" />
-        <SelectField label="وضعیت" value={filterValues.status} onChange={e => setFilterValues({...filterValues, status: e.target.value})}>
-          <option value="all">همه وضعیت‌ها</option>
-          <option value="active">فعال</option>
-          <option value="inactive">غیرفعال</option>
+        <InputField label={t.detail_code} value={filterValues.detailCode} onChange={e => setFilterValues({...filterValues, detailCode: e.target.value})} placeholder="..." className="dir-ltr" />
+        <SelectField label={t.pt_status} value={filterValues.status} onChange={e => setFilterValues({...filterValues, status: e.target.value})}>
+          <option value="all">{t.opt_all_status}</option>
+          <option value="active">{t.opt_active}</option>
+          <option value="inactive">{t.opt_inactive}</option>
         </SelectField>
-        <SelectField label="نوع" value={filterValues.type} onChange={e => setFilterValues({...filterValues, type: e.target.value})}>
-          <option value="all">همه انواع</option>
-          <option value="person">شخص حقیقی</option>
-          <option value="company">شخص حقوقی</option>
+        <SelectField label={t.pt_type} value={filterValues.type} onChange={e => setFilterValues({...filterValues, type: e.target.value})}>
+          <option value="all">{t.opt_all_types}</option>
+          <option value="person">{t.pt_person}</option>
+          <option value="company">{t.pt_company}</option>
         </SelectField>
       </FilterSection>
 
@@ -256,62 +255,62 @@ const Parties = ({ t, isRtl }) => {
       </div>
 
       {/* Main Edit/Create Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingParty ? "ویرایش اطلاعات" : "تعریف شخص/شرکت جدید"} size="xl"
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingParty ? t.pt_edit : t.pt_new} size="xl"
         footer={<><Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t.btn_cancel}</Button><Button variant="primary" icon={Check} onClick={handleSave}>{t.btn_save}</Button></>}>
         <div className="space-y-6">
           <div className="flex gap-4 p-2 bg-slate-50 rounded-lg justify-center">
-             <ToggleChip label="شخص حقیقی" checked={formData.type === 'person'} onClick={() => setFormData({...formData, type: 'person'})} colorClass="indigo" />
-             <ToggleChip label="شخص حقوقی" checked={formData.type === 'company'} onClick={() => setFormData({...formData, type: 'company'})} colorClass="indigo" />
+             <ToggleChip label={t.pt_person} checked={formData.type === 'person'} onClick={() => setFormData({...formData, type: 'person'})} colorClass="indigo" />
+             <ToggleChip label={t.pt_company} checked={formData.type === 'company'} onClick={() => setFormData({...formData, type: 'company'})} colorClass="indigo" />
           </div>
 
           <div className="grid grid-cols-4 gap-4 items-end">
             {formData.type === 'person' ? (
               <>
-                <InputField label="نام *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
-                <InputField label="نام خانوادگی *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
-                <InputField label="کد ملی / اتباع *" value={formData.nationalId} onChange={e => setFormData({...formData, nationalId: e.target.value})} />
-                <InputField label="نام کامل" value={`${formData.firstName} ${formData.lastName}`} disabled className="bg-slate-100" />
-                <InputField label="نام مستعار" value={formData.alias} onChange={e => setFormData({...formData, alias: e.target.value})} />
-                <SelectField label="جنسیت" value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})}>
-                  <option value="male">مرد</option><option value="female">زن</option>
+                <InputField label={`${t.pt_fname} *`} value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+                <InputField label={`${t.pt_lname} *`} value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+                <InputField label={`${t.pt_nat_id} *`} value={formData.nationalId} onChange={e => setFormData({...formData, nationalId: e.target.value})} />
+                <InputField label={t.pt_fullname} value={`${formData.firstName} ${formData.lastName}`} disabled className="bg-slate-100" />
+                <InputField label={t.pt_alias} value={formData.alias} onChange={e => setFormData({...formData, alias: e.target.value})} />
+                <SelectField label={t.pt_gender} value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})}>
+                  <option value="male">{t.opt_male}</option><option value="female">{t.opt_female}</option>
                 </SelectField>
-                <InputField label="نام پدر" value={formData.fatherName} onChange={e => setFormData({...formData, fatherName: e.target.value})} />
-                <DatePicker label="تاریخ تولد" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} />
-                <InputField label="شماره شناسنامه" value={formData.birthCertificateNo} onChange={e => setFormData({...formData, birthCertificateNo: e.target.value})} />
-                <InputField label="محل تولد" value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} />
-                <InputField label="استان محل زندگی" value={formData.province} onChange={e => setFormData({...formData, province: e.target.value})} />
+                <InputField label={t.pt_father} value={formData.fatherName} onChange={e => setFormData({...formData, fatherName: e.target.value})} />
+                <DatePicker label={t.pt_birthdate} value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} />
+                <InputField label={t.pt_birth_no} value={formData.birthCertificateNo} onChange={e => setFormData({...formData, birthCertificateNo: e.target.value})} />
+                <InputField label={t.pt_birth_place} value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} />
+                <InputField label={t.pt_province} value={formData.province} onChange={e => setFormData({...formData, province: e.target.value})} />
               </>
             ) : (
               <>
-                <InputField label="نام شرکت *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="col-span-2" />
-                <InputField label="شناسه ملی *" value={formData.nationalId} onChange={e => setFormData({...formData, nationalId: e.target.value})} />
-                <InputField label="شماره ثبت" value={formData.regNo} onChange={e => setFormData({...formData, regNo: e.target.value})} />
-                <InputField label="وب‌سایت" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} />
+                <InputField label={`${t.pt_comp_name} *`} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="col-span-2" />
+                <InputField label={`${t.pt_nat_id} *`} value={formData.nationalId} onChange={e => setFormData({...formData, nationalId: e.target.value})} />
+                <InputField label={t.pt_reg_no} value={formData.regNo} onChange={e => setFormData({...formData, regNo: e.target.value})} />
+                <InputField label={t.pt_website} value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} />
               </>
             )}
-            <SelectField label="تابعیت *" value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})}>
-              <option value="iranian">ایرانی</option><option value="foreign">غیر ایرانی</option>
+            <SelectField label={`${t.pt_nationality} *`} value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})}>
+              <option value="iranian">{t.opt_iranian}</option><option value="foreign">{t.opt_foreign}</option>
             </SelectField>
-            <InputField label="تلفن" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-            <InputField label="تلفن همراه" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} />
-            <InputField label="پست الکترونیک" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            <InputField label={t.pt_phone} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            <InputField label={t.pt_mobile} value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} />
+            <InputField label={t.pt_email} value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             
-            {/* فیلد وضعیت به عنوان آخرین آیتم فیلدهای اصلی */}
+            {/* فیلد وضعیت */}
             <div className="col-span-1 flex items-center h-8 bg-slate-50 px-2 rounded border border-slate-200 shadow-sm justify-between">
-              <span className="text-[11px] font-bold text-slate-600">وضعیت</span>
+              <span className="text-[11px] font-bold text-slate-600">{t.pt_status}</span>
               <Toggle checked={formData.isActive} onChange={v => setFormData({...formData, isActive: v})} />
             </div>
           </div>
 
           <div className="space-y-2 border-t pt-4">
-            <div className="flex justify-between items-center"><label className="text-[11px] font-bold text-slate-600">آدرس‌ها</label><Button size="sm" variant="ghost" icon={Plus} onClick={() => setFormData({...formData, addresses: [...(formData.addresses || []), '']})}>{t.btn_add || 'افزودن'}</Button></div>
+            <div className="flex justify-between items-center"><label className="text-[11px] font-bold text-slate-600">{t.pt_addr}</label><Button size="sm" variant="ghost" icon={Plus} onClick={() => setFormData({...formData, addresses: [...(formData.addresses || []), '']})}>{t.btn_add}</Button></div>
             {(formData.addresses || ['']).map((addr, idx) => (
-              <div key={idx} className="flex gap-2"><InputField placeholder={`آدرس ${idx + 1}`} value={addr} onChange={e => { const n = [...formData.addresses]; n[idx] = e.target.value; setFormData({...formData, addresses: n}); }} />{idx > 0 && <Button variant="ghost" size="iconSm" icon={X} className="text-red-500" onClick={() => setFormData({...formData, addresses: formData.addresses.filter((_, i) => i !== idx)})} />}</div>
+              <div key={idx} className="flex gap-2"><InputField placeholder={`${t.ph_addr} ${idx + 1}`} value={addr} onChange={e => { const n = [...formData.addresses]; n[idx] = e.target.value; setFormData({...formData, addresses: n}); }} />{idx > 0 && <Button variant="ghost" size="iconSm" icon={X} className="text-red-500" onClick={() => setFormData({...formData, addresses: formData.addresses.filter((_, i) => i !== idx)})} />}</div>
             ))}
           </div>
 
           <div className="border-t pt-4">
-            <label className="block text-[11px] font-bold text-slate-600 mb-3">نقش‌ها</label>
+            <label className="block text-[11px] font-bold text-slate-600 mb-3">{t.pt_roles}</label>
             <SelectionGrid items={PARTY_ROLES} selectedIds={formData.roles || []} onToggle={id => { const r = formData.roles || []; const n = r.includes(id) ? r.filter(x => x !== id) : [...r, id]; setFormData({...formData, roles: n}); }} />
           </div>
         </div>
@@ -320,7 +319,7 @@ const Parties = ({ t, isRtl }) => {
       {/* Detail Code Assignment Modal */}
       <Modal 
         isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)}
-        title={t.detail_assign_btn || "تخصیص کد تفصیلی"}
+        title={t.detail_assign_btn}
         size="sm"
         footer={
            <>
@@ -336,7 +335,7 @@ const Parties = ({ t, isRtl }) => {
                  : `Assigning detail code for: ${targetForDetail?.fullName}`}
             </div>
             <InputField 
-               label={t.detail_code || "کد تفصیلی"}
+               label={t.detail_code}
                value={detailCodeInput} 
                onChange={(e) => setDetailCodeInput(e.target.value)} 
                isRtl={isRtl}
