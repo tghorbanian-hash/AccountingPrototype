@@ -46,7 +46,7 @@ const App = () => {
   }, [activeModuleId, MENU_DATA]);
   
   const renderContent = () => {
-    // دریافت کامپوننت‌ها از window با اضافه کردن Parties و UserProfile
+    // دریافت کامپوننت‌ها از window
     const { 
       KpiDashboard, 
       UserManagement, 
@@ -55,19 +55,31 @@ const App = () => {
       LoginPage, 
       Roles,
       Parties,
-      UserProfile 
+      UserProfile,
+      OrganizationInfo,
+      CurrencySettings
     } = window;
 
-    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
-    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
-    if (activeId === 'roles') return Roles ? <Roles t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Roles Component Not Loaded</div>;
-    if (activeId === 'parties') return Parties ? <Parties t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Parties Component Not Loaded</div>;
-    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
-    if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    // --- مسیردهی صفحات (Routing) ---
     
-    // رندر صفحه پروفایل کاربری
+    // 1. پروفایل کاربری
     if (activeId === 'user_profile') return UserProfile ? <UserProfile t={t} isRtl={isRtl} onLanguageChange={setLang} /> : <div className="p-4 text-red-500">Error: UserProfile Component Not Loaded</div>;
 
+    // 2. اطلاعات پایه (Base Info)
+    if (activeId === 'org_info') return OrganizationInfo ? <OrganizationInfo t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: OrganizationInfo Component Not Loaded</div>;
+    if (activeId === 'currency_settings') return CurrencySettings ? <CurrencySettings t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: CurrencySettings Component Not Loaded</div>;
+    if (activeId === 'parties') return Parties ? <Parties t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Parties Component Not Loaded</div>;
+
+    // 3. امنیت و دسترسی (Security)
+    if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
+    if (activeId === 'roles') return Roles ? <Roles t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Roles Component Not Loaded</div>;
+
+    // 4. فضای کار و داشبوردها (Workspace)
+    if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+
+    // 5. صفحه خالی (پیش‌فرض)
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
           <div className="p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200">
