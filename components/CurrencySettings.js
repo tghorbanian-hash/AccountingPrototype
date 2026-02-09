@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Banknote, Search, Plus, Edit, Trash2, RefreshCw, 
-  History, Settings, ArrowLeftRight, Coins, ChevronLeft 
+  History, Settings, ArrowLeftRight, Coins, ChevronLeft, Save 
 } from 'lucide-react';
 
 const CurrencySettings = ({ t, isRtl }) => {
