@@ -15,6 +15,9 @@ const OrganizationInfo = ({ t, isRtl }) => {
     { id: 2, code: 'ORG-002', name: 'شعبه اصفهان', regNo: '654321', phone: '031-33333333', fax: '031-33333334', logo: null, addresses: [] },
   ]);
   
+  // Filter State
+  const [filters, setFilters] = useState({ code: '', name: '' });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -88,11 +91,17 @@ const OrganizationInfo = ({ t, isRtl }) => {
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // In a real app, upload to server. Here just mock URL object
       const url = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, logo: url }));
     }
   };
+
+  // --- Filter Logic ---
+  const filteredData = data.filter(item => {
+    const matchCode = filters.code ? item.code.toLowerCase().includes(filters.code.toLowerCase()) : true;
+    const matchName = filters.name ? item.name.toLowerCase().includes(filters.name.toLowerCase()) : true;
+    return matchCode && matchName;
+  });
 
   return (
     <div className="flex flex-col h-full p-4 md:p-6 bg-slate-50/50">
@@ -108,18 +117,34 @@ const OrganizationInfo = ({ t, isRtl }) => {
         </div>
       </div>
 
-      <FilterSection isRtl={isRtl} onSearch={() => {}} onClear={() => {}}>
-        <InputField label={t.colId || 'کد'} placeholder="..." isRtl={isRtl} />
-        <InputField label={t.ph_name || 'نام'} placeholder="..." isRtl={isRtl} />
+      <FilterSection 
+        isRtl={isRtl} 
+        onSearch={() => {}} 
+        onClear={() => setFilters({ code: '', name: '' })}
+      >
+        <InputField 
+          label={t.colId || 'کد'} 
+          placeholder="..." 
+          isRtl={isRtl} 
+          value={filters.code}
+          onChange={(e) => setFilters(prev => ({ ...prev, code: e.target.value }))}
+        />
+        <InputField 
+          label={t.ph_name || 'نام'} 
+          placeholder="..." 
+          isRtl={isRtl} 
+          value={filters.name}
+          onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
+        />
       </FilterSection>
 
       <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <DataGrid 
           columns={columns} 
-          data={data} 
+          data={filteredData} 
           selectedIds={selectedIds}
           onSelectRow={(id, checked) => setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id))}
-          onSelectAll={(checked) => setSelectedIds(checked ? data.map(d => d.id) : [])}
+          onSelectAll={(checked) => setSelectedIds(checked ? filteredData.map(d => d.id) : [])}
           onCreate={() => handleOpenModal()}
           onDelete={handleDelete}
           isRtl={isRtl}
