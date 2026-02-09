@@ -46,7 +46,7 @@ const App = () => {
   }, [activeModuleId, MENU_DATA]);
   
   const renderContent = () => {
-    // دریافت کامپوننت‌ها از window با اضافه کردن Parties
+    // دریافت کامپوننت‌ها از window با اضافه کردن Parties و UserProfile
     const { 
       KpiDashboard, 
       UserManagement, 
@@ -54,16 +54,19 @@ const App = () => {
       ComponentShowcase, 
       LoginPage, 
       Roles,
-      Parties 
+      Parties,
+      UserProfile 
     } = window;
 
     if (activeId === 'workspace_gen') return GeneralWorkspace ? <GeneralWorkspace t={t} isRtl={isRtl} /> : <div>Loading...</div>;
     if (activeId === 'users_list') return UserManagement ? <UserManagement t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: UserManagement Not Loaded</div>;
     if (activeId === 'roles') return Roles ? <Roles t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Roles Component Not Loaded</div>;
-    // رندر صفحه جدید اشخاص و شرکت‌ها
     if (activeId === 'parties') return Parties ? <Parties t={t} isRtl={isRtl} /> : <div className="p-4 text-red-500">Error: Parties Component Not Loaded</div>;
     if (activeId === 'dashboards_gen') return KpiDashboard ? <KpiDashboard t={t} isRtl={isRtl} /> : <div>Loading...</div>;
     if (activeId === 'ui_showcase') return ComponentShowcase ? <ComponentShowcase t={t} isRtl={isRtl} /> : <div>Loading...</div>;
+    
+    // رندر صفحه پروفایل کاربری
+    if (activeId === 'user_profile') return UserProfile ? <UserProfile t={t} isRtl={isRtl} onLanguageChange={setLang} /> : <div className="p-4 text-red-500">Error: UserProfile Component Not Loaded</div>;
 
     return (
       <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60">
@@ -162,7 +165,10 @@ const App = () => {
         </div>
         
         <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-slate-100">
+          <div 
+             onClick={() => setActiveId('user_profile')}
+             className="flex items-center gap-3 p-2 rounded-xl hover:bg-white hover:shadow-sm transition-all cursor-pointer border border-transparent hover:border-slate-100"
+          >
              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-100 to-blue-50 border border-white shadow-sm flex items-center justify-center text-indigo-700 font-black text-xs">
                AD
              </div>
@@ -188,7 +194,7 @@ const App = () => {
              <div className="flex items-center gap-2 text-sm">
                 <span className="text-slate-400 font-medium hidden sm:inline">{currentModule.label ? currentModule.label[lang] : ''}</span>
                 <ChevronRight size={14} className={`text-slate-300 hidden sm:inline ${isRtl ? 'rotate-180' : ''}`} />
-                <span className="text-slate-800 font-bold">{activeId}</span>
+                <span className="text-slate-800 font-bold">{activeId === 'user_profile' ? (t.profileTitle || 'User Profile') : activeId}</span>
              </div>
            </div>
 
