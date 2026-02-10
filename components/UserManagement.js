@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Users, Search, Plus, Edit, Trash2, Key, Shield, 
   Check, X, RefreshCw, Briefcase, ChevronLeft, 
-  Lock, FileText, Filter, CheckSquare, Zap, UserPlus, UserMinus, ChevronDown
+  Lock, FileText, Filter, CheckSquare, Zap, UserPlus, UserMinus, ChevronDown, Info
 } from 'lucide-react';
 
 const UserManagement = ({ t, isRtl }) => {
@@ -171,6 +171,7 @@ const UserManagement = ({ t, isRtl }) => {
   const [assignedRoles, setAssignedRoles] = useState([]); 
   const [directPermissions, setDirectPermissions] = useState([]); 
   const [selectedPermDetail, setSelectedPermDetail] = useState(null);
+  const [activeSourceId, setActiveSourceId] = useState(null); // Tracks which source (role or direct) is currently viewed
   
   const [formSearchTerm, setFormSearchTerm] = useState('');
   const [showFormResults, setShowFormResults] = useState(false);
@@ -184,9 +185,10 @@ const UserManagement = ({ t, isRtl }) => {
     return p ? `${p.name} (${p.code})` : 'نامشخص';
   };
 
-  // --- LOGIC: MERGE PERMISSIONS ---
+  // --- LOGIC: MERGE PERMISSIONS WITH SOURCE BREAKDOWN ---
   const effectivePermissions = useMemo(() => {
     const map = new Map();
+    const getForm = (id) => ALL_SYSTEM_FORMS.find(f => f.id === id);
 
     // 1. Process Roles
     assignedRoles.forEach(roleId => {
@@ -194,59 +196,70 @@ const UserManagement = ({ t, isRtl }) => {
       const roleInfo = MOCK_ROLES_LIST.find(r => r.id === roleId);
       
       rolePerms.forEach(p => {
-        const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
-        // If form doesn't exist in menu, skip it (prevents errors)
+        const formInfo = getForm(p.formId);
         if (!formInfo) return; 
 
         if (!map.has(p.formId)) {
           map.set(p.formId, {
             id: p.formId,
             path: formInfo.fullPath,
-            sources: [{ type: 'role', label: roleInfo?.title }],
-            roleActions: p.actions, 
-            roleScopes: p.dataScopes,
-            directActions: [],
-            directScopes: {}
+            breakdown: [] // Stores separate records for each source
           });
-        } else {
-          const item = map.get(p.formId);
-          item.sources.push({ type: 'role', label: roleInfo?.title });
         }
+        
+        map.get(p.formId).breakdown.push({
+           sourceId: `role_${roleId}`,
+           type: 'role',
+           label: roleInfo?.title || 'نقش نامشخص',
+           actions: p.actions,
+           scopes: p.dataScopes
+        });
       });
     });
 
     // 2. Process Direct
     directPermissions.forEach(p => {
-      const formInfo = ALL_SYSTEM_FORMS.find(f => f.id === p.formId);
+      const formInfo = getForm(p.formId);
       if (!formInfo) return;
 
       if (!map.has(p.formId)) {
         map.set(p.formId, {
           id: p.formId,
           path: formInfo.fullPath,
-          sources: [{ type: 'direct', label: 'مستقیم' }],
-          roleActions: [],
-          roleScopes: {},
-          directActions: p.actions || [],
-          directScopes: p.dataScopes || {}
+          breakdown: []
         });
+      }
+
+      // Check if direct already exists (should only happen once per form)
+      const existing = map.get(p.formId).breakdown.find(b => b.type === 'direct');
+      if (existing) {
+         existing.actions = p.actions || [];
+         existing.scopes = p.dataScopes || {};
       } else {
-        const item = map.get(p.formId);
-        item.sources.push({ type: 'direct', label: 'مستقیم' });
-        item.directActions = p.actions || [];
-        item.directScopes = p.dataScopes || {};
+         map.get(p.formId).breakdown.push({
+            sourceId: 'direct',
+            type: 'direct',
+            label: 'مستقیم',
+            actions: p.actions || [],
+            scopes: p.dataScopes || {}
+         });
       }
     });
 
     return Array.from(map.values());
   }, [assignedRoles, directPermissions, ALL_SYSTEM_FORMS]);
 
-  // Sync Sidebar State
+  // Sync Sidebar State when effectivePermissions updates
   useEffect(() => {
     if (selectedPermDetail) {
       const updated = effectivePermissions.find(p => p.id === selectedPermDetail.id);
       if (updated) {
         setSelectedPermDetail(updated);
+        // If activeSourceId is no longer valid, default to first source
+        const sourceStillExists = updated.breakdown.find(b => b.sourceId === activeSourceId);
+        if (!sourceStillExists && updated.breakdown.length > 0) {
+            setActiveSourceId(updated.breakdown[0].sourceId);
+        }
       }
     }
   }, [effectivePermissions]);
@@ -289,6 +302,7 @@ const UserManagement = ({ t, isRtl }) => {
     setAssignedRoles(user.roleIds || []);
     setDirectPermissions([]); 
     setSelectedPermDetail(null);
+    setActiveSourceId(null);
     setFormSearchTerm('');
     setRoleSearchTerm('');
     setIsPermModalOpen(true);
@@ -315,6 +329,13 @@ const UserManagement = ({ t, isRtl }) => {
     setDirectPermissions(prev => [...prev, { formId: form.id, actions: [], dataScopes: {} }]);
     setFormSearchTerm('');
     setShowFormResults(false);
+    
+    // Note: We don't auto-select here to avoid complex state sync issues, user will see it in list.
+  };
+
+  const handleSelectSource = (row, source) => {
+    setSelectedPermDetail(row);
+    setActiveSourceId(source.sourceId);
   };
 
   const handleUpdateDirectPermission = (formId, type, key, value) => {
@@ -391,16 +412,32 @@ const UserManagement = ({ t, isRtl }) => {
     { header: 'وضعیت', field: 'isActive', width: 'w-24 text-center', render: (r) => <Badge variant={r.isActive ? 'success' : 'neutral'}>{r.isActive ? 'فعال' : 'غیرفعال'}</Badge> },
   ];
 
-  // Widened columns for modal grid
+  // --- PERMISSION MODAL COLUMNS (Updated for Separation) ---
   const permColumns = [
     { header: 'مسیر فرم', field: 'path', width: 'w-full', render: (r) => <div className="text-[11px] font-medium flex items-center gap-2"><FileText size={12} className="text-indigo-400"/>{r.path}</div> },
-    { header: 'منبع دسترسی', field: 'source', width: 'w-48', render: (r) => (
+    { header: 'منبع دسترسی (برای جزئیات کلیک کنید)', field: 'source', width: 'w-72', render: (r) => (
        <div className="flex flex-wrap gap-1">
-          {r.sources.map((s, idx) => (
-             <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>
-                {s.type === 'role' ? `نقش: ${s.label}` : 'مستقیم'}
-             </Badge>
-          ))}
+          {r.breakdown.map((s, idx) => {
+             // Check if this specific source is currently active/selected
+             const isActive = selectedPermDetail?.id === r.id && activeSourceId === s.sourceId;
+             
+             return (
+                 <div 
+                    key={idx} 
+                    onClick={(e) => { e.stopPropagation(); handleSelectSource(r, s); }}
+                    className={`
+                        cursor-pointer px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all flex items-center gap-1
+                        ${isActive 
+                           ? (s.type === 'role' ? 'bg-purple-100 text-purple-700 border-purple-300 ring-1 ring-purple-200' : 'bg-blue-100 text-blue-700 border-blue-300 ring-1 ring-blue-200')
+                           : (s.type === 'role' ? 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100 hover:border-purple-200' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100 hover:border-blue-200')
+                        }
+                    `}
+                 >
+                    {s.type === 'role' ? <Shield size={10}/> : <Zap size={10}/>}
+                    {s.type === 'role' ? `${s.label}` : 'مستقیم'}
+                 </div>
+             )
+          })}
        </div>
     )},
   ];
@@ -538,7 +575,7 @@ const UserManagement = ({ t, isRtl }) => {
             <div className="flex flex-1 border border-slate-200 rounded-lg overflow-hidden">
                <div className={`${selectedPermDetail ? 'w-1/2' : 'w-full'} flex flex-col transition-all duration-300 bg-white relative`}>
                   
-                  {/* SEARCH FORM WRAPPER - High Z-Index */}
+                  {/* SEARCH FORM WRAPPER */}
                   <div className="p-2 border-b border-slate-100 bg-white relative z-[50]">
                      <div className="relative">
                         <input 
@@ -564,18 +601,25 @@ const UserManagement = ({ t, isRtl }) => {
                      </div>
                   </div>
 
-                  {/* GRID CONTAINER - Lower Z-Index */}
+                  {/* GRID CONTAINER */}
                   <div className="flex-1 overflow-hidden z-0">
                      <DataGrid 
                         columns={permColumns} data={effectivePermissions} isRtl={isRtl}
                         onSelectRow={(id) => {
                            const item = effectivePermissions.find(p => p.id === id);
-                           if(item) setSelectedPermDetail(item);
+                           if(item) {
+                              setSelectedPermDetail(item);
+                              // Auto-select first source if available
+                              if(item.breakdown.length > 0) setActiveSourceId(item.breakdown[0].sourceId);
+                           }
                         }}
                         actions={(row) => (
                            <div className="flex gap-1">
-                              <Button variant="ghost" size="iconSm" icon={ChevronLeft} onClick={() => setSelectedPermDetail(row)} 
-                                className={selectedPermDetail?.id === row.id ? 'bg-indigo-50 text-indigo-700' : ''} />
+                              <Button variant="ghost" size="iconSm" icon={ChevronLeft} onClick={() => {
+                                 setSelectedPermDetail(row);
+                                 if(row.breakdown.length > 0) setActiveSourceId(row.breakdown[0].sourceId);
+                              }} 
+                              className={selectedPermDetail?.id === row.id ? 'bg-indigo-50 text-indigo-700' : ''} />
                            </div>
                         )}
                      />
@@ -590,32 +634,54 @@ const UserManagement = ({ t, isRtl }) => {
                      
                      <div className="p-4 border-b border-slate-200 bg-white">
                         <h3 className="font-black text-slate-800 text-sm mb-1">{selectedPermDetail.path.split('/').pop().trim()}</h3>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                           {selectedPermDetail.sources.map((s, idx) => (
-                              <Badge key={idx} variant={s.type === 'role' ? 'purple' : 'info'}>{s.type === 'role' ? `نقش: ${s.label}` : 'مستقیم'}</Badge>
-                           ))}
-                        </div>
+                        <div className="text-[11px] text-slate-500 mb-2">{selectedPermDetail.path}</div>
                      </div>
 
-                     <div className="p-5 flex-1 overflow-y-auto space-y-6">
+                     <div className="p-5 flex-1 overflow-y-auto space-y-4">
                         {(() => {
-                           const hasDirect = selectedPermDetail.sources.some(s => s.type === 'direct');
+                           // Find the ACTIVE source detail
+                           const activeSource = selectedPermDetail.breakdown.find(b => b.sourceId === activeSourceId);
+                           
+                           if (!activeSource) {
+                               return <div className="text-center text-slate-400 text-xs mt-10">لطفا یکی از منابع دسترسی (بج‌های رنگی) را از لیست انتخاب کنید.</div>;
+                           }
+                           
+                           const isReadOnly = activeSource.type === 'role';
+
                            return (
                               <>
-                                 {!hasDirect && (
-                                    <div className="bg-amber-50 border border-amber-200 p-2 rounded text-[10px] text-amber-700 flex items-center gap-1 mb-2">
-                                       <Lock size={10}/> دسترسی فعلی از طریق نقش است. برای تغییر، روی گزینه‌ها کلیک کنید تا دسترسی مستقیم اضافه شود.
-                                    </div>
+                                 <div className={`p-3 rounded border mb-2 flex items-center gap-2 ${isReadOnly ? 'bg-purple-50 border-purple-100 text-purple-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
+                                     {isReadOnly ? <Shield size={16}/> : <Edit size={16}/>}
+                                     <div className="font-bold text-xs">
+                                         منبع: {activeSource.type === 'role' ? `نقش ${activeSource.label}` : 'دسترسی مستقیم'}
+                                     </div>
+                                 </div>
+
+                                 {isReadOnly && (
+                                     <div className="flex items-start gap-2 text-[10px] text-slate-500 bg-slate-100 p-2 rounded">
+                                        <Info size={14} className="shrink-0 mt-0.5"/>
+                                        این دسترسی‌ها از نقش به ارث رسیده‌اند و در اینجا قابل تغییر نیستند.
+                                     </div>
                                  )}
 
                                  <div>
                                     <div className="text-[11px] font-bold text-slate-500 uppercase mb-3">عملیات مجاز</div>
-                                    <SelectionGrid 
-                                        items={AVAILABLE_ACTIONS}
-                                        selectedIds={hasDirect ? selectedPermDetail.directActions || [] : selectedPermDetail.roleActions || []}
-                                        onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)}
-                                        columns={4}
-                                    />
+                                    {isReadOnly ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {activeSource.actions.map(act => {
+                                                const label = AVAILABLE_ACTIONS.find(a => a.id === act)?.label || act;
+                                                return <Badge key={act} variant="success">{label}</Badge>
+                                            })}
+                                            {activeSource.actions.length === 0 && <span className="text-slate-400 text-xs">هیچ عملیاتی مجاز نیست</span>}
+                                        </div>
+                                    ) : (
+                                        <SelectionGrid 
+                                            items={AVAILABLE_ACTIONS}
+                                            selectedIds={activeSource.actions || []}
+                                            onToggle={(id) => handleUpdateDirectPermission(selectedPermDetail.id, 'action', id)}
+                                            columns={3}
+                                        />
+                                    )}
                                  </div>
 
                                  <div className="pt-4 border-t border-slate-200">
@@ -625,20 +691,25 @@ const UserManagement = ({ t, isRtl }) => {
                                             <span className="text-[11px] font-bold block mb-2 text-slate-700">{def.label}:</span>
                                             <div className="flex flex-wrap gap-2">
                                                 {def.options.map(opt => {
-                                                    const roleHas = selectedPermDetail.roleScopes?.[key]?.includes(opt.value);
-                                                    const directHas = selectedPermDetail.directScopes?.[key]?.includes(opt.value);
-                                                    const isChecked = hasDirect ? directHas : roleHas;
+                                                    const hasAccess = activeSource.scopes?.[key]?.includes(opt.value);
                                                     
+                                                    if (isReadOnly) {
+                                                        return hasAccess ? <Badge key={opt.value} variant="info">{opt.label}</Badge> : null;
+                                                    }
+
                                                     return (
                                                         <ToggleChip 
                                                             key={opt.value} 
                                                             label={opt.label} 
-                                                            checked={isChecked}
+                                                            checked={hasAccess}
                                                             onClick={() => handleUpdateDirectPermission(selectedPermDetail.id, 'scope', key, opt.value)}
-                                                            colorClass={hasDirect ? 'green' : 'indigo'} 
+                                                            colorClass="indigo"
                                                         />
                                                     )
                                                 })}
+                                                {isReadOnly && (!activeSource.scopes?.[key] || activeSource.scopes[key].length === 0) && (
+                                                    <span className="text-[10px] text-slate-400">محدودیتی تعریف نشده</span>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
