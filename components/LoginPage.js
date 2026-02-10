@@ -12,7 +12,10 @@ import {
   User, 
   Building2, 
   Languages, 
-  BarChart3 
+  BarChart3,
+  Search,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 
 const LoginPage = ({ 
@@ -28,25 +31,82 @@ const LoginPage = ({
   if (authView === 'login') {
     headerTitle = t.loginTitle;
     headerSubtitle = t.loginSubtitle;
+  } else if (authView === 'forgot-identify') {
+    headerTitle = isRtl ? 'بازیابی حساب کاربری' : 'Account Recovery';
+    headerSubtitle = isRtl ? 'ابتدا نام کاربری یا شماره موبایل خود را وارد کنید' : 'Enter your username or mobile number first';
+  } else if (authView === 'forgot-choice') {
+    headerTitle = isRtl ? 'انتخاب روش بازیابی' : 'Select Recovery Method';
+    headerSubtitle = isRtl ? `بازیابی برای حساب: ${recoveryData.identifier || '...'}` : `Recovery for: ${recoveryData.identifier || '...'}`;
   } else if (authView === 'reset') {
-    // استفاده از ترجمه موجود یا متن ثابت برای حالت تغییر رمز
     headerTitle = t.updatePassword || (isRtl ? 'تغییر رمز عبور' : 'Change Password');
     headerSubtitle = isRtl ? 'لطفاً رمز عبور جدید خود را وارد کنید' : 'Please enter your new password';
   }
-  // --------------------------------------------------
+  
+  const DirectionIcon = isRtl ? ArrowLeft : ArrowRight;
+  const BackIcon = isRtl ? ChevronRight : ChevronLeft;
+
+  // Handler to move from Identity to Choice
+  const handleIdentitySubmit = (e) => {
+    e.preventDefault();
+    if (!recoveryData.identifier) return; // Simple validation
+    setAuthView('forgot-choice');
+  };
 
   const renderAuthView = () => {
     switch (authView) {
-      case 'forgot-choice':
+      
+      // --- 1. NEW STEP: IDENTIFY USER ---
+      case 'forgot-identify':
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <form onSubmit={handleIdentitySubmit} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <button 
+              type="button"
               onClick={() => setAuthView('login')}
-              className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold mb-4"
+              className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold mb-2"
             >
-              {isRtl ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              <BackIcon size={18} />
               {t.backToLogin}
             </button>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
+                {isRtl ? 'نام کاربری / موبایل / ایمیل' : 'Username / Mobile / Email'}
+              </label>
+              <div className="relative group">
+                <div className={`absolute inset-y-0 ${isRtl ? 'right-4' : 'left-4'} flex items-center text-slate-400 group-focus-within:text-blue-600 transition-colors`}>
+                  <Search size={20} />
+                </div>
+                <input 
+                  type="text" 
+                  autoFocus
+                  required
+                  value={recoveryData.identifier || ''}
+                  onChange={(e) => setRecoveryData({...recoveryData, identifier: e.target.value})}
+                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all text-sm`}
+                  placeholder={isRtl ? "مثال: admin" : "e.g. admin"}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+              {isRtl ? 'ادامه' : 'Continue'}
+              <DirectionIcon size={18} />
+            </button>
+          </form>
+        );
+
+      // --- 2. CHOOSE METHOD (Updated) ---
+      case 'forgot-choice':
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
+            <button 
+              onClick={() => setAuthView('forgot-identify')}
+              className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold mb-4"
+            >
+              <BackIcon size={18} />
+              {isRtl ? 'بازگشت' : 'Back'}
+            </button>
+            
             <div className="grid grid-cols-1 gap-4">
               <button 
                 onClick={() => setAuthView('otp')}
@@ -57,6 +117,7 @@ const LoginPage = ({
                 </div>
                 <div className="text-center">
                   <h3 className="font-bold text-slate-900">{t.viaSms}</h3>
+                  <span className="text-[10px] text-slate-400 block mt-1">0912***3456</span>
                 </div>
               </button>
               <button 
@@ -68,6 +129,7 @@ const LoginPage = ({
                 </div>
                 <div className="text-center">
                   <h3 className="font-bold text-slate-900">{t.viaEmail}</h3>
+                  <span className="text-[10px] text-slate-400 block mt-1">use***@company.com</span>
                 </div>
               </button>
             </div>
@@ -77,19 +139,10 @@ const LoginPage = ({
       case 'otp':
         return (
           <form onSubmit={handleVerifyOtp} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <button onClick={() => setAuthView('forgot-choice')} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold">
-              {isRtl ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-              {isRtl ? 'تغییر روش بازیابی' : 'Change Method'}
+            <button type="button" onClick={() => setAuthView('forgot-choice')} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-bold">
+              <BackIcon size={18} />
+              {isRtl ? 'تغییر روش' : 'Change Method'}
             </button>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.mobileLabel}</label>
-              <input 
-                type="text" 
-                disabled
-                value="0912****345"
-                className="w-full bg-slate-100 border border-slate-200 rounded-xl py-3 px-4 text-sm font-medium text-slate-500 cursor-not-allowed"
-              />
-            </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">{t.enterOtp}</label>
               <input 
@@ -165,7 +218,6 @@ const LoginPage = ({
               </div>
             </div>
 
-            {/* --- اصلاح شده: نمایش خطا در صورت عدم تطابق رمزها --- */}
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold flex items-center gap-2 border border-red-100 animate-in shake">
                 <ShieldCheck size={16}/> {error}
@@ -234,7 +286,7 @@ const LoginPage = ({
                   />
                 </div>
                 <div className="flex justify-end mt-2 px-1">
-                  <button type="button" onClick={() => {setAuthView('forgot-choice');}} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
+                  <button type="button" onClick={() => {setAuthView('forgot-identify');}} className="text-xs font-bold text-blue-600 hover:underline">{t.forgotPass}</button>
                 </div>
               </div>
 
@@ -242,7 +294,7 @@ const LoginPage = ({
 
               <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
                 {t.loginBtn}
-                {isRtl ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+                <DirectionIcon size={18} />
               </button>
             </form>
           </div>
@@ -263,7 +315,6 @@ const LoginPage = ({
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
             <BarChart3 size={32} />
           </div>
-          {/* --- اصلاح شده: استفاده از متغیرهای پویا برای عنوان و زیرعنوان --- */}
           <h1 className="text-2xl font-black">{headerTitle}</h1>
           <p className="text-blue-100 text-sm mt-2 opacity-90">{headerSubtitle}</p>
         </div>
