@@ -460,7 +460,7 @@ const UserManagement = ({ t, isRtl }) => {
          <div className="grid grid-cols-2 gap-4">
             <InputField label="نام کاربری" value={userFormData.username} onChange={(e) => setUserFormData({...userFormData, username: e.target.value})} isRtl={isRtl} className="dir-ltr" />
             <SelectField label="نوع کاربری" value={userFormData.userType} onChange={(e) => setUserFormData({...userFormData, userType: e.target.value})} isRtl={isRtl}>
-               <option value="مدیر سیستم">مدیر سیستم</option><option value="کارشناس">کارشناس</option>
+               <option value="مدیر سیستم">مدیر سیستم</option><option value="کاربر سیستم">کاربر سیستم</option>
             </SelectField>
             
             <div className="col-span-2 grid grid-cols-2 gap-4">
