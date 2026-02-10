@@ -246,14 +246,6 @@ const CurrencySettings = ({ t, isRtl }) => {
       width: 'w-32', 
       className: 'font-mono font-bold text-left dir-ltr',
       render: (row) => row.rate.toLocaleString('fa-IR', { maximumFractionDigits: 4 }) 
-    },
-    {
-       field: 'actions',
-       header: t.colActions || 'Actions',
-       width: 'w-20',
-       render: (row) => (
-          <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteHistory(row.id)} />
-       )
     }
   ];
 
