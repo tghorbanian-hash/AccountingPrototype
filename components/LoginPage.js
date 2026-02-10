@@ -20,6 +20,21 @@ const LoginPage = ({
   loginData, setLoginData, recoveryData, setRecoveryData, error, 
   handleLogin, handleVerifyOtp, handleUpdatePassword, toggleLanguage 
 }) => {
+
+  // --- Logic to Determine Header Title & Subtitle ---
+  let headerTitle = t.resetMethodTitle;
+  let headerSubtitle = t.resetMethodSubtitle;
+
+  if (authView === 'login') {
+    headerTitle = t.loginTitle;
+    headerSubtitle = t.loginSubtitle;
+  } else if (authView === 'reset') {
+    // استفاده از ترجمه موجود یا متن ثابت برای حالت تغییر رمز
+    headerTitle = t.updatePassword || (isRtl ? 'تغییر رمز عبور' : 'Change Password');
+    headerSubtitle = isRtl ? 'لطفاً رمز عبور جدید خود را وارد کنید' : 'Please enter your new password';
+  }
+  // --------------------------------------------------
+
   const renderAuthView = () => {
     switch (authView) {
       case 'forgot-choice':
@@ -118,7 +133,6 @@ const LoginPage = ({
           </div>
         );
 
-      // --- اصلاح شده: تغییر نام case از 'reset-password' به 'reset' برای هماهنگی با App.js ---
       case 'reset':
         return (
           <form onSubmit={handleUpdatePassword} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -150,6 +164,14 @@ const LoginPage = ({
                 />
               </div>
             </div>
+
+            {/* --- اصلاح شده: نمایش خطا در صورت عدم تطابق رمزها --- */}
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold flex items-center gap-2 border border-red-100 animate-in shake">
+                <ShieldCheck size={16}/> {error}
+              </div>
+            )}
+
             <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
               {t.updatePassword}
             </button>
@@ -241,8 +263,9 @@ const LoginPage = ({
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
             <BarChart3 size={32} />
           </div>
-          <h1 className="text-2xl font-black">{authView === 'login' ? t.loginTitle : t.resetMethodTitle}</h1>
-          <p className="text-blue-100 text-sm mt-2 opacity-90">{authView === 'login' ? t.loginSubtitle : t.resetMethodSubtitle}</p>
+          {/* --- اصلاح شده: استفاده از متغیرهای پویا برای عنوان و زیرعنوان --- */}
+          <h1 className="text-2xl font-black">{headerTitle}</h1>
+          <p className="text-blue-100 text-sm mt-2 opacity-90">{headerSubtitle}</p>
         </div>
 
         <div className="p-8">
