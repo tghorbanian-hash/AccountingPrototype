@@ -153,7 +153,7 @@ const UserManagement = ({ t, isRtl }) => {
 
   const [users, setUsers] = useState([
     { id: 1, username: 'admin', partyId: 101, userType: 'مدیر سیستم', roleIds: [4], isActive: true, lastLogin: '1402/11/15' },
-    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کارشناس مالی', roleIds: [1], isActive: true, lastLogin: '1402/11/10' },
+    { id: 2, username: 's.ahmadi', partyId: 103, userType: 'کاربر سیستم', roleIds: [1], isActive: true, lastLogin: '1402/11/10' },
   ]);
 
   // --- STATES ---
@@ -254,7 +254,7 @@ const UserManagement = ({ t, isRtl }) => {
   // --- HANDLERS ---
   const handleCreate = () => {
     setEditingUser(null);
-    setUserFormData({ username: '', partyId: '', userType: 'کارشناس', isActive: true, password: '' });
+    setUserFormData({ username: '', partyId: '', userType: 'کاربر سیستم', isActive: true, password: '' });
     setIsEditModalOpen(true);
   };
 
