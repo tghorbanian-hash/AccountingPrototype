@@ -246,14 +246,6 @@ const CurrencySettings = ({ t, isRtl }) => {
       width: 'w-32', 
       className: 'font-mono font-bold text-left dir-ltr',
       render: (row) => row.rate.toLocaleString('fa-IR', { maximumFractionDigits: 4 }) 
-    },
-    {
-       field: 'actions',
-       header: t.colActions || 'Actions',
-       width: 'w-20',
-       render: (row) => (
-          <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteHistory(row.id)} />
-       )
     }
   ];
 
@@ -476,9 +468,17 @@ const CurrencySettings = ({ t, isRtl }) => {
       {/* 3. History Modal */}
       <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title={t.curr_history_title} size="lg">
          <div className="h-96">
-            <DataGrid columns={historyColumns} data={historyLog} isRtl={isRtl} />
-         </div>
-      </Modal>
+            <DataGrid 
+              columns={historyColumns} 
+              data={historyLog} 
+              isRtl={isRtl} 
+              // این خط زیر را اضافه کنید تا دکمه حذف در ستون صحیح نمایش داده شود
+              actions={(row) => (
+                <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteHistory(row.id)} />
+        )}
+      />
+   </div>
+</Modal>
 
     </div>
   );
