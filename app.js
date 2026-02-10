@@ -19,10 +19,11 @@ const App = () => {
   const [activeId, setActiveId] = useState('gl_docs');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
-  const [authView, setAuthView] = useState('login');
+  // Authentication States
+  const [authView, setAuthView] = useState('login'); // login, forgot, otp, reset
   const [loginMethod, setLoginMethod] = useState('standard');
   const [loginData, setLoginData] = useState({ identifier: '', password: '' });
-  const [recoveryData, setRecoveryData] = useState({ otp: '' });
+  const [recoveryData, setRecoveryData] = useState({ otp: '', newPass: '', confirmPass: '' });
   const [error, setError] = useState('');
 
   const t = translations[lang] || {};
@@ -33,13 +34,45 @@ const App = () => {
     document.documentElement.lang = lang;
   }, [lang, isRtl]);
 
+  // --- Auth Handlers ---
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (loginData.identifier === 'admin' && loginData.password === 'admin') {
       setIsLoggedIn(true);
       setError('');
-    } else setError(t.invalidCreds || 'Invalid credentials');
+    } else {
+      setError(t.invalidCreds || 'Invalid credentials');
+    }
   };
+
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    // MOCK LOGIC: Accept '123456' as the valid code
+    if (recoveryData.otp === '123456') {
+      setError('');
+      setAuthView('reset'); // Go to Change Password Page
+    } else {
+      setError(t.invalidOtp || 'Invalid OTP code');
+    }
+  };
+
+  const handleUpdatePassword = (e) => {
+    e.preventDefault();
+    // MOCK LOGIC: Validate passwords match
+    if (!recoveryData.newPass || recoveryData.newPass !== recoveryData.confirmPass) {
+       setError(isRtl ? 'رمز عبور و تکرار آن مطابقت ندارند' : 'Passwords do not match');
+       return;
+    }
+    
+    // Success scenario
+    alert(t.resetSuccess || 'Password updated successfully');
+    setAuthView('login');
+    setError('');
+    setRecoveryData({ otp: '', newPass: '', confirmPass: '' });
+  };
+
+  // --- App Logic ---
 
   const currentModule = useMemo(() => {
     return MENU_DATA.find(m => m.id === activeModuleId) || MENU_DATA[0] || {};
@@ -104,7 +137,27 @@ const App = () => {
   const { LoginPage } = window;
   if (!isLoggedIn) {
     if (!LoginPage) return <div className="p-10 text-center">Loading...</div>;
-    return <LoginPage t={t} isRtl={isRtl} authView={authView} setAuthView={setAuthView} loginMethod={loginMethod} setLoginMethod={setLoginMethod} loginData={loginData} setLoginData={setLoginData} recoveryData={recoveryData} setRecoveryData={setRecoveryData} error={error} handleLogin={handleLogin} toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')} handleVerifyOtp={() => {}} handleUpdatePassword={() => {}} />;
+    return (
+      <LoginPage 
+        t={t} 
+        isRtl={isRtl} 
+        authView={authView} 
+        setAuthView={setAuthView} 
+        loginMethod={loginMethod} 
+        setLoginMethod={setLoginMethod} 
+        loginData={loginData} 
+        setLoginData={setLoginData} 
+        recoveryData={recoveryData} 
+        setRecoveryData={setRecoveryData} 
+        error={error} 
+        handleLogin={handleLogin} 
+        toggleLanguage={() => setLang(l => l === 'en' ? 'fa' : 'en')} 
+        
+        // --- Added Handlers ---
+        handleVerifyOtp={handleVerifyOtp} 
+        handleUpdatePassword={handleUpdatePassword} 
+      />
+    );
   }
 
   return (
