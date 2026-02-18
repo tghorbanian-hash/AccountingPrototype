@@ -165,18 +165,11 @@ const LoginPage = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5 px-1">
-                    <label className="block text-xs font-bold text-slate-700">
-                      {t.password || (isRtl ? 'کلمه عبور' : 'Password')}
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={() => setAuthView('forgot-identify')}
-                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-                    >
-                      {t.forgotPasswordLink || (isRtl ? 'رمز عبور را فراموش کرده‌اید؟' : 'Forgot password?')}
-                    </button>
-                  </div>
+                  {/* Changed: Label is now alone, without the button inside */}
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">
+                    {t.password || (isRtl ? 'کلمه عبور' : 'Password')}
+                  </label>
+                  
                   <div className="relative">
                     <input
                       type="password"
@@ -187,6 +180,17 @@ const LoginPage = ({
                       placeholder="••••••••"
                     />
                     <Lock size={18} className="absolute top-3.5 left-3.5 text-slate-400" />
+                  </div>
+
+                  {/* Changed: Forgot Password Button moved here, below the input */}
+                  <div className="flex justify-end mt-2 px-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setAuthView('forgot-identify')}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      {t.forgotPasswordLink || (isRtl ? 'رمز عبور را فراموش کرده‌اید؟' : 'Forgot password?')}
+                    </button>
                   </div>
                 </div>
               </div>
