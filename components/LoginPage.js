@@ -63,8 +63,8 @@ const LoginPage = ({
   const getHeaderTitle = () => {
     switch (authView) {
       case 'login': return t.loginTitle || (isRtl ? 'ورود به سیستم' : 'System Login');
-      case 'forgot-identify': return t.forgotPassword || (isRtl ? 'فراموشی کلمه عبور' : 'Forgot Password');
       case 'forgot-choice': return t.recoveryMethod || (isRtl ? 'روش بازیابی' : 'Recovery Method');
+      case 'forgot-identify': return t.forgotPassword || (isRtl ? 'فراموشی کلمه عبور' : 'Forgot Password');
       case 'otp': return t.enterOtp || (isRtl ? 'تایید کد' : 'Verify OTP');
       case 'email-sent': return t.emailSent || (isRtl ? 'ایمیل ارسال شد' : 'Email Sent');
       case 'reset': return t.resetPassword || (isRtl ? 'تغییر کلمه عبور' : 'Reset Password');
