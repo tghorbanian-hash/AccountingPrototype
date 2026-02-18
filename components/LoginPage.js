@@ -40,7 +40,6 @@ const LoginPage = ({
          return;
       }
       
-      // Fix: Use chain .schema().rpc() instead of options
       const { error: resetErr } = await supabase.schema('gen').rpc('reset_user_password', {
          p_user_id: userData.id,
          p_new_password: resetData.newPassword
@@ -165,11 +164,12 @@ const LoginPage = ({
                 </div>
 
                 <div>
-                  {/* Changed: Label is now alone, without the button inside */}
+                  {/* لیبل پسورد - بدون دکمه فراموشی */}
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">
                     {t.password || (isRtl ? 'کلمه عبور' : 'Password')}
                   </label>
                   
+                  {/* فیلد ورودی پسورد */}
                   <div className="relative">
                     <input
                       type="password"
@@ -182,7 +182,7 @@ const LoginPage = ({
                     <Lock size={18} className="absolute top-3.5 left-3.5 text-slate-400" />
                   </div>
 
-                  {/* Changed: Forgot Password Button moved here, below the input */}
+                  {/* دکمه فراموشی رمز عبور - منتقل شده به زیر فیلد پسورد */}
                   <div className="flex justify-end mt-2 px-1">
                     <button 
                       type="button" 
