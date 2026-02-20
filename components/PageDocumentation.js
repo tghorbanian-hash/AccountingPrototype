@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Book, FileText, UploadCloud, Trash2, Download, 
-  File, X, AlertCircle 
+  File, AlertCircle, FileSpreadsheet, X, CheckCircle
 } from 'lucide-react';
 
 const PageDocumentation = ({ 
   isOpen, onClose, pageKey, docType, 
-  isAdmin, t, isRtl 
+  isAdmin, t, isRtl, userId 
 }) => {
   // دسترسی ایمن به آبجکت UI سراسری
   const UI = window.UI || {};
@@ -18,6 +18,7 @@ const PageDocumentation = ({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentDoc, setCurrentDoc] = useState(null);
+  const [hasFile, setHasFile] = useState(false); // استیت جدید برای بررسی انتخاب فایل
   const fileInputRef = useRef(null);
 
   // اگر کامپوننت‌های UI هنوز لود نشده‌اند، رندر نکن تا ارور ندهد
@@ -32,6 +33,7 @@ const PageDocumentation = ({
   useEffect(() => {
     if (isOpen && pageKey) {
       fetchDocument();
+      setHasFile(false); // ریست کردن وضعیت فایل
     }
   }, [isOpen, pageKey, docType]);
 
@@ -39,7 +41,6 @@ const PageDocumentation = ({
     if (!supabase) return;
     setLoading(true);
     try {
-      // استفاده از maybeSingle برای جلوگیری از ارور در صورت نبود رکورد
       const { data, error } = await supabase
         .schema('gen')
         .from('page_documents')
@@ -60,8 +61,18 @@ const PageDocumentation = ({
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleFileSelect = (e) => {
+    // بررسی اینکه آیا فایلی واقعا انتخاب شده است
+    if (e.target.files && e.target.files.length > 0) {
+      setHasFile(true);
+    } else {
+      setHasFile(false);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    // دریافت فایل از ref به جای event
+    const file = fileInputRef.current?.files[0];
     if (!file) return;
 
     // محدودیت حجم (۱۰ مگابایت)
@@ -95,12 +106,12 @@ const PageDocumentation = ({
         file_path: fileNameInStorage,
         file_name: file.name,
         content_type: file.type,
-        updated_at: new Date().toISOString() // استفاده از فرمت استاندارد زمان
+        updated_by: userId || null,
+        updated_at: new Date().toISOString()
       };
 
       // ۳. آپدیت یا اینسرت در دیتابیس
       if (currentDoc && currentDoc.id) {
-        // اگر قبلاً فایلی بوده، فایل قبلی را از استوریج پاک کن (اختیاری ولی تمیزتر است)
         if (currentDoc.file_path) {
            await supabase.storage.from('documentation').remove([currentDoc.file_path]);
         }
@@ -122,6 +133,8 @@ const PageDocumentation = ({
       }
 
       await fetchDocument();
+      setHasFile(false); // ریست کردن دکمه پس از آپلود موفق
+      if (fileInputRef.current) fileInputRef.current.value = ''; // پاک کردن اینپوت
       alert(isRtl ? 'فایل با موفقیت آپلود شد.' : 'File uploaded successfully.');
 
     } catch (err) {
@@ -129,8 +142,6 @@ const PageDocumentation = ({
       alert(isRtl ? 'خطا در آپلود فایل. لطفاً کنسول را چک کنید.' : 'Error uploading file. Check console.');
     } finally {
       setUploading(false);
-      // پاک کردن اینپوت فایل
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -139,7 +150,6 @@ const PageDocumentation = ({
 
     setUploading(true);
     try {
-      // ۱. حذف از Storage
       if (currentDoc.file_path) {
         const { error: storageError } = await supabase.storage
           .from('documentation')
@@ -148,7 +158,6 @@ const PageDocumentation = ({
         if (storageError) console.warn("Storage delete warning:", storageError);
       }
 
-      // ۲. حذف از دیتابیس
       const { error: dbError } = await supabase
         .schema('gen')
         .from('page_documents')
@@ -170,6 +179,17 @@ const PageDocumentation = ({
     if (!path) return '#';
     const { data } = supabase.storage.from('documentation').getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const getFileIcon = (fileName) => {
+      if (!fileName) return <File size={24} />;
+      const ext = fileName.split('.').pop().toLowerCase();
+      
+      if (['xls', 'xlsx', 'csv'].includes(ext)) {
+          return FileSpreadsheet ? <FileSpreadsheet size={24} /> : <File size={24} />;
+      }
+      if (['pdf'].includes(ext)) return <FileText size={24} />;
+      return <File size={24} />;
   };
 
   return (
@@ -203,7 +223,7 @@ const PageDocumentation = ({
                 <div className="w-full animate-in fade-in duration-300">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
-                       <File size={24} />
+                       {getFileIcon(currentDoc.file_name)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-slate-800 truncate dir-ltr text-right" title={currentDoc.file_name}>
@@ -220,7 +240,7 @@ const PageDocumentation = ({
                       href={getDownloadUrl(currentDoc.file_path)} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className={`flex-1 flex items-center justify-center gap-2 h-9 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm shadow-indigo-200`}
+                      className="flex-1 flex items-center justify-center gap-2 h-9 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm shadow-indigo-200"
                     >
                       <Download size={14} />
                       {isRtl ? 'دانلود / مشاهده' : 'Download / View'}
@@ -262,10 +282,11 @@ const PageDocumentation = ({
                    </span>
                 </div>
                 
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-3 items-center">
                    <input 
                       type="file" 
                       ref={fileInputRef}
+                      onChange={handleFileSelect} // اتصال تابع هندلر جدید
                       className="block w-full text-xs text-slate-500
                         file:mr-4 file:py-2 file:px-4
                         file:rounded-full file:border-0
@@ -274,22 +295,31 @@ const PageDocumentation = ({
                         file:cursor-pointer hover:file:bg-indigo-100
                         cursor-pointer
                       "
-                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.txt"
                       disabled={uploading}
                    />
+                   
+                   {/* دکمه آپلود بزرگ‌تر و هوشمند */}
                    <Button 
-                      variant="primary" 
-                      size="sm"
-                      onClick={() => fileInputRef.current && handleFileUpload({ target: fileInputRef.current })}
-                      disabled={uploading}
-                      className="shrink-0 h-9"
+                      variant={hasFile ? "primary" : "secondary"} 
+                      onClick={handleFileUpload}
+                      disabled={uploading || !hasFile} // غیرفعال تا زمانی که فایل انتخاب نشده
+                      className={`
+                        shrink-0 h-10 px-6 text-sm font-bold shadow-md transition-all
+                        ${hasFile ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5' : 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400'}
+                      `}
                    >
-                      {uploading ? '...' : (isRtl ? 'آپلود' : 'Upload')}
+                      {uploading ? '...' : (
+                        <div className="flex items-center gap-2">
+                          {hasFile ? <UploadCloud size={18}/> : null}
+                          <span>{isRtl ? 'آپلود فایل' : 'Upload File'}</span>
+                        </div>
+                      )}
                    </Button>
                 </div>
                 <div className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
                   <AlertCircle size={10} />
-                  {isRtl ? 'فرمت‌های مجاز: PDF, Word, تصویر (حداکثر ۱۰ مگابایت)' : 'Allowed: PDF, Word, Images (Max 10MB)'}
+                  {isRtl ? 'فرمت‌های مجاز: PDF, Word, Excel, تصویر (حداکثر ۱۰ مگابایت)' : 'Allowed: PDF, Word, Excel, Images (Max 10MB)'}
                 </div>
               </div>
             )}
@@ -307,5 +337,8 @@ const PageDocumentation = ({
     </Modal>
   );
 };
+
+// اتصال به آبجکت window جهت دسترسی در app.js
+window.PageDocumentation = PageDocumentation;
 
 export default PageDocumentation;
