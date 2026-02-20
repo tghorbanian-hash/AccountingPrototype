@@ -382,7 +382,10 @@ const StructureList = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [formData, setFormData] = useState({ code: '', title: '', status: true, groupLen: 1, generalLen: 2, subsidiaryLen: 2, useChar: false });
+  const [formData, setFormData] = useState({ 
+      code: '', title: '', status: true, 
+      groupLen: 1, generalLen: 2, subsidiaryLen: 2, useChar: false
+  });
 
   const handleEdit = (row) => {
     if(!canEdit) return alert(isRtl ? "دسترسی ندارید" : "Access Denied");
@@ -394,7 +397,10 @@ const StructureList = ({
   const handleCreate = () => {
     if(!canCreate) return alert(isRtl ? "دسترسی ندارید" : "Access Denied");
     setEditingItem(null);
-    setFormData({ code: '', title: '', status: true, groupLen: 1, generalLen: 2, subsidiaryLen: 2, useChar: false });
+    setFormData({ 
+        code: '', title: '', status: true, 
+        groupLen: 1, generalLen: 2, subsidiaryLen: 2, useChar: false
+    });
     setShowModal(true);
   };
 
@@ -467,18 +473,24 @@ const StructureList = ({
                <InputField label={isRtl ? "کد ساختار" : "Code"} value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} isRtl={isRtl} />
                <InputField label={isRtl ? "عنوان ساختار" : "Title"} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} isRtl={isRtl} />
             </div>
+            
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4">
-               <h4 className="text-[11px] font-bold text-slate-500 uppercase">{isRtl ? "تنظیمات طول کدینگ" : "Coding Length Settings"}</h4>
+               <h4 className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                 <Layers size={14}/> {isRtl ? "تنظیمات طول کدگذاری حساب‌ها" : "Length Settings"}
+               </h4>
+
                <div className="grid grid-cols-3 gap-4">
                   <InputField type="number" min="1" max="10" label={isRtl ? "طول کد گروه" : "Group Length"} value={formData.groupLen} onChange={e => setFormData({...formData, groupLen: parseInt(e.target.value)})} isRtl={isRtl} />
                   <InputField type="number" min="1" max="10" label={isRtl ? "طول کد کل" : "General Length"} value={formData.generalLen} onChange={e => setFormData({...formData, generalLen: parseInt(e.target.value)})} isRtl={isRtl} />
                   <InputField type="number" min="1" max="10" label={isRtl ? "طول کد معین" : "Sub Length"} value={formData.subsidiaryLen} onChange={e => setFormData({...formData, subsidiaryLen: parseInt(e.target.value)})} isRtl={isRtl} />
                </div>
+
                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <span className="text-[11px] text-slate-500">{isRtl ? "مجموع طول کد حساب:" : "Total Length:"}</span>
                   <span className="font-black text-indigo-700 text-lg">{(formData.groupLen || 0) + (formData.generalLen || 0) + (formData.subsidiaryLen || 0)}</span>
                </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
                <Checkbox label={isRtl ? "استفاده از حروف در کد" : "Use Characters"} checked={formData.useChar} onChange={v => setFormData({...formData, useChar: v})} />
                <Checkbox label={isRtl ? "فعال" : "Active"} checked={formData.status} onChange={v => setFormData({...formData, status: v})} />
@@ -520,7 +532,7 @@ const AccountTreeView = ({
     
     let defaults = {
       level: level, isActive: true, type: 'permanent', nature: 'debit',
-      tafsils: [], descriptions: []
+      tafsils: [], descriptions: [], code: ''
     };
 
     if (selectedNode && (level === 'general' || level === 'subsidiary')) {
@@ -528,6 +540,7 @@ const AccountTreeView = ({
       defaults.type = selectedNode.type || 'permanent';
       defaults.nature = selectedNode.nature || 'debit';
     }
+
     setFormData(defaults);
     setMode(`create_${level}`);
     setActiveTab('info');
@@ -551,6 +564,16 @@ const AccountTreeView = ({
     return null;
   };
 
+  // بررسی تکراری بودن کد کامل حساب در فرانت‌اند
+  const checkDuplicateCode = (nodes, fullCd, excludeId) => {
+      for (const n of nodes) {
+          const nFull = n.dynamicFullCode || n.fullCode || n.code;
+          if (n.id !== excludeId && nFull === fullCd) return true;
+          if (n.children && checkDuplicateCode(n.children, fullCd, excludeId)) return true;
+      }
+      return false;
+  };
+
   const handleSaveForm = async () => {
     if (!formData.code || !formData.title) return alert(isRtl ? "کد و عنوان الزامی است" : "Code and Title Required");
     
@@ -560,7 +583,7 @@ const AccountTreeView = ({
     else if (formData.level === 'subsidiary') requiredLen = structure.subsidiaryLen;
 
     if (formData.code.length !== requiredLen) {
-      return alert(isRtl ? `طول کد برای این سطح باید ${requiredLen} کاراکتر باشد.` : `Code length must be ${requiredLen}.`);
+      return alert(isRtl ? `طول کد برای این سطح باید دقیقاً ${requiredLen} کاراکتر باشد.` : `Code length must be exactly ${requiredLen}.`);
     }
 
     let parentFullCode = '';
@@ -580,6 +603,11 @@ const AccountTreeView = ({
     }
     
     let fullCode = formData.level === 'group' ? formData.code : (parentFullCode + formData.code);
+
+    // بررسی تکراری نبودن کد قبل از ارسال به بک‌اند
+    if (checkDuplicateCode(treeData, fullCode, formData.id)) {
+        return alert(isRtl ? "این کد حساب قبلاً ثبت شده و تکراری است." : "This account code already exists and is duplicate.");
+    }
 
     const payload = {
        structure_id: structure.id,
@@ -610,12 +638,15 @@ const AccountTreeView = ({
 
     try {
         let targetNodeId = formData.id;
+
         if (mode === 'edit') {
             await supabase.schema('gl').from('accounts').update(payload).eq('id', formData.id);
         } else {
             const { data, error } = await supabase.schema('gl').from('accounts').insert([payload]).select();
             if(error) throw error;
-            if(data && data.length > 0) targetNodeId = data[0].id;
+            if(data && data.length > 0) {
+                targetNodeId = data[0].id;
+            }
         }
 
         const { roots, map } = await fetchTreeData(structure.id);
@@ -629,7 +660,11 @@ const AccountTreeView = ({
         setMode('view');
     } catch (err) {
         console.error(err);
-        alert(isRtl ? "خطا در ثبت اطلاعات" : "Save Error");
+        if (err.code === '23505') {
+            alert(isRtl ? "کد وارد شده تکراری است." : "Duplicate code error.");
+        } else {
+            alert(isRtl ? "خطا در ثبت اطلاعات" : "Save Error");
+        }
     }
   };
 
