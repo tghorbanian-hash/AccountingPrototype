@@ -464,9 +464,13 @@ const App = () => {
           {menuData.map(mod => {
              const isActive = activeModuleId === mod.id;
              const IconComponent = mod.icon || Circle;
+             const moduleName = mod.label ? mod.label[lang] : mod.id;
+             
              return (
               <button 
-                key={mod.id} onClick={() => setActiveModuleId(mod.id)}
+                key={mod.id} 
+                onClick={() => setActiveModuleId(mod.id)}
+                title={moduleName} // Added native title attribute for native tooltip
                 className={`
                   relative w-10 h-10 rounded-xl transition-all flex items-center justify-center shrink-0 group
                   ${isActive 
@@ -480,13 +484,13 @@ const App = () => {
                   <span className={`absolute w-1.5 h-1.5 bg-indigo-600 rounded-full top-1.5 ${isRtl ? 'right-1' : 'left-1'}`}></span>
                 )}
 
-                {/* Tooltip: Positioned with high z-index and absolute positioning outside the container */}
+                {/* Styled CSS Tooltip (might be hidden by container overflow, native title provides fallback) */}
                 <div className={`
                   absolute ${isRtl ? 'right-full mr-4' : 'left-full ml-4'} top-1/2 -translate-y-1/2 
                   bg-slate-900 text-white text-[11px] py-1.5 px-3 rounded-md opacity-0 invisible 
                   group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100] shadow-xl font-medium pointer-events-none
                 `}>
-                  {mod.label ? mod.label[lang] : mod.id}
+                  {moduleName}
                   <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-[-4px]' : 'left-[-4px]'} w-2 h-2 bg-slate-900 rotate-45`}></div>
                 </div>
               </button>
@@ -572,15 +576,14 @@ const App = () => {
                 <Book size={18} />
               </button>
               
-              {window.IS_ADMIN && (
-                <button 
-                  onClick={() => openDocs('dev')} 
-                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
-                  title={isRtl ? 'مستندات توسعه (فنی)' : 'Developer Docs'}
-                >
-                  <Code size={18} />
-                </button>
-              )}
+              {/* CHANGE: Always visible now */}
+              <button 
+                onClick={() => openDocs('dev')} 
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
+                title={isRtl ? 'مستندات توسعه (فنی)' : 'Developer Docs'}
+              >
+                <Code size={18} />
+              </button>
               
               <div className="h-5 w-px bg-slate-200 mx-1"></div>
 
@@ -616,6 +619,7 @@ const App = () => {
           isAdmin={window.IS_ADMIN}
           t={t}
           isRtl={isRtl}
+          userId={currentUser?.id}
         />
       )}
     </div>
