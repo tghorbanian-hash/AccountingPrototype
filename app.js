@@ -521,7 +521,7 @@ const App = () => {
            </h2>
         </div>
         
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {TreeMenu ? (
             <TreeMenu 
               items={currentModule.children || []} 
