@@ -2,20 +2,33 @@ name: Mirror to GitLab
 
 on:
   push:
-    branches: [ '**' ]     # همه شاخه‌ها (main, master, هر چی داری)
+    branches: [ '**' ]
+    tags: [ '**' ]
   create:
   delete:
+  workflow_dispatch:   # ← این مهمه! حالا می‌تونی دستی Run کنی
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source (GitHub)
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # همه تاریخچه و شاخه‌ها رو بگیر
 
-      - name: Mirror to GitLab
+      - name: Configure Git
         run: |
-          git remote add gitlab ${{ secrets.GITLAB_MIRROR_URL }}
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Push mirror to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          # URL رو دقیق جایگزین کن (username و repo-name خودت)
+          GITLAB_URL="https://oauth2:${GITLAB_TOKEN}@gitlab.com/USERNAME/PROJECT-NAME.git"
+          
+          git remote add gitlab "${GITLAB_URL}" || true
           git push gitlab --all --force
           git push gitlab --tags --force
