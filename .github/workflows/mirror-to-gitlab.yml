@@ -6,28 +6,35 @@ on:
     tags: [ '**' ]
   create:
   delete:
-  workflow_dispatch:          # اجازه می‌ده دستی از تب Actions اجرا کنی
+  workflow_dispatch:          # دستی Run کن از تب Actions
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout GitHub repo (full history)
+      - name: Checkout full GitHub repository (with all history and branches)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set Git config
+      - name: Set Git user config (required for push)
         run: |
-          git config --global user.name "GitHub Actions Bot"
+          git config --global user.name "GitHub Actions Mirror Bot"
           git config --global user.email "actions@github.com"
 
-      - name: Mirror everything to GitLab
+      - name: Mirror everything to GitLab (full sync)
         env:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          # آدرس دقیق repo GitLab (گروه + پروژه)
-          git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@gitlab.com/next-top-tech/accounting/accounting-prototype.git" || true
+          # آدرس repo با توکن از secret (oauth2: پیشوند استاندارد برای PAT در GitLab)
+          GITLAB_REPO_URL="https://oauth2:${GITLAB_TOKEN}@gitlab.com/next-top-tech/accounting/accounting-prototype.git"
           
-          # قوی‌ترین روش mirror (همه شاخه‌ها، تگ‌ها، force overwrite)
+          # اضافه کردن remote (اگر وجود داشت ignore می‌کنه)
+          git remote add gitlab "${GITLAB_REPO_URL}" || true
+          
+          # تلاش اول بدون force (برای debug بهتر)
+          git push gitlab --all || echo "Normal push --all failed → going to force mirror"
+          git push gitlab --tags || echo "Normal push --tags failed → going to force"
+          
+          # mirror کامل + force (این معمولاً کار می‌کنه اگر auth درست باشه)
           git push gitlab --mirror --force
