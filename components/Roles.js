@@ -67,6 +67,7 @@ const Roles = ({ t, isRtl }) => {
   const [customActionsMap, setCustomActionsMap] = useState({});
   const [dbBranches, setDbBranches] = useState([]);
   const [dbLedgers, setDbLedgers] = useState([]);
+  const [dbDocTypes, setDbDocTypes] = useState([]);
 
   // --- UI STATES ---
   const [selectedRows, setSelectedRows] = useState([]);
@@ -103,15 +104,14 @@ const Roles = ({ t, isRtl }) => {
       'vouchers': [
         { id: 'allowed_ledgers', label: t.dsLedgers || (isRtl ? 'دفاتر مجاز' : 'Allowed Ledgers'), options: dbLedgers.map(l => ({ value: String(l.id), label: l.title })) },
         { id: 'allowed_branches', label: t.dsBranches || (isRtl ? 'شعب مجاز' : 'Allowed Branches'), options: dbBranches.map(b => ({ value: String(b.id), label: b.title })) },
-        { id: 'allowed_doctypes', label: t.dsDocTypes || (isRtl ? 'انواع سند سیستمی مجاز' : 'Allowed System Doc Types'), options: [
-            { value: 'sys_general', label: t.sysGeneral || (isRtl ? 'سند عمومی' : 'General') },
-            { value: 'sys_opening', label: t.sysOpening || (isRtl ? 'افتتاحیه' : 'Opening') }
-        ]}
+        { id: 'allowed_doctypes', label: t.dsDocTypes || (isRtl ? 'انواع سند سیستمی مجاز' : 'Allowed System Doc Types'), options: dbDocTypes.map(d => ({ value: d.code, label: d.title })) }
       ]
     };
     scopes['doc_list'] = scopes['vouchers']; 
+    scopes['doc_review'] = scopes['vouchers']; 
+    scopes['doc_finalize'] = scopes['vouchers']; 
     return scopes;
-  }, [dbBranches, dbLedgers, t, isRtl]);
+  }, [dbBranches, dbLedgers, dbDocTypes, t, isRtl]);
 
   // --- FETCH DATA ---
   useEffect(() => {
@@ -125,6 +125,9 @@ const Roles = ({ t, isRtl }) => {
     const { data: lData } = await supabase.schema('gl').from('ledgers').select('id, title').eq('is_active', true);
     if (lData) setDbLedgers(lData);
 
+    const { data: dtData } = await supabase.schema('gl').from('doc_types').select('code, title, type').eq('is_active', true);
+    if (dtData) setDbDocTypes(dtData.filter(d => d.type !== 'user'));
+
     const { data: resData } = await supabase.schema('gen').from('resources').select('*');
     if (resData) {
       const map = new Map();
@@ -133,7 +136,7 @@ const Roles = ({ t, isRtl }) => {
       const cActionsMap = {};
 
       resData.forEach(r => map.set(r.id, { 
-        id: r.code, // بسیار مهم: برگشت به نام کُد فرمت استاندارد 
+        id: r.code, 
         uuid: r.id, 
         label: { fa: r.title_fa, en: r.title_en }, 
         type: r.type, 
