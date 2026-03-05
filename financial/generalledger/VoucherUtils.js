@@ -502,48 +502,87 @@ const processCSVImport = async (file, contextVals, lookups, supabase, t) => {
     });
 };
 
-/**
- * سطح ۳: دریافت دسترسی‌های ۳ سطحی کاربر از دیتابیس
- * @param {object} supabase - کلاینت سوپابیس
- * @param {string} resourceCode - کد منبع (مثلاً 'vouchers')
- */
-const getUserPermissions = async (supabase, resourceCode = 'vouchers') => {
+const getUserPermissions = async (supabase, resourceCodes = ['vouchers']) => {
     try {
+        const codes = Array.isArray(resourceCodes) ? resourceCodes : [resourceCodes];
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData?.user?.id;
-        if (!userId) return null;
-
-        // دریافت نقش‌های کاربر
-        const { data: userRoles } = await supabase.schema('gen').from('user_roles').select('role_id').eq('user_id', userId);
-        const roleIds = userRoles?.map(r => r.role_id) || [];
-
-        // دریافت پرمیشن‌ها برای کاربر یا نقش‌های او
-        let query = supabase.schema('gen').from('permissions').select('*').eq('resource_code', resourceCode);
         
-        if (roleIds.length > 0) {
-            query = query.or(`user_id.eq.${userId},role_id.in.(${roleIds.join(',')})`);
-        } else {
-            query = query.eq('user_id', userId);
+        if (!userId) {
+            console.warn("[Permission] No user ID found from auth.");
+            return { actions: [], allowed_branches: [], allowed_ledgers: [], allowed_doctypes: [] };
         }
 
-        const { data: perms, error } = await query;
-        if (error) throw error;
+        const { data: userRoles, error: roleErr } = await supabase.schema('gen').from('user_roles').select('role_id').eq('user_id', userId);
+        if (roleErr) console.error("[Permission] Error fetching roles:", roleErr);
+        
+        const roleIds = userRoles?.map(r => r.role_id) || [];
+        let allPerms = [];
 
-        // ادغام پرمیشن‌ها (اگر کاربر چندین نقش داشته باشد)
-        const combined = {
-            actions: new Set(),
-            allowed_branches: [],
-            allowed_ledgers: [],
-            allowed_doctypes: []
-        };
+        // Fetch direct user permissions
+        const { data: userPerms, error: uErr } = await supabase.schema('gen').from('permissions')
+            .select('*')
+            .eq('user_id', userId)
+            .in('resource_code', codes);
+            
+        if (uErr) console.error("[Permission] User perms fetch error:", uErr);
+        if (userPerms && userPerms.length > 0) allPerms.push(...userPerms);
 
-        perms.forEach(p => {
-            // سطح ۲: عملیات
-            const actions = Array.isArray(p.actions) ? p.actions : (typeof p.actions === 'string' ? JSON.parse(p.actions) : []);
-            actions.forEach(a => combined.actions.add(a));
+        // Fetch role permissions
+        if (roleIds.length > 0) {
+            const { data: rolePerms, error: rErr } = await supabase.schema('gen').from('permissions')
+                .select('*')
+                .in('role_id', roleIds)
+                .in('resource_code', codes);
+                
+            if (rErr) console.error("[Permission] Role perms fetch error:", rErr);
+            if (rolePerms && rolePerms.length > 0) allPerms.push(...rolePerms);
+        }
 
-            // سطح ۳: دیتای مجاز
-            const scopes = p.data_scopes || {};
+        // 🌟 Fallback بسیار هوشمندانه برای خواندن مستقیم از کش برنامه اصلی 
+        if (allPerms.length === 0 && window.USER_PERMISSIONS) {
+            if (Array.isArray(window.USER_PERMISSIONS)) {
+                const cached = window.USER_PERMISSIONS.filter(p => codes.includes(p.resource_code) || codes.includes(p.resource_id));
+                allPerms.push(...cached);
+            } else if (typeof window.USER_PERMISSIONS === 'object') {
+                // اگر پرمیشن‌های کش شده به شکل دیکشنری (Key-Value) باشند
+                codes.forEach(c => {
+                    if (window.USER_PERMISSIONS[c]) {
+                        allPerms.push({ resource_code: c, ...window.USER_PERMISSIONS[c] });
+                    }
+                });
+            }
+        }
+
+        if (allPerms.length === 0) {
+             console.warn(`[Permission] No permissions found for user ${userId} on codes: ${codes.join(', ')}.`);
+             return { actions: [], allowed_branches: [], allowed_ledgers: [], allowed_doctypes: [] };
+        }
+
+        const combined = { actions: new Set(), allowed_branches: [], allowed_ledgers: [], allowed_doctypes: [] };
+
+        allPerms.forEach(p => {
+            let actionsArr = [];
+            try {
+                if (Array.isArray(p.actions)) {
+                    actionsArr = p.actions;
+                } else if (typeof p.actions === 'string') {
+                    if (p.actions.trim().startsWith('[')) actionsArr = JSON.parse(p.actions);
+                    else actionsArr = p.actions.split(',').map(s => s.trim());
+                }
+            } catch(e) { console.error("[Permission] Actions JSON parse error:", e, p.actions); }
+            
+            actionsArr.forEach(a => combined.actions.add(a));
+
+            let scopes = {};
+            try {
+                if (typeof p.data_scopes === 'object' && p.data_scopes !== null) {
+                    scopes = p.data_scopes;
+                } else if (typeof p.data_scopes === 'string') {
+                    scopes = JSON.parse(p.data_scopes);
+                }
+            } catch(e) { console.error("[Permission] Scopes JSON parse error:", e, p.data_scopes); }
+            
             if (scopes.allowed_branches) combined.allowed_branches.push(...scopes.allowed_branches);
             if (scopes.allowed_ledgers) combined.allowed_ledgers.push(...scopes.allowed_ledgers);
             if (scopes.allowed_doctypes) combined.allowed_doctypes.push(...scopes.allowed_doctypes);
@@ -556,8 +595,8 @@ const getUserPermissions = async (supabase, resourceCode = 'vouchers') => {
             allowed_doctypes: [...new Set(combined.allowed_doctypes)]
         };
     } catch (err) {
-        console.error('Error fetching permissions:', err);
-        return null;
+        console.error('[Permission] Fatal error in getUserPermissions:', err);
+        return { actions: [], allowed_branches: [], allowed_ledgers: [], allowed_doctypes: [] };
     }
 };
 

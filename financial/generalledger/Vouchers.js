@@ -2,11 +2,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Edit, Trash2, Plus, FileText, CheckCircle, FileWarning, Filter, 
-  Copy, Printer, Paperclip, DownloadCloud, FileSpreadsheet, Lock
+  Copy, Printer, Paperclip, DownloadCloud, FileSpreadsheet, Lock, Ban
 } from 'lucide-react';
 
 const Vouchers = ({ language = 'fa' }) => {
-  const { localTranslations, getStatusBadge, processCSVImport, generateCSVTemplate, getUserPermissions } = window.VoucherUtils || {};
+  const { localTranslations, getStatusBadge, processCSVImport, generateCSVTemplate } = window.VoucherUtils || {};
   const VoucherForm = window.VoucherForm;
   
   const t = localTranslations ? (localTranslations[language] || localTranslations['en']) : {};
@@ -17,6 +17,19 @@ const Vouchers = ({ language = 'fa' }) => {
   const supabase = window.supabase;
 
   const fileInputRef = useRef(null);
+
+  // --- Resilient Permission Checks (Like Ledgers.js) ---
+  const checkAccess = (action = null) => {
+    if (!window.hasAccess) return false;
+    const variations = ['doc_list', 'vouchers', '6ba74488-f6f0-4e23-8fc3-9cf6d7477e19'];
+    for (const res of variations) {
+       if (window.hasAccess(res, action)) return true;
+    }
+    return false;
+  };
+
+  const canEnterForm = checkAccess(); 
+  const canView   = canEnterForm || checkAccess('view') || checkAccess('read') || checkAccess('show');
 
   // --- Security States ---
   const [permissions, setPermissions] = useState(null);
@@ -57,26 +70,63 @@ const Vouchers = ({ language = 'fa' }) => {
   const lookups = useMemo(() => ({
       accounts, accountStructures, branches, fiscalYears, ledgers, 
       docTypes, currencies, currencyGlobals, detailTypes, allDetailInstances,
-      permissions // تزریق پرمیشن‌ها به لوکاپ‌ها برای استفاده در فرم
+      permissions
   }), [accounts, accountStructures, branches, fiscalYears, ledgers, docTypes, currencies, currencyGlobals, detailTypes, allDetailInstances, permissions]);
 
   // --- Initialization & Security ---
   useEffect(() => {
     const init = async () => {
-        setAccessLoading(true);
-        let perms = null;
-        
-        if (window.IS_ADMIN) {
-            perms = {
-                actions: ['view', 'create', 'edit', 'delete', 'import', 'export', 'print', 'attach', 'status_change'],
-                allowed_branches: [],
-                allowed_ledgers: [],
-                allowed_doctypes: []
-            };
-        } else {
-            perms = await getUserPermissions(supabase, 'vouchers');
+        if (!canView && !window.IS_ADMIN) {
+            setAccessLoading(false);
+            return;
         }
+
+        setAccessLoading(true);
         
+        // استخراج عملیات‌های مجاز با استفاده از متد قدرتمند window.hasAccess
+        const actions = [];
+        if (checkAccess('view')) actions.push('view');
+        if (checkAccess('create')) actions.push('create');
+        if (checkAccess('edit')) actions.push('edit');
+        if (checkAccess('delete')) actions.push('delete');
+        if (checkAccess('import')) actions.push('import');
+        if (checkAccess('export')) actions.push('export');
+        if (checkAccess('print')) actions.push('print');
+        if (checkAccess('attach')) actions.push('attach');
+        if (checkAccess('status_change')) actions.push('status_change');
+        
+        if (actions.length === 0 && canView) {
+            actions.push('view');
+        }
+
+        let perms = {
+            actions: window.IS_ADMIN ? ['view', 'create', 'edit', 'delete', 'import', 'export', 'print', 'attach', 'status_change'] : actions,
+            allowed_branches: [],
+            allowed_ledgers: [],
+            allowed_doctypes: []
+        };
+        
+        // تلاش برای دریافت Data Scopes از دیتابیس (بدون نیاز به User ID)
+        try {
+             if (!window.IS_ADMIN) {
+                 const { data: permData } = await supabase.schema('gen').from('permissions').select('data_scopes').eq('resource_code', 'doc_list');
+                 if (permData && permData.length > 0) {
+                     let br = [], ld = [], dt = [];
+                     permData.forEach(p => {
+                         const ds = p.data_scopes || {};
+                         if (ds.allowed_branches) br.push(...ds.allowed_branches);
+                         if (ds.allowed_ledgers) ld.push(...ds.allowed_ledgers);
+                         if (ds.allowed_doctypes) dt.push(...ds.allowed_doctypes);
+                     });
+                     if (br.length > 0) perms.allowed_branches = [...new Set(br)];
+                     if (ld.length > 0) perms.allowed_ledgers = [...new Set(ld)];
+                     if (dt.length > 0) perms.allowed_doctypes = [...new Set(dt)];
+                 }
+             }
+        } catch(e) {
+            console.error("Warning: Could not fetch data scopes", e);
+        }
+
         setPermissions(perms);
         setAccessLoading(false);
         fetchLookups(perms);
@@ -119,21 +169,40 @@ const Vouchers = ({ language = 'fa' }) => {
         safeFetch(supabase.schema('gen').from('currency_globals').select('*').limit(1))
     ]);
 
-    // سطح ۳: فیلتر کردن اطلاعات پایه بر اساس دسترسی کاربر
+    // سطح ۳: اعمال محدودیت شعب
     if (brData) {
-        const filteredBranches = (perms && perms.allowed_branches && perms.allowed_branches.length > 0)
-            ? brData.filter(b => perms.allowed_branches.includes(b.id))
-            : brData;
-        setBranches(filteredBranches.filter(b => b.is_active !== false));
+        if (window.IS_ADMIN) {
+            setBranches(brData.filter(b => b.is_active !== false));
+        } else {
+            const allowed = perms?.allowed_branches || [];
+            if (allowed.length > 0) {
+                 const filteredBranches = brData.filter(b => allowed.includes(String(b.id)));
+                 setBranches(filteredBranches.filter(b => b.is_active !== false));
+            } else {
+                 setBranches(brData.filter(b => b.is_active !== false));
+            }
+        }
     }
 
     if (fyData) setFiscalYears(fyData);
 
+    // سطح ۳: اعمال محدودیت دفاتر
+    let initialLedgerId = '';
     if (ledData) {
-        const filteredLedgers = (perms && perms.allowed_ledgers && perms.allowed_ledgers.length > 0)
-            ? ledData.filter(l => perms.allowed_ledgers.includes(String(l.id)))
-            : ledData;
-        setLedgers(filteredLedgers);
+        if (window.IS_ADMIN) {
+            setLedgers(ledData);
+            initialLedgerId = ledData[0]?.id || '';
+        } else {
+            const allowed = perms?.allowed_ledgers || [];
+            if (allowed.length > 0) {
+                const filteredLedgers = ledData.filter(l => allowed.includes(String(l.id)));
+                setLedgers(filteredLedgers);
+                initialLedgerId = filteredLedgers[0]?.id || '';
+            } else {
+                setLedgers(ledData);
+                initialLedgerId = ledData[0]?.id || '';
+            }
+        }
     }
 
     if (structData) setAccountStructures(structData);
@@ -142,28 +211,29 @@ const Vouchers = ({ language = 'fa' }) => {
     if (currGlobalsData && currGlobalsData.length > 0) setCurrencyGlobals(currGlobalsData[0]);
 
     setContextVals(prev => {
-        const initialLedger = (perms && perms.allowed_ledgers && perms.allowed_ledgers.length > 0)
-            ? ledData?.find(l => perms.allowed_ledgers.includes(String(l.id)))
-            : ledData?.[0];
-            
         if (!prev.fiscal_year_id && !prev.ledger_id) {
-            return { 
-                fiscal_year_id: fyData?.[0]?.id || '', 
-                ledger_id: initialLedger?.id || '' 
-            };
+            return { fiscal_year_id: fyData?.[0]?.id || '', ledger_id: initialLedgerId };
         }
         return prev;
     });
 
+    // سطح ۳: اعمال محدودیت نوع سند
     if (doctypeData) {
-        const allowedSysCodes = ['sys_opening', 'sys_general', 'sys_closing', 'sys_close_acc'];
-        let baseDocTypes = doctypeData.filter(d => d.type === 'user' || allowedSysCodes.includes(d.code));
-        
-        // سطح ۳: فیلتر انواع سند
-        if (perms && perms.allowed_doctypes && perms.allowed_doctypes.length > 0) {
-            baseDocTypes = baseDocTypes.filter(d => perms.allowed_doctypes.includes(d.code));
+        const allowedSysCodes = ['sys_general', 'sys_opening'];
+        if (window.IS_ADMIN) {
+            setDocTypes(doctypeData.filter(d => d.type === 'user' || allowedSysCodes.includes(d.code)));
+        } else {
+            const allowedSys = perms?.allowed_doctypes || [];
+            if (allowedSys.length > 0) {
+                setDocTypes(doctypeData.filter(d => {
+                    if (d.type === 'user') return true; 
+                    if (!allowedSysCodes.includes(d.code)) return false; 
+                    return allowedSys.includes(d.code); 
+                }));
+            } else {
+                setDocTypes(doctypeData.filter(d => d.type === 'user' || allowedSysCodes.includes(d.code)));
+            }
         }
-        setDocTypes(baseDocTypes);
     }
 
     if (currData) setCurrencies(currData);
@@ -195,12 +265,21 @@ const Vouchers = ({ language = 'fa' }) => {
         .order('voucher_date', { ascending: false })
         .order('voucher_number', { ascending: false });
       
-      // سطح ۳: محدود سازی دیتا در کوئری اصلی
-      if (permissions.allowed_branches && permissions.allowed_branches.length > 0) {
-          query = query.in('branch_id', permissions.allowed_branches);
-      }
-      if (permissions.allowed_doctypes && permissions.allowed_doctypes.length > 0) {
-          query = query.in('voucher_type', permissions.allowed_doctypes);
+      // سطح ۳: سخت‌گیری روی کوئری 
+      if (!window.IS_ADMIN) {
+          if (permissions.allowed_branches && permissions.allowed_branches.length > 0) {
+              query = query.in('branch_id', permissions.allowed_branches);
+          }
+
+          const sysAllowed = permissions.allowed_doctypes || [];
+          if (sysAllowed.length > 0) {
+              query = query.or(`voucher_type.not.ilike.sys_%,voucher_type.in.(${sysAllowed.join(',')})`);
+          } else {
+              query = query.not('voucher_type', 'ilike', 'sys_%');
+          }
+      } else {
+          const allowedSysCodes = ['sys_general', 'sys_opening'];
+          query = query.or(`voucher_type.not.ilike.sys_%,voucher_type.in.(${allowedSysCodes.join(',')})`);
       }
 
       if (paramsObj.voucher_number) query = query.eq('voucher_number', paramsObj.voucher_number);
@@ -239,8 +318,8 @@ const Vouchers = ({ language = 'fa' }) => {
   };
 
   const handleOpenForm = (voucher = null, copy = false) => {
-    if (!voucher && !permissions?.actions.includes('create')) {
-        alert(t.accessDenied);
+    if (!voucher && !permissions?.actions?.includes('create')) {
+        alert(t.accessDenied || 'دسترسی غیرمجاز برای ایجاد');
         return;
     }
     setCurrentVoucherId(voucher ? voucher.id : null);
@@ -249,20 +328,15 @@ const Vouchers = ({ language = 'fa' }) => {
   };
 
   const handleBulkStatus = async (newStatus) => {
-    if (!permissions?.actions.includes('status_change')) {
-        alert(t.accessDenied);
+    if (!permissions?.actions?.includes('status_change')) {
+        alert(t.accessDenied || 'دسترسی غیرمجاز');
         return;
     }
     if (selectedIds.length === 0) return;
     setLoading(true);
     try {
-        const { data: authData } = await supabase.auth.getUser();
-        const currentUserId = authData?.user?.id || null;
-        
         let updatePayload = { status: newStatus };
-        if (newStatus === 'reviewed') updatePayload.reviewed_by = currentUserId;
-        if (newStatus === 'final') updatePayload.approved_by = currentUserId;
-
+        // Since we are not strictly bound to auth.user, we just update status without user IDs for now
         const { error } = await supabase.schema('gl').from('vouchers').update(updatePayload).in('id', selectedIds);
         if (error) throw error;
         setSelectedIds([]);
@@ -288,24 +362,24 @@ const Vouchers = ({ language = 'fa' }) => {
   };
 
   const promptDelete = (voucher) => {
-    if (!permissions?.actions.includes('delete')) return;
+    if (!permissions?.actions?.includes('delete')) return;
     if (voucher.status === 'reviewed' || voucher.status === 'final') return;
     setVoucherToDelete(voucher);
     setShowDeleteModal(true);
   };
 
   const handleImportCSV = async (e) => {
-     if (!permissions?.actions.includes('import')) return;
+     if (!permissions?.actions?.includes('import')) return;
      const file = e.target.files[0];
      if (!file) return;
      setLoading(true);
      try {
          await processCSVImport(file, contextVals, lookups, supabase, t);
-         alert(t.importSuccess);
+         alert(t.importSuccess || 'با موفقیت وارد شد');
          fetchVouchers();
      } catch (err) {
          console.error(err);
-         alert(t.importError + '\n' + (err.message || ''));
+         alert((t.importError || 'خطا در درون‌ریزی') + '\n' + (err.message || ''));
      } finally {
          setLoading(false);
          e.target.value = ''; 
@@ -330,20 +404,20 @@ const Vouchers = ({ language = 'fa' }) => {
 
   // --- Grid Columns ---
   const columns = [
-    { field: 'voucher_number', header: t.voucherNumber, width: 'w-24', sortable: true },
-    { field: 'voucher_date', header: t.date, width: 'w-24', sortable: true },
-    { field: 'status', header: t.status, width: 'w-32', render: (row) => getStatusBadge(row.status, t) },
-    { field: 'voucher_type', header: t.type, width: 'w-32', render: (row) => docTypes.find(d => d.code === row.voucher_type)?.title || row.voucher_type },
-    { field: 'branch_id', header: t.branch, width: 'w-32', render: (row) => branches.find(b => b.id === row.branch_id)?.title || '-' },
-    { field: 'description', header: t.description, width: 'w-64' },
-    { field: 'total_debit', header: t.amount, width: 'w-32', render: (row) => UI.utils.formatNumber(row.total_debit) },
-    { field: 'currency', header: t.currency, width: 'w-24', render: (row) => {
+    { field: 'voucher_number', header: t.voucherNumber || 'شماره سند', width: 'w-24', sortable: true },
+    { field: 'voucher_date', header: t.date || 'تاریخ', width: 'w-24', sortable: true },
+    { field: 'status', header: t.status || 'وضعیت', width: 'w-32', render: (row) => getStatusBadge ? getStatusBadge(row.status, t) : row.status },
+    { field: 'voucher_type', header: t.type || 'نوع سند', width: 'w-32', render: (row) => docTypes.find(d => d.code === row.voucher_type)?.title || row.voucher_type },
+    { field: 'branch_id', header: t.branch || 'شعبه', width: 'w-32', render: (row) => branches.find(b => b.id === row.branch_id)?.title || '-' },
+    { field: 'description', header: t.description || 'شرح', width: 'w-64' },
+    { field: 'total_debit', header: t.amount || 'مبلغ', width: 'w-32', render: (row) => UI.utils?.formatNumber ? UI.utils.formatNumber(row.total_debit) : row.total_debit },
+    { field: 'currency', header: t.currency || 'ارز', width: 'w-24', render: (row) => {
         const ledger = ledgers.find(l => String(l.id) === String(row.ledger_id));
         const currCode = ledger?.currency;
         return currencies.find(c => c.code === currCode)?.title || currCode || '-';
     }},
-    { field: 'daily_number', header: t.dailyNumber, width: 'w-24' },
-    { field: 'cross_reference', header: t.crossReference, width: 'w-24' }
+    { field: 'daily_number', header: t.dailyNumber || 'شماره روزانه', width: 'w-24' },
+    { field: 'cross_reference', header: t.crossReference || 'عطف', width: 'w-24' }
   ];
 
   // --- Render View Routing ---
@@ -351,8 +425,16 @@ const Vouchers = ({ language = 'fa' }) => {
       return <div className="h-full flex flex-col items-center justify-center bg-slate-50 text-indigo-600 gap-4"><Lock className="animate-pulse" size={48}/><p className="font-bold">{isRtl ? 'در حال بررسی دسترسی‌ها...' : 'Checking permissions...'}</p></div>;
   }
 
-  if (!permissions?.actions.includes('view')) {
-      return <div className="h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-4"><Lock size={64}/><h2 className="text-xl font-black">{isRtl ? 'عدم دسترسی' : 'Access Denied'}</h2><p>{isRtl ? 'شما مجوز مشاهده این صفحه را ندارید.' : 'You do not have permission to view this page.'}</p></div>;
+  if (!canView) {
+      return (
+        <div className={`flex flex-col items-center justify-center h-full bg-slate-50/50 ${isRtl ? 'font-vazir' : 'font-sans'}`}>
+          <div className="p-6 bg-white rounded-2xl shadow-sm text-center border border-red-100">
+             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><Ban className="text-red-500" size={32} /></div>
+             <h2 className="text-lg font-bold text-slate-800">{isRtl ? 'دسترسی غیرمجاز' : 'Access Denied'}</h2>
+             <p className="text-sm text-slate-500 mt-2">{isRtl ? 'شما مجوز مشاهده این فرم را ندارید.' : 'You do not have permission to view this form.'}</p>
+          </div>
+        </div>
+      );
   }
 
   if (view === 'form') {
@@ -375,19 +457,23 @@ const Vouchers = ({ language = 'fa' }) => {
 
   // --- Main List Render ---
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 bg-slate-50/50">
+    <div className={`h-full flex flex-col p-4 md:p-6 bg-slate-50/50 ${isRtl ? 'font-vazir' : 'font-sans'}`}>
       <div className="mb-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-2 text-indigo-800 font-bold text-sm">
           <Filter size={18} className="text-indigo-500"/>
-          <span>{t.globalFiltersTitle}:</span>
+          <span>{t.globalFiltersTitle || (isRtl ? 'فیلترهای سراسری' : 'Global Filters')}:</span>
         </div>
         <div className="flex gap-3">
           <select value={contextVals.fiscal_year_id} onChange={e => setContextVals({...contextVals, fiscal_year_id: e.target.value})} className="bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg px-3 py-1.5 text-xs font-bold outline-none cursor-pointer focus:ring-2 focus:ring-indigo-200 transition-all">
             {fiscalYears.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
           </select>
-          <select value={contextVals.ledger_id} onChange={e => setContextVals({...contextVals, ledger_id: e.target.value})} className="bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg px-3 py-1.5 text-xs font-bold outline-none cursor-pointer focus:ring-2 focus:ring-indigo-200 transition-all">
-            {ledgers.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-          </select>
+          {ledgers.length > 0 ? (
+            <select value={contextVals.ledger_id} onChange={e => setContextVals({...contextVals, ledger_id: e.target.value})} className="bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg px-3 py-1.5 text-xs font-bold outline-none cursor-pointer focus:ring-2 focus:ring-indigo-200 transition-all">
+              {ledgers.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+            </select>
+          ) : (
+            <span className="text-xs text-red-500 font-bold px-2 flex items-center">{isRtl ? 'دفتری مجاز نیست' : 'No ledgers allowed'}</span>
+          )}
         </div>
       </div>
 
@@ -397,21 +483,21 @@ const Vouchers = ({ language = 'fa' }) => {
             <FileText size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800">{t.title}</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">{t.subtitle}</p>
+            <h1 className="text-xl font-black text-slate-800">{t.title || (isRtl ? 'فهرست اسناد' : 'Vouchers List')}</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">{t.subtitle || (isRtl ? 'مدیریت و بررسی اسناد حسابداری' : 'Manage accounting vouchers')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-            {permissions.actions.includes('import') && (
+            {permissions?.actions?.includes('import') && (
                 <>
                   <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleImportCSV} />
-                  <Button variant="ghost" size="sm" icon={DownloadCloud} onClick={() => generateCSVTemplate(isRtl)} title={t.downloadTemplate} />
-                  <Button variant="ghost" size="sm" icon={FileSpreadsheet} onClick={() => fileInputRef.current?.click()} title={t.importCSV} className="text-emerald-600 hover:bg-emerald-50" />
+                  <Button variant="ghost" size="sm" icon={DownloadCloud} onClick={() => generateCSVTemplate && generateCSVTemplate(isRtl)} title={t.downloadTemplate || 'دانلود الگو'} />
+                  <Button variant="ghost" size="sm" icon={FileSpreadsheet} onClick={() => fileInputRef.current?.click()} title={t.importCSV || 'درون‌ریزی CSV'} className="text-emerald-600 hover:bg-emerald-50" />
                   <div className="h-6 w-px bg-slate-200 mx-1"></div>
                 </>
             )}
-            {permissions.actions.includes('create') && (
-                <Button variant="primary" size="default" onClick={() => handleOpenForm(null, false)} icon={Plus}>{t.newVoucher}</Button>
+            {permissions?.actions?.includes('create') && (
+                <Button variant="primary" size="default" onClick={() => handleOpenForm(null, false)} icon={Plus} disabled={ledgers.length === 0}>{t.newVoucher || (isRtl ? 'سند جدید' : 'New Voucher')}</Button>
             )}
         </div>
       </div>
@@ -420,37 +506,37 @@ const Vouchers = ({ language = 'fa' }) => {
          onSearch={() => fetchVouchers(searchParams)} 
          onClear={handleClearSearch} 
          isRtl={isRtl} 
-         title={t.search}
+         title={t.search || (isRtl ? 'جستجو' : 'Search')}
          defaultOpen={false}
       >
-        <InputField label={t.voucherNumber} value={searchParams.voucher_number} onChange={e => setSearchParams({...searchParams, voucher_number: e.target.value})} isRtl={isRtl} dir="ltr" />
-        <SelectField label={t.status} value={searchParams.status} onChange={e => setSearchParams({...searchParams, status: e.target.value})} isRtl={isRtl}>
-           <option value="">{t.all}</option>
-           <option value="draft">{t.statusDraft}</option>
-           <option value="temporary">{t.statusTemporary}</option>
-           <option value="reviewed">{t.statusReviewed}</option>
-           <option value="final">{t.statusFinal}</option>
+        <InputField label={t.voucherNumber || 'شماره سند'} value={searchParams.voucher_number} onChange={e => setSearchParams({...searchParams, voucher_number: e.target.value})} isRtl={isRtl} dir="ltr" />
+        <SelectField label={t.status || 'وضعیت'} value={searchParams.status} onChange={e => setSearchParams({...searchParams, status: e.target.value})} isRtl={isRtl}>
+           <option value="">{t.all || 'همه'}</option>
+           <option value="draft">{t.statusDraft || 'یادداشت'}</option>
+           <option value="temporary">{t.statusTemporary || 'موقت'}</option>
+           <option value="reviewed">{t.statusReviewed || 'بررسی شده'}</option>
+           <option value="final">{t.statusFinal || 'قطعی'}</option>
         </SelectField>
-        <InputField type="date" label={t.fromDate} value={searchParams.from_date} onChange={e => setSearchParams({...searchParams, from_date: e.target.value})} isRtl={isRtl} />
-        <InputField type="date" label={t.toDate} value={searchParams.to_date} onChange={e => setSearchParams({...searchParams, to_date: e.target.value})} isRtl={isRtl} />
+        <InputField type="date" label={t.fromDate || 'از تاریخ'} value={searchParams.from_date} onChange={e => setSearchParams({...searchParams, from_date: e.target.value})} isRtl={isRtl} />
+        <InputField type="date" label={t.toDate || 'تا تاریخ'} value={searchParams.to_date} onChange={e => setSearchParams({...searchParams, to_date: e.target.value})} isRtl={isRtl} />
         
-        <SelectField label={t.type} value={searchParams.voucher_type} onChange={e => setSearchParams({...searchParams, voucher_type: e.target.value})} isRtl={isRtl}>
-           <option value="">{t.all}</option>
+        <SelectField label={t.type || 'نوع سند'} value={searchParams.voucher_type} onChange={e => setSearchParams({...searchParams, voucher_type: e.target.value})} isRtl={isRtl}>
+           <option value="">{t.all || 'همه'}</option>
            {docTypes.map(d => <option key={d.id} value={d.code}>{d.title}</option>)}
         </SelectField>
 
         <div className="flex flex-col gap-1">
-           <label className="text-[11px] font-bold text-slate-600 rtl:pr-1 ltr:pl-1">{t.account}</label>
+           <label className="text-[11px] font-bold text-slate-600 rtl:pr-1 ltr:pl-1">{t.account || 'حساب'}</label>
            <SearchableSelect 
                options={validAccountsForLedger} 
                value={searchParams.account_id} 
                onChange={v => setSearchParams({...searchParams, account_id: v})} 
-               placeholder={t.searchAccount} 
+               placeholder={t.searchAccount || 'جستجوی حساب'} 
                isRtl={isRtl}
            />
         </div>
 
-        <InputField label={t.description} value={searchParams.description} onChange={e => setSearchParams({...searchParams, description: e.target.value})} isRtl={isRtl} />
+        <InputField label={t.description || 'شرح'} value={searchParams.description} onChange={e => setSearchParams({...searchParams, description: e.target.value})} isRtl={isRtl} />
       </FilterSection>
 
       <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -466,29 +552,29 @@ const Vouchers = ({ language = 'fa' }) => {
           isLoading={loading} 
           bulkActions={
              <>
-               {permissions.actions.includes('status_change') && (
+               {permissions?.actions?.includes('status_change') && (
                    <>
-                     {allDraft && <Button variant="secondary" size="sm" onClick={() => handleBulkStatus('temporary')} icon={CheckCircle}>{t.makeTemporary}</Button>}
-                     {allTemp && <Button variant="secondary" size="sm" onClick={() => handleBulkStatus('draft')} icon={FileText}>{t.makeDraft}</Button>}
+                     {allDraft && <Button variant="secondary" size="sm" onClick={() => handleBulkStatus('temporary')} icon={CheckCircle}>{t.makeTemporary || 'تبدیل به موقت'}</Button>}
+                     {allTemp && <Button variant="secondary" size="sm" onClick={() => handleBulkStatus('draft')} icon={FileText}>{t.makeDraft || 'تبدیل به یادداشت'}</Button>}
                    </>
                )}
              </>
           }
           actions={(r) => (
             <div className="flex gap-1 justify-center">
-              {permissions.actions.includes('attach') && (
-                <Button variant="ghost" size="iconSm" icon={Paperclip} onClick={() => setVoucherForAttachments(r)} title={t.attachments} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50" />
+              {permissions?.actions?.includes('attach') && (
+                <Button variant="ghost" size="iconSm" icon={Paperclip} onClick={() => setVoucherForAttachments(r)} title={t.attachments || 'ضمائم'} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50" />
               )}
-              {permissions.actions.includes('create') && (
-                <Button variant="ghost" size="iconSm" icon={Copy} onClick={() => handleOpenForm(r, true)} title={t.copyVoucher} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50" />
+              {permissions?.actions?.includes('create') && (
+                <Button variant="ghost" size="iconSm" icon={Copy} onClick={() => handleOpenForm(r, true)} title={t.copyVoucher || 'کپی سند'} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50" />
               )}
-              {permissions.actions.includes('print') && (
-                <Button variant="ghost" size="iconSm" icon={Printer} onClick={() => setVoucherToPrint(r)} title={t.print} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50" />
+              {permissions?.actions?.includes('print') && (
+                <Button variant="ghost" size="iconSm" icon={Printer} onClick={() => setVoucherToPrint(r)} title={t.print || 'چاپ'} className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50" />
               )}
-              {permissions.actions.includes('edit') && (
+              {permissions?.actions?.includes('edit') && (
                 <Button variant="ghost" size="iconSm" icon={Edit} onClick={() => handleOpenForm(r, false)} />
               )}
-              {permissions.actions.includes('delete') && (
+              {permissions?.actions?.includes('delete') && (
                 <Button variant="ghost" size="iconSm" icon={Trash2} className="text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => promptDelete(r)} />
               )}
             </div>
@@ -496,8 +582,8 @@ const Vouchers = ({ language = 'fa' }) => {
         />
       </div>
 
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t.delete} footer={<><Button variant="ghost" onClick={() => setShowDeleteModal(false)}>{t.backToList}</Button><Button variant="danger" onClick={confirmDelete}>{t.delete}</Button></>}>
-        <div className="p-4"><p className="text-slate-700 font-medium">{t.confirmDelete}</p></div>
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t.delete || 'حذف'} footer={<><Button variant="ghost" onClick={() => setShowDeleteModal(false)}>{t.backToList || 'بازگشت'}</Button><Button variant="danger" onClick={confirmDelete}>{t.delete || 'حذف'}</Button></>}>
+        <div className="p-4"><p className="text-slate-700 font-medium">{t.confirmDelete || 'آیا از حذف اطمینان دارید؟'}</p></div>
       </Modal>
 
       <Modal isOpen={!!voucherToPrint} onClose={() => setVoucherToPrint(null)} title={t.printVoucher || 'چاپ سند حسابداری'} size="lg">
